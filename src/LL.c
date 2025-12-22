@@ -8,14 +8,14 @@ static Node* helper(LL* lst, int index)
 
 	int i = 0;
 	r = lst->first;
-	if (abs(index - recent_index) < abs(index - i))
+	if (abs(index - lst->recent_index) < abs(index - i))
 	{
-		i = recent_index;
+		i = lst->recent_index;
 		r = lst->recent;
 	}
-	if (abs(index - (size - 1)) < abs(index - i))
+	if (abs(index - (lst->size - 1)) < abs(index - i))
 	{
-		i = size - 1;
+		i = lst->size - 1;
 		r = lst->last;
 	}
 
@@ -40,9 +40,22 @@ static Node* helper(LL* lst, int index)
 	return r;
 }
 
-Node* get(LL* lst, int index)
+Node* get_node(LL* lst, int index)
 {
+	if (lst->size == 0)
+	{
+		return NULL;
+	}
 	return helper(lst, index);
+}
+
+void* get_elt(LL* lst, int index)
+{
+	if (lst->size == 0)
+	{
+		return NULL;
+	}
+	return get_node(lst, index)->elt;
 }
 
 void add(LL* lst, void* elt, int index)
@@ -79,7 +92,7 @@ void add(LL* lst, void* elt, int index)
 	lst->size++;
 }
 
-void* remove(LL* lst, int index)
+void* rm(LL* lst, int index)
 {
 	Node* n = helper(lst, index);
 	if (n->prev != NULL)
@@ -107,7 +120,7 @@ void free_list(LL* lst)
 	for (int i = 0; i < lst->size - 1; i++)
 	{
 		ptr = ptr->next;
-		free(ptr->last);
+		free(ptr->prev);
 	}
 	free(ptr);
 	free(lst);

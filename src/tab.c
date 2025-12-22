@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "tab.h"
 
@@ -20,7 +21,10 @@ Tab* make_tab(char* fname)
 	while (1)
 	{
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		buf[LINE_SIZE - 1] = 0;
+		// setting the last character in the buffer to a random character that is not the null character so we can check
+		// after fgets() to see if the buffer was filled completely, in which case the line is too long for the editor we 
+		// terminate
+		buf[LINE_SIZE - 1] = 'a';
 		buf[0] = '\0';
 		fgets(buf, LINE_SIZE, f);
 		if (buf[LINE_SIZE - 1] == '\0')
@@ -29,6 +33,11 @@ Tab* make_tab(char* fname)
 			free_list(r->lines);
 			free(fname);
 			return NULL;
+		}
+		if (buf[0] == '\0')
+		{
+			free(buf);
+			break;
 		}
 		add(r->lines, buf, r->lines->size);
 	}

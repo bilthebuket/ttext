@@ -1,4 +1,6 @@
+#include <ncurses.h>
 #include "normal_mode.h"
+#include "global.h"
 
 void normal_mode(int ch)
 {
@@ -13,7 +15,7 @@ void normal_mode(int ch)
 		break;
 
 		case 'j':
-		if (active_tab->y < active_tab->lines - 1)
+		if (active_tab->y < active_tab->lines->size - 1)
 		{
 			active_tab->y++;
 			move(active_tab->y, active_tab->x);
@@ -29,7 +31,7 @@ void normal_mode(int ch)
 		break;
 
 		case 'l':
-		if (((char*) get(active_tab->lines, active_tab->y))[active_tab->x] != '\0')
+		if (((char*) get_elt(active_tab->lines, active_tab->y))[active_tab->x] != '\0')
 		{
 			active_tab->x++;
 			move(active_tab->y, active_tab->x);
@@ -38,17 +40,17 @@ void normal_mode(int ch)
 
 		case 't':
 		move(height - 2, 1);
-		mode = &terminal_mode;
+		//mode = &terminal_mode;
 		break;
 
 		case 'i':
-		mode = &insert_mode;
+		//mode = &insert_mode;
 		break;
 
 		case 'a':
 		active_tab->x++;
 		move(active_tab->y, active_tab->x);
-		mode = &insert_mode;
+		//mode = &insert_mode;
 		break;
 	}
 }
