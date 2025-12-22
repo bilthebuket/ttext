@@ -7,6 +7,8 @@ Tab* make_tab(char* fname)
 {
 	Tab* r = malloc(sizeof(Tab));
 	r->fname = fname;
+	r->x = 0;
+	r->y = 0;
 	r->lines = make_list();
 
 	FILE* f = fopen(fname, "r");

@@ -7,6 +7,8 @@ typedef struct Tab
 {
 	LL* lines;
 	char* fname;
+	int x;
+	int y;
 } Tab;
 
 Tab* make_tab(char* fname);
