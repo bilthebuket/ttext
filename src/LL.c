@@ -100,3 +100,15 @@ LL* make_list(void)
 	r->size = 0;
 	return r;
 }
+
+void free_list(LL* lst)
+{
+	Node* ptr = lst->first;
+	for (int i = 0; i < lst->size - 1; i++)
+	{
+		ptr = ptr->next;
+		free(ptr->last);
+	}
+	free(ptr);
+	free(lst);
+}
