@@ -95,6 +95,7 @@ void add(LL* lst, void* elt, int index)
 void* rm(LL* lst, int index)
 {
 	Node* n = helper(lst, index);
+	void* r = n->elt;
 	if (n->prev != NULL)
 	{
 		n->prev->next = n->next;
@@ -104,7 +105,8 @@ void* rm(LL* lst, int index)
 		n->next->prev = n->prev;
 	}
 	lst->size--;
-	return n;
+	free(n);
+	return r;
 }
 
 LL* make_list(void)

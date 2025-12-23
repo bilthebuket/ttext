@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tab.h"
-
-#define LINE_SIZE 2048
+#include "global.h"
 
 Tab* make_tab(char* fname)
 {
