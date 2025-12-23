@@ -10,11 +10,11 @@
 void insert_mode(int ch)
 {
 	char* line = (char*) get_elt(active_tab->lines, active_tab->y);
+	int i;
 
 	switch (ch)
 	{
 		default:
-		int i;
 		for (i = active_tab->x; line[i] != '\0'; i++) {}
 		if (i != LINE_SIZE - 1)
 		{
@@ -44,15 +44,52 @@ void insert_mode(int ch)
 
 			print_line(active_tab, active_tab->y);
 		}
-		else if (line[0] == '\0')
+		else if (active_tab->y > 0)
 		{
-			free(rm(active_tab->lines, active_tab->y));
+			char* line_above = (char*) get_elt(active_tab->lines, active_tab->y - 1);
+
+			for (i = 0; line_above[i] != '\0'; i++) {}
+			int len = i;
+			for (; line[i - len] != '\0' && i < LINE_SIZE; i++)
+			{
+				line_above[i] = line[i - len];
+			}
+			if (line[i - len] != '\0')
+			{
+				line[len] = '\0';
+				print_message("Operation would cause a line to exceed the maximum line size");
+			}
+			else
+			{
+				rm(active_tab->lines, active_tab->y);
+				line_above[i] = '\0';
+				free(line);
+				active_tab->x = i - 1;
+				active_tab->y--;
+				move(active_tab->y, active_tab->x);
+				print_tab(active_tab);
+			}
 		}
 		break;
 
 		case ESCAPE_KEYCODE:
 		print_message("Normal Mode");
 		mode = &normal_mode;
+		break;
+
+		case ENTER_KEYCODE1:
+		char* buf = malloc(sizeof(char) * LINE_SIZE);
+		for (i = active_tab->x; line[i] != '\0'; i++)
+		{
+			buf[i - active_tab->x] = line[i];
+		}
+		line[active_tab->x] = '\0';
+		buf[i - active_tab->x] = '\0';
+		add(active_tab->lines, buf, active_tab->y + 1);
+		active_tab->x = 0;
+		active_tab->y++;
+		move(active_tab->y, active_tab->x);
+		print_tab(active_tab);
 		break;
 	}
 }

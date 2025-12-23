@@ -25,22 +25,31 @@ Tab* make_tab(char* fname)
 		// terminate
 		buf[LINE_SIZE - 1] = 'a';
 		buf[0] = '\0';
-		fgets(buf, LINE_SIZE, f);
+
+		if (!fgets(buf, LINE_SIZE, f))
+		{
+			free(buf);
+			break;
+		}
 		if (buf[LINE_SIZE - 1] == '\0')
 		{
 			free(buf);
 			free_list(r->lines);
 			free(fname);
+			fclose(f);
 			return NULL;
 		}
-		if (buf[0] == '\0')
+
+		int i;
+		for (i = 0; buf[i] != '\0'; i++) {}
+		if (buf[i - 1] == '\n')
 		{
-			free(buf);
-			break;
+			buf[i - 1] = '\0';
 		}
 		add(r->lines, buf, r->lines->size);
 	}
 
+	fclose(f);
 	return r;
 }
 

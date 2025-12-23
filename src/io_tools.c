@@ -7,13 +7,16 @@ void print_tab(Tab* t)
 {
 	int y, x;
 	getyx(stdscr, y, x);
-	for (int i = 0; i < t->lines->size; i++)
+	for (int i = 0; i < height - 1; i++)
 	{
 		for (int j = 0; j < width; j++)
 		{
 			mvaddch(i, j, ' ');
 		}
-		mvaddstr(i, 0, (char*) get_elt(t->lines, i));
+		if (i < t->lines->size)
+		{
+			mvaddstr(i, 0, (char*) get_elt(t->lines, i));
+		}
 	}
 	move(y, x);
 }
