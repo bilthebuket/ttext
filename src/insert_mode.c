@@ -25,7 +25,8 @@ void insert_mode(int ch)
 			line[active_tab->x] = ch;
 
 			active_tab->x++;
-			move(active_tab->y, active_tab->x);
+			check_right_update(active_tab);
+			move_cursor_to_tab(active_tab);
 
 			print_line(active_tab, active_tab->y);
 		}
@@ -40,7 +41,8 @@ void insert_mode(int ch)
 			}
 
 			active_tab->x--;
-			move(active_tab->y, active_tab->x);
+			check_left_update(active_tab);
+			move_cursor_to_tab(active_tab);
 
 			print_line(active_tab, active_tab->y);
 		}
@@ -64,9 +66,15 @@ void insert_mode(int ch)
 				rm(active_tab->lines, active_tab->y);
 				line_above[i] = '\0';
 				free(line);
+
 				active_tab->x = i - 1;
 				active_tab->y--;
-				move(active_tab->y, active_tab->x);
+
+				check_left_update(active_tab);
+				check_right_update(active_tab);
+				check_top_update(active_tab);
+				move_cursor_to_tab(active_tab);
+
 				print_tab(active_tab);
 			}
 		}
@@ -86,9 +94,14 @@ void insert_mode(int ch)
 		line[active_tab->x] = '\0';
 		buf[i - active_tab->x] = '\0';
 		add(active_tab->lines, buf, active_tab->y + 1);
+
 		active_tab->x = 0;
 		active_tab->y++;
-		move(active_tab->y, active_tab->x);
+
+		check_left_update(active_tab);
+		check_bottom_update(active_tab);
+		move_cursor_to_tab(active_tab);
+
 		print_tab(active_tab);
 		break;
 	}

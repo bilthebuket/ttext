@@ -1,20 +1,41 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ncurses.h>
 #include <pty.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "LL.h"
 #include "global.h"
 #include "io_tools.h"
 #include "normal_mode.h"
+#include "terminal_mode.h"
 
 int main(int argc, char* argv[])
 {
-	int master_fd;
-	int pid = forkpty(&master_fd, NULL, NULL, NULL);
-	if (pid == 0)
+	initscr();
+	noecho();
+	cbreak();
+	getmaxyx(stdscr, height, width);
+
+	terminal = malloc(sizeof(Tab));
+	terminal->lines = make_list();
+	terminal->width = width;
+	terminal->height = 5;
+	terminal->x = 1;
+	terminal->y = terminal->height - 1;
+	terminal->xpos = 0;
+	terminal->ypos = height - terminal->height;
+	terminal->left_column_index = 0;
+	terminal->top_line_index = 0;
+
+	slave_pid = forkpty(&master_fd, NULL, NULL, NULL);
+	if (slave_pid == 0)
 	{
 		execlp("bash", "bash", NULL);
 	}
+
+	pthread_t listener;
+	pthread_create(&listener, NULL, &listener_func, NULL);
 
 	tabs = make_list();
 	for (int i = 1; i < argc; i++)
@@ -32,11 +53,6 @@ int main(int argc, char* argv[])
 
 	active_tab = (Tab*) get_elt(tabs, 0);
 	mode = &normal_mode;
-
-	initscr();
-	noecho();
-	cbreak();
-	getmaxyx(stdscr, height, width);
 
 	print_tab(active_tab);
 	refresh();

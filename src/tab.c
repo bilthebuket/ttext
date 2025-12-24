@@ -9,6 +9,12 @@ Tab* make_tab(char* fname)
 	r->fname = fname;
 	r->x = 0;
 	r->y = 0;
+	r->height = height - 1;
+	r->width = width;
+	r->xpos = 0;
+	r->ypos = 0;
+	r->top_line_index = 0;
+	r->left_column_index = 0;
 	r->lines = make_list();
 
 	FILE* f = fopen(fname, "r");

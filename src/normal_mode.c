@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include "normal_mode.h"
 #include "insert_mode.h"
+#include "terminal_mode.h"
 #include "global.h"
 #include "io_tools.h"
 
@@ -12,7 +13,8 @@ void normal_mode(int ch)
 		if (active_tab->x > 0)
 		{
 			active_tab->x--;
-			move(active_tab->y, active_tab->x);
+			check_left_update(active_tab);
+			move_cursor_to_tab(active_tab);
 		}
 		break;
 
@@ -35,7 +37,11 @@ void normal_mode(int ch)
 			}
 
 			active_tab->y++;
-			move(active_tab->y, active_tab->x);
+			
+			check_bottom_update(active_tab);
+			check_left_update(active_tab);
+
+			move_cursor_to_tab(active_tab);
 		}
 		break;
 
@@ -58,7 +64,11 @@ void normal_mode(int ch)
 			}
 
 			active_tab->y--;
-			move(active_tab->y, active_tab->x);
+
+			check_top_update(active_tab);
+			check_left_update(active_tab);
+
+			move_cursor_to_tab(active_tab);
 		}
 		break;
 
@@ -66,13 +76,15 @@ void normal_mode(int ch)
 		if (((char*) get_elt(active_tab->lines, active_tab->y))[active_tab->x + 1] != '\0')
 		{
 			active_tab->x++;
-			move(active_tab->y, active_tab->x);
+			check_right_update(active_tab);
+			move_cursor_to_tab(active_tab);
 		}
 		break;
 
 		case 't':
-		move(height - 2, 1);
-		//mode = &terminal_mode;
+		print_tab(terminal);
+		move_cursor_to_tab(terminal);
+		mode = &terminal_mode;
 		break;
 
 		case 'i':
@@ -83,7 +95,12 @@ void normal_mode(int ch)
 		case 'a':
 		print_message("Insert Mode");
 		active_tab->x++;
-		move(active_tab->y, active_tab->x);
+		if (active_tab->left_column_index + active_tab->width < active_tab->x)
+		{
+			active_tab->left_column_index = active_tab->x - active_tab->width;
+			print_tab(active_tab);
+		}
+		move_cursor_to_tab(active_tab);
 		mode = &insert_mode;
 		break;
 	}

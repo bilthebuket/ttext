@@ -14,8 +14,12 @@
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;
+extern Tab* terminal;
 
 extern int height;
 extern int width;
+
+extern int slave_pid;
+extern int master_fd;
 
 #endif
