@@ -87,6 +87,10 @@ void add(LL* lst, void* elt, int index)
 		new->prev = n->prev;
 		n->prev = new;
 	}
+	if (index == 0)
+	{
+		lst->first = new;
+	}
 	lst->recent_index = index;
 	lst->recent = new;
 	lst->size++;

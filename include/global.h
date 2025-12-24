@@ -3,6 +3,7 @@
 
 #include "LL.h"
 #include "tab.h"
+#include "semaphore.h"
 
 #define LINE_SIZE 2048
 
@@ -21,5 +22,7 @@ extern int width;
 
 extern int slave_pid;
 extern int master_fd;
+
+extern sem_t sem;
 
 #endif

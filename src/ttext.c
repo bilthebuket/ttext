@@ -4,6 +4,7 @@
 #include <pty.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include "LL.h"
 #include "global.h"
 #include "io_tools.h"
@@ -12,6 +13,8 @@
 
 int main(int argc, char* argv[])
 {
+	sem_init(&sem, 0, 1);
+
 	initscr();
 	noecho();
 	cbreak();
@@ -19,12 +22,16 @@ int main(int argc, char* argv[])
 
 	terminal = malloc(sizeof(Tab));
 	terminal->lines = make_list();
+	char* input_line = malloc(sizeof(char) * LINE_SIZE);
+	input_line[0] = '\0';
+	add(terminal->lines, input_line, 0);
+
 	terminal->width = width;
 	terminal->height = 5;
-	terminal->x = 1;
-	terminal->y = terminal->height - 1;
+	terminal->x = 0;
+	terminal->y = 0;
 	terminal->xpos = 0;
-	terminal->ypos = height - terminal->height;
+	terminal->ypos = height - terminal->height - 1;
 	terminal->left_column_index = 0;
 	terminal->top_line_index = 0;
 
@@ -59,9 +66,13 @@ int main(int argc, char* argv[])
 
 	while (1)
 	{
-		(*mode)(getch());
+		char c = getch();
+		sem_wait(&sem);
+		(*mode)(c);
 		refresh();
+		sem_post(&sem);
 	}
 
 	endwin();
+	sem_destroy(&sem);
 }
