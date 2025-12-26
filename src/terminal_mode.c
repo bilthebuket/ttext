@@ -39,12 +39,11 @@ void terminal_mode(int ch)
 		{
 			int i = 0;
 			for (; line[i] != '\0'; i++) {}
-			write(master_fd, line, i + 1);
-			char* input_line = malloc(sizeof(char) * LINE_SIZE);
-			input_line[0] = '\0';
-			add(terminal->lines, input_line, terminal->lines->size);
+			line[i] = '\n';
+			line[i + 1] = '\0';
+			write(master_fd, line, i + 2);
+			line[0] = '\0';
 			terminal->x = 0;
-			terminal->y++;
 			check_bottom_update(terminal);
 			move_cursor_to_tab(terminal);
 		}

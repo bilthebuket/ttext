@@ -60,6 +60,11 @@ void* get_elt(LL* lst, int index)
 
 void add(LL* lst, void* elt, int index)
 {
+	if (index < 0)
+	{
+		index = 0;
+	}
+
 	Node* new = malloc(sizeof(Node));
 	new->elt = elt;
 
@@ -85,12 +90,17 @@ void add(LL* lst, void* elt, int index)
 		Node* n = helper(lst, index);
 		new->next = n;
 		new->prev = n->prev;
+		if (index == 0)
+		{
+			lst->first = new;
+		}
+		else
+		{
+			n->prev->next = new;
+		}
 		n->prev = new;
 	}
-	if (index == 0)
-	{
-		lst->first = new;
-	}
+
 	lst->recent_index = index;
 	lst->recent = new;
 	lst->size++;
