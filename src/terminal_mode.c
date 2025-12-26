@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include "terminal_mode.h"
+#include "normal_mode.h"
 #include "global.h"
 #include "io_tools.h"
 
@@ -63,6 +64,11 @@ void terminal_mode(int ch)
 
 			print_line(terminal, terminal->y);
 		}
+		break;
+
+		case ESCAPE_KEYCODE:
+		move_cursor_to_tab(active_tab);
+		mode = &normal_mode;
 		break;
 	}
 }

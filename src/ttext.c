@@ -58,7 +58,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	active_tab = (Tab*) get_elt(tabs, 0);
+	if (argc == 1)
+	{
+		active_tab = (Tab*) make_tab(NULL);
+	}
+	else
+	{
+		active_tab = (Tab*) get_elt(tabs, 0);
+	}
 	mode = &normal_mode;
 
 	print_tab(active_tab);

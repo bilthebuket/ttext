@@ -20,6 +20,9 @@ Tab* make_tab(char* fname)
 	FILE* f = fopen(fname, "r");
 	if (f == NULL)
 	{
+		char* buf = malloc(sizeof(char) * LINE_SIZE);
+		buf[0] = '\0';
+		add(r->lines, buf, 0);
 		return r;
 	}
 
