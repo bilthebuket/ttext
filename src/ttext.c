@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
 	if (argc == 1)
 	{
-		active_tab = (Tab*) make_tab(NULL);
+		active_tab = make_tab(NULL);
 		add(tabs, active_tab, 0);
 		active_tab_index = 0;
 	}
@@ -71,8 +71,10 @@ int main(int argc, char* argv[])
 	}
 	mode = &normal_mode;
 
+	sem_wait(&sem);
 	print_tab(active_tab);
 	refresh();
+	sem_post(&sem);
 
 	while (1)
 	{

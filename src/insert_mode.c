@@ -67,7 +67,7 @@ void insert_mode(int ch)
 				line_above[i] = '\0';
 				free(line);
 
-				active_tab->x = i - 1;
+				active_tab->x = i;
 				active_tab->y--;
 
 				check_left_update(active_tab);

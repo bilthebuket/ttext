@@ -110,14 +110,28 @@ void* rm(LL* lst, int index)
 {
 	Node* n = helper(lst, index);
 	void* r = n->elt;
+
 	if (n->prev != NULL)
 	{
 		n->prev->next = n->next;
 	}
+	else
+	{
+		lst->first = n->next;
+	}
+
 	if (n->next != NULL)
 	{
 		n->next->prev = n->prev;
+		lst->recent = n->next;
 	}
+	else
+	{
+		lst->last = n->prev;
+		lst->recent = n->prev;
+		lst->recent_index--;
+	}
+
 	lst->size--;
 	free(n);
 	return r;

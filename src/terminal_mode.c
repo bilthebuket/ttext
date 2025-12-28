@@ -61,6 +61,7 @@ void terminal_mode(int ch)
 				ptr = &ptr[i + 1];
 				active_tab = make_tab(ptr);
 				add(tabs, active_tab, tabs->size);
+				active_tab_index = tabs->size - 1;
 				print_tab(active_tab);
 			}
 			else if (!strcmp(ptr, "tabn"))
