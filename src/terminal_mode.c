@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <ncurses.h>
 #include "terminal_mode.h"
@@ -34,7 +36,259 @@ void terminal_mode(int ch)
 		case ENTER_KEYCODE1:
 		if (line[0] == ':')
 		{
-			
+			char* ptr = &line[1];
+			bool only_one_arg = false;
+
+			int i = 0;
+			for (; ptr[i] != ' ' && ptr[i] != '\0'; i++) {}
+
+			if (ptr[i] == '\0')
+			{
+				only_one_arg = true;
+			}
+			ptr[i] = '\0';
+
+			if (!strcmp(ptr, "tabnew"))
+			{
+				if (only_one_arg)
+				{
+					print_message("Please pass filename as argument");
+					make_input_line();
+					return;
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				active_tab = make_tab(ptr);
+				add(tabs, active_tab, tabs->size);
+				print_tab(active_tab);
+			}
+			else if (!strcmp(ptr, "tabn"))
+			{
+				if (active_tab_index == tabs->size - 1)
+				{
+					active_tab_index = 0;
+				}
+				else
+				{
+					active_tab_index++;
+				}
+
+				active_tab = (Tab*) get_elt(tabs, active_tab_index);
+				print_tab(active_tab);
+			}
+			else if (!strcmp(ptr, "tabp"))
+			{
+				if (active_tab_index == 0)
+				{
+					active_tab_index = tabs->size - 1;
+				}
+				else
+				{
+					active_tab_index--;
+				}
+
+				active_tab = (Tab*) get_elt(tabs, active_tab_index);
+				print_tab(active_tab);
+			}
+			else if (!strcmp(ptr, "tab"))
+			{
+				if (only_one_arg)
+				{
+					print_message("Please pass the index of the tab to switch to");
+					make_input_line();
+					return;
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				int index = atoi(ptr);
+
+				if (index < 0 || index >= tabs->size)
+				{
+					print_message("Index invalid");
+					make_input_line();
+					return;
+				}
+
+				active_tab = (Tab*) get_elt(tabs, index);
+				print_tab(active_tab);
+			}
+			else if (!strcmp(ptr, "rs"))
+			{
+				int amount; 
+
+				int* num_to_change1 = NULL;
+				int sign1;
+
+				int* num_to_change2 = NULL;
+				int sign2;
+
+				if (only_one_arg)
+				{
+					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					make_input_line();
+					return;
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				for (i = 0; ptr[i] != '\0' && ptr[i] != ' '; i++) {}
+
+				if (ptr[i] == '\0')
+				{
+					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					make_input_line();
+					return;
+				}
+
+				ptr[i] = '\0';
+
+				if (!strcmp(ptr, "top"))
+				{
+					num_to_change1 = &active_tab->ypos;
+					num_to_change2 = &active_tab->height;
+				}
+				else if (!strcmp(ptr, "bottom"))
+				{
+					num_to_change1 = &active_tab->height;
+				}
+				else if (!strcmp(ptr, "left"))
+				{
+					num_to_change1 = &active_tab->xpos;
+					num_to_change2 = &active_tab->width;
+				}
+				else if (!strcmp(ptr, "right"))
+				{
+					num_to_change1 = &active_tab->width;
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				for (i = 0; ptr[i] != '\0' && ptr[i] != ' '; i++) {}
+
+				if (ptr[i] == '\0')
+				{
+					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					make_input_line();
+					return;
+				}
+
+				ptr[i] = '\0';
+
+				if (!strcmp(ptr, "add"))
+				{
+					if (num_to_change2 == NULL)
+					{
+						sign1 = 1;
+					}
+					else
+					{
+						sign1 = -1;
+						sign2 = 1;
+					}
+				}
+				else if (!strcmp(ptr, "sub"))
+				{
+					if (num_to_change2 == NULL)
+					{
+						sign1 = -1;
+					}
+					else
+					{
+						sign1 = 1;
+						sign2 = -1;
+					}
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				amount = atoi(ptr);
+				amount = atoi(ptr);
+
+				if (num_to_change1 != NULL)
+				{
+					*num_to_change1 = *num_to_change1 + sign1 * amount;
+				}
+				if (num_to_change2 != NULL)
+				{
+					*num_to_change2 = *num_to_change2 + sign2 * amount;
+				}
+
+				print_tab(active_tab);
+				move_cursor_to_tab(active_tab);
+			}
+			else if (!strcmp(ptr, "q"))
+			{
+				if (active_tab->changes_saved)
+				{
+					if (active_tab_index == tabs->size - 1)
+					{
+						if (tabs->size == 1)
+						{
+							// quit program
+						}
+
+						active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
+						free_tab((Tab*) rm(tabs, active_tab_index));
+						active_tab_index--;
+					}
+					else
+					{
+						active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
+						free_tab((Tab*) rm(tabs, active_tab_index));
+					}
+				}
+			}
+			else if (!strcmp(ptr, "q!"))
+			{
+				if (active_tab_index == tabs->size - 1)
+				{
+					if (tabs->size == 1)
+					{
+						// quit program
+					}
+
+					active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
+					free_tab((Tab*) rm(tabs, active_tab_index));
+					active_tab_index--;
+				}
+				else
+				{
+					active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
+					free_tab((Tab*) rm(tabs, active_tab_index));
+				}
+			}
+			else if (!strcmp(ptr, "w"))
+			{
+				if (active_tab->fname == NULL)
+				{
+					char* fname = malloc(sizeof(char) * 10);
+					fname[0] = 'u';
+					fname[1] = 'n';
+					fname[2] = 't';
+					fname[3] = 'i';
+					fname[4] = 't';
+					fname[5] = '.';
+					fname[6] = 't';
+					fname[7] = 'x';
+					fname[8] = 't';
+					active_tab->fname = fname;
+				}
+
+				FILE* f = fopen(active_tab->fname, "r");
+				for (int i = 0; i < active_tab->lines->size; i++)
+				{
+					fprintf(f, "%s\n", (char*) get_elt(active_tab->lines, i));
+				}
+				fclose(f);
+			}
+			else if (!strcmp(ptr, "findreplace"))
+			{
+
+			}
+
+			make_input_line();
 		}
 		else
 		{
@@ -71,6 +325,17 @@ void terminal_mode(int ch)
 		mode = &normal_mode;
 		break;
 	}
+}
+
+static void make_input_line(void)
+{
+	char* line = malloc(sizeof(char) * LINE_SIZE);
+	line[0] = '\0';
+	add(terminal->lines, line, terminal->lines->size);
+	terminal->x = 0;
+	terminal->y++;
+	check_bottom_update(terminal);
+	move_cursor_to_tab(terminal);
 }
 
 void* listener_func(void*)

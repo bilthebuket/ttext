@@ -7,6 +7,7 @@ typedef struct Tab
 {
 	LL* lines;
 	char* fname;
+	bool changes_saved;
 
 	// cursor position
 	int x;
@@ -24,5 +25,6 @@ typedef struct Tab
 } Tab;
 
 Tab* make_tab(char* fname);
+void free_tab(Tab* t);
 
 #endif

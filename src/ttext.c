@@ -61,10 +61,13 @@ int main(int argc, char* argv[])
 	if (argc == 1)
 	{
 		active_tab = (Tab*) make_tab(NULL);
+		add(tabs, active_tab, 0);
+		active_tab_index = 0;
 	}
 	else
 	{
 		active_tab = (Tab*) get_elt(tabs, 0);
+		active_tab_index = 0;
 	}
 	mode = &normal_mode;
 

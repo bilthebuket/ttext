@@ -15,6 +15,7 @@
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;
+extern int active_tab_index;
 extern Tab* terminal;
 
 extern int height;

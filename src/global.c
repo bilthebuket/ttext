@@ -3,6 +3,7 @@
 void (*mode)(int);
 LL* tabs;
 Tab* active_tab;
+int active_tab_index;
 Tab* terminal;
 
 int height;
