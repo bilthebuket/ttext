@@ -88,11 +88,13 @@ void normal_mode(int ch)
 		break;
 
 		case 'i':
+		active_tab->changes_saved = false;
 		print_message("Insert Mode");
 		mode = &insert_mode;
 		break;
 
 		case 'a':
+		active_tab->changes_saved = false;
 		print_message("Insert Mode");
 		active_tab->x++;
 		if (active_tab->left_column_index + active_tab->width < active_tab->x)

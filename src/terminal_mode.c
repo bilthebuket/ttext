@@ -8,6 +8,17 @@
 #include "global.h"
 #include "io_tools.h"
 
+static void make_input_line(void)
+{
+	char* line = malloc(sizeof(char) * LINE_SIZE);
+	line[0] = '\0';
+	add(terminal->lines, line, terminal->lines->size);
+	terminal->x = 0;
+	terminal->y++;
+	check_bottom_update(terminal);
+	move_cursor_to_tab(terminal);
+}
+
 void terminal_mode(int ch)
 {
 	char* line = (char*) get_elt(terminal->lines, terminal->y);
@@ -219,6 +230,64 @@ void terminal_mode(int ch)
 				print_tab(active_tab);
 				move_cursor_to_tab(active_tab);
 			}
+			else if (!strcmp(ptr, "mv"))
+			{
+				if (only_one_arg)
+				{
+					print_message("Ussage: :mv <left/right/up/down> <amount>");
+					make_input_line();
+					return;
+				}
+
+				int* num_to_change = NULL;
+				int sign;
+				int amount;
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				for (i = 0; ptr[i] != ' ' && ptr[i] != '\0'; i++) {}
+				if (ptr[i] == '\0')
+				{
+					print_message("Ussage: :mv <left/right/up/down> <amount>");
+					make_input_line();
+					return;
+				}
+				ptr[i] = '\0';
+
+				if (!strcmp(ptr, "left"))
+				{
+					num_to_change = &active_tab->xpos;
+					sign = -1;
+				}
+				else if (!strcmp(ptr, "right"))
+				{
+					num_to_change = &active_tab->xpos;
+					sign = 1;
+				}
+				else if (!strcmp(ptr, "up"))
+				{
+					num_to_change = &active_tab->ypos;
+					sign = -1;
+				}
+				else if (!strcmp(ptr, "down"))
+				{
+					num_to_change = &active_tab->ypos;
+					sign = 1;
+				}
+
+				ptr[i] = ' ';
+				ptr = &ptr[i + 1];
+				amount = atoi(ptr);
+
+				if (num_to_change != NULL)
+				{
+					*num_to_change = *num_to_change + amount * sign;
+				}
+
+				print_tab(active_tab);
+				move_cursor_to_tab(active_tab);
+				make_input_line();
+			}
 			else if (!strcmp(ptr, "q"))
 			{
 				if (active_tab->changes_saved)
@@ -227,12 +296,14 @@ void terminal_mode(int ch)
 					{
 						if (tabs->size == 1)
 						{
-							// quit program
+							terminate = true;
 						}
-
-						active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
-						free_tab((Tab*) rm(tabs, active_tab_index));
-						active_tab_index--;
+						else
+						{
+							active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
+							free_tab((Tab*) rm(tabs, active_tab_index));
+							active_tab_index--;
+						}
 					}
 					else
 					{
@@ -247,7 +318,7 @@ void terminal_mode(int ch)
 				{
 					if (tabs->size == 1)
 					{
-						// quit program
+						terminate = true;
 					}
 
 					active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
@@ -277,12 +348,13 @@ void terminal_mode(int ch)
 					active_tab->fname = fname;
 				}
 
-				FILE* f = fopen(active_tab->fname, "r");
+				FILE* f = fopen(active_tab->fname, "w");
 				for (int i = 0; i < active_tab->lines->size; i++)
 				{
 					fprintf(f, "%s\n", (char*) get_elt(active_tab->lines, i));
 				}
 				fclose(f);
+				active_tab->changes_saved = true;
 			}
 			else if (!strcmp(ptr, "findreplace"))
 			{
@@ -290,6 +362,7 @@ void terminal_mode(int ch)
 			}
 
 			make_input_line();
+			print_tab(terminal);
 		}
 		else
 		{
@@ -322,39 +395,42 @@ void terminal_mode(int ch)
 		break;
 
 		case ESCAPE_KEYCODE:
+		print_tab(active_tab);
 		move_cursor_to_tab(active_tab);
 		mode = &normal_mode;
 		break;
 	}
 }
 
-static void make_input_line(void)
-{
-	char* line = malloc(sizeof(char) * LINE_SIZE);
-	line[0] = '\0';
-	add(terminal->lines, line, terminal->lines->size);
-	terminal->x = 0;
-	terminal->y++;
-	check_bottom_update(terminal);
-	move_cursor_to_tab(terminal);
-}
-
 void* listener_func(void*)
 {
-	while (1)
+	while (!terminate)
 	{
-		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		read(master_fd, buf, LINE_SIZE);
-		sem_wait(&sem);
-		add(terminal->lines, buf, terminal->lines->size - 1);
-		terminal->y++;
-		check_bottom_update(terminal);
-		if (mode == &terminal_mode)
+		listener_buf = malloc(sizeof(char) * LINE_SIZE);
+		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
+		if (bytes_read > 0)
 		{
-			move_cursor_to_tab(terminal);
+			listener_buf[bytes_read] = '\0';
+			sem_wait(&sem);
+			add(terminal->lines, listener_buf, terminal->lines->size - 1);
+			terminal->y++;
+			check_bottom_update(terminal);
+			if (mode == &terminal_mode)
+			{
+				move_cursor_to_tab(terminal);
+			}
+			print_tab(terminal);
+			refresh();
+			sem_post(&sem);
 		}
-		print_tab(terminal);
-		refresh();
-		sem_post(&sem);
+		else
+		{
+			sem_wait(&sem);
+			free(listener_buf);
+			listener_buf = NULL;
+			sem_post(&sem);
+		}
 	}
+
+	return NULL;
 }

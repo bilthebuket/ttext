@@ -147,11 +147,18 @@ LL* make_list(void)
 void free_list(LL* lst)
 {
 	Node* ptr = lst->first;
-	for (int i = 0; i < lst->size - 1; i++)
+
+	if (lst->size > 1)
 	{
-		ptr = ptr->next;
-		free(ptr->prev);
+		for (int i = 0; i < lst->size - 1; i++)
+		{
+			ptr = ptr->next;
+			free(ptr->prev->elt);
+			free(ptr->prev);
+		}
 	}
+
+	free(ptr->elt);
 	free(ptr);
 	free(lst);
 }

@@ -47,7 +47,15 @@ int main(int argc, char* argv[])
 	tabs = make_list();
 	for (int i = 1; i < argc; i++)
 	{
-		Tab* t = make_tab(argv[i]);
+		char* fname = malloc(sizeof(char) * FNAME_SIZE);
+		int j;
+		for (j = 0; argv[i][j] != '\0'; j++)
+		{
+			fname[j] = argv[i][j];
+		}
+		fname[j] = '\0';
+
+		Tab* t = make_tab(fname);
 		if (!t)
 		{
 			print_message("There is at least one file with at least one line that is too long");
@@ -76,7 +84,7 @@ int main(int argc, char* argv[])
 	refresh();
 	sem_post(&sem);
 
-	while (1)
+	while (!terminate)
 	{
 		char c = getch();
 		sem_wait(&sem);
@@ -85,6 +93,27 @@ int main(int argc, char* argv[])
 		sem_post(&sem);
 	}
 
+	sem_wait(&sem);
+	pthread_cancel(listener);
+	pthread_join(listener, NULL);
+	if (listener_buf != NULL)
+	{
+		free(listener_buf);
+	}
+	sem_post(&sem);
 	endwin();
 	sem_destroy(&sem);
+	close(master_fd);
+	free_list(terminal->lines);
+	free(terminal);
+	for (int i = 0; i < tabs->size; i++)
+	{
+		Tab* t = get_elt(tabs, i);
+		free_list(t->lines);
+		if (t->fname != NULL)
+		{
+			free(t->fname);
+		}
+	}
+	free_list(tabs);
 }

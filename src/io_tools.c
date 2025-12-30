@@ -68,7 +68,7 @@ void print_line(Tab* t, int line_index)
 	move(y, x);
 }
 
-void print_message(char* str)
+void print_message(const char* const str)
 {
 	int y, x;
 	getyx(stdscr, y, x);

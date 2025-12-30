@@ -5,7 +5,7 @@
 
 void print_tab(Tab* t);
 void print_line(Tab* t, int line_index);
-void print_message(char* str);
+void print_message(const char* const str);
 void clear_message_line(void);
 
 void move_cursor_to_tab(Tab* t);

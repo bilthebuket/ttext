@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "global.h"
 
 void (*mode)(int);
@@ -13,3 +14,6 @@ int slave_pid;
 int master_fd;
 
 sem_t sem;
+char* listener_buf = NULL;
+
+bool terminate = false;

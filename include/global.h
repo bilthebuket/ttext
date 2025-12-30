@@ -1,11 +1,13 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <stdbool.h>
 #include "LL.h"
 #include "tab.h"
 #include "semaphore.h"
 
 #define LINE_SIZE 2048
+#define FNAME_SIZE 256
 
 #define BACKSPACE_KEYCODE1 8
 #define BACKSPACE_KEYCODE2 0x7f
@@ -25,5 +27,8 @@ extern int slave_pid;
 extern int master_fd;
 
 extern sem_t sem;
+extern char* listener_buf;
+
+extern bool terminate;
 
 #endif

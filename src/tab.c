@@ -18,7 +18,16 @@ Tab* make_tab(char* fname)
 	r->left_column_index = 0;
 	r->lines = make_list();
 
-	FILE* f = fopen(fname, "r");
+	FILE* f;
+	if (fname != NULL)
+	{
+		f = fopen(fname, "r");
+	}
+	else
+	{
+		f = NULL;
+	}
+
 	if (f == NULL)
 	{
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
