@@ -40,6 +40,27 @@ void print_tab(Tab* t)
 	move(y, x);
 }
 
+void print_screen(void)
+{
+	int y, x;
+	getyx(stdscr, y, x);
+
+	for (int i = 0; i < width; i++)
+	{
+		for (int j = 0; j < height; j++)
+		{
+			mvaddch(j, i, ' ');
+		}
+	}
+	for (int i = tabs->size - 1; i >= 0; i--)
+	{
+		print_tab((Tab*) get_elt(tabs, i));
+	}
+	print_tab(terminal);
+
+	move(y,x);
+}
+
 void print_line(Tab* t, int line_index)
 {
 	int y, x;

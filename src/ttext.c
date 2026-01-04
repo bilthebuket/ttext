@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 	mode = &normal_mode;
 
 	sem_wait(&sem);
-	print_tab(active_tab);
+	print_screen();
 	refresh();
 	sem_post(&sem);
 

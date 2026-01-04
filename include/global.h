@@ -14,6 +14,8 @@
 #define ESCAPE_KEYCODE 27
 #define ENTER_KEYCODE1 10
 
+#define CHANGES_SAVED (1ULL << 63)
+
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;

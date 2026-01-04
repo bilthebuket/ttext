@@ -70,10 +70,16 @@ void terminal_mode(int ch)
 
 				ptr[i] = ' ';
 				ptr = &ptr[i + 1];
+
 				active_tab = make_tab(ptr);
-				add(tabs, active_tab, tabs->size);
-				active_tab_index = tabs->size - 1;
-				print_tab(active_tab);
+				for (int i = 0; i < tabs->size; i++)
+				{
+					Tab* t = (Tab*) get_elt(tabs, i);
+					t->z_index_changes_saved++;
+				}
+				add(tabs, active_tab, 0);
+				active_tab_index = 0;
+				print_screen();
 			}
 			else if (!strcmp(ptr, "tabn"))
 			{
@@ -86,8 +92,15 @@ void terminal_mode(int ch)
 					active_tab_index++;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, active_tab_index);
-				print_tab(active_tab);
+				active_tab = (Tab*) rm(tabs, active_tab_index);
+				for (int i = 0; i < tabs->size; i++)
+				{
+					Tab* t = (Tab*) get_elt(tabs, i);
+					t->z_index_changes_saved++;
+				}
+				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+				add(tabs, active_tab, 0);
+				print_screen();
 			}
 			else if (!strcmp(ptr, "tabp"))
 			{
@@ -100,8 +113,15 @@ void terminal_mode(int ch)
 					active_tab_index--;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, active_tab_index);
-				print_tab(active_tab);
+				active_tab = (Tab*) rm(tabs, active_tab_index);
+				for (int i = 0; i < tabs->size; i++)
+				{
+					Tab* t = (Tab*) get_elt(tabs, i);
+					t->z_index_changes_saved++;
+				}
+				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+				add(tabs, active_tab, 0);
+				print_screen();
 			}
 			else if (!strcmp(ptr, "tab"))
 			{
@@ -123,8 +143,15 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, index);
-				print_tab(active_tab);
+				active_tab = (Tab*) rm(tabs, index);
+				for (int i = 0; i < tabs->size; i++)
+				{
+					Tab* t = (Tab*) get_elt(tabs, i);
+					t->z_index_changes_saved++;
+				}
+				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+				add(tabs, active_tab, 0);
+				print_screen();
 			}
 			else if (!strcmp(ptr, "rs"))
 			{
@@ -227,7 +254,7 @@ void terminal_mode(int ch)
 					*num_to_change2 = *num_to_change2 + sign2 * amount;
 				}
 
-				print_tab(active_tab);
+				print_screen();
 				move_cursor_to_tab(active_tab);
 			}
 			else if (!strcmp(ptr, "mv"))
@@ -284,13 +311,13 @@ void terminal_mode(int ch)
 					*num_to_change = *num_to_change + amount * sign;
 				}
 
-				print_tab(active_tab);
+				print_screen();
 				move_cursor_to_tab(active_tab);
 				make_input_line();
 			}
 			else if (!strcmp(ptr, "q"))
 			{
-				if (active_tab->changes_saved)
+				if (active_tab->z_index_changes_saved & CHANGES_SAVED)
 				{
 					if (active_tab_index == tabs->size - 1)
 					{
@@ -354,7 +381,7 @@ void terminal_mode(int ch)
 					fprintf(f, "%s\n", (char*) get_elt(active_tab->lines, i));
 				}
 				fclose(f);
-				active_tab->changes_saved = true;
+				active_tab->z_index_changes_saved |= CHANGES_SAVED;
 			}
 			else if (!strcmp(ptr, "findreplace"))
 			{
@@ -395,7 +422,7 @@ void terminal_mode(int ch)
 		break;
 
 		case ESCAPE_KEYCODE:
-		print_tab(active_tab);
+		print_screen();
 		move_cursor_to_tab(active_tab);
 		mode = &normal_mode;
 		break;

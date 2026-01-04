@@ -7,7 +7,7 @@ Tab* make_tab(char* fname)
 {
 	Tab* r = malloc(sizeof(Tab));
 	r->fname = fname;
-	r->changes_saved = true;
+	r->z_index_changes_saved = CHANGES_SAVED;
 	r->x = 0;
 	r->y = 0;
 	r->height = height - 1;
