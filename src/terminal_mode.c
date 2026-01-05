@@ -71,14 +71,22 @@ void terminal_mode(int ch)
 				ptr[i] = ' ';
 				ptr = &ptr[i + 1];
 
-				active_tab = make_tab(ptr);
+				char* fname = malloc(sizeof(char) * LINE_SIZE);
+				int i;
+				for (i = 0; ptr[i] != '\0'; i++)
+				{
+					fname[i] = ptr[i];
+				}
+				fname[i] = '\0';
+
+				active_tab = make_tab(fname);
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
 					t->z_index_changes_saved++;
 				}
-				add(tabs, active_tab, 0);
-				active_tab_index = 0;
+				add(tabs, active_tab, tabs->size);
+				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
 			else if (!strcmp(ptr, "tabn"))
@@ -92,14 +100,13 @@ void terminal_mode(int ch)
 					active_tab_index++;
 				}
 
-				active_tab = (Tab*) rm(tabs, active_tab_index);
+				active_tab = (Tab*) get_elt(tabs, active_tab_index);
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
-				add(tabs, active_tab, 0);
 				print_screen();
 			}
 			else if (!strcmp(ptr, "tabp"))
@@ -113,14 +120,13 @@ void terminal_mode(int ch)
 					active_tab_index--;
 				}
 
-				active_tab = (Tab*) rm(tabs, active_tab_index);
+				active_tab = (Tab*) get_elt(tabs, active_tab_index);
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
-				add(tabs, active_tab, 0);
 				print_screen();
 			}
 			else if (!strcmp(ptr, "tab"))
@@ -143,14 +149,13 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				active_tab = (Tab*) rm(tabs, index);
+				active_tab = (Tab*) get_elt(tabs, index);
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
-				add(tabs, active_tab, 0);
 				print_screen();
 			}
 			else if (!strcmp(ptr, "rs"))
@@ -255,7 +260,6 @@ void terminal_mode(int ch)
 				}
 
 				print_screen();
-				move_cursor_to_tab(active_tab);
 			}
 			else if (!strcmp(ptr, "mv"))
 			{
@@ -312,8 +316,6 @@ void terminal_mode(int ch)
 				}
 
 				print_screen();
-				move_cursor_to_tab(active_tab);
-				make_input_line();
 			}
 			else if (!strcmp(ptr, "q"))
 			{
@@ -330,12 +332,14 @@ void terminal_mode(int ch)
 							active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
 							free_tab((Tab*) rm(tabs, active_tab_index));
 							active_tab_index--;
+							print_screen();
 						}
 					}
 					else
 					{
 						active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
 						free_tab((Tab*) rm(tabs, active_tab_index));
+						print_screen();
 					}
 				}
 			}
@@ -351,11 +355,13 @@ void terminal_mode(int ch)
 					active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
 					free_tab((Tab*) rm(tabs, active_tab_index));
 					active_tab_index--;
+					print_screen();
 				}
 				else
 				{
 					active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
 					free_tab((Tab*) rm(tabs, active_tab_index));
+					print_screen();
 				}
 			}
 			else if (!strcmp(ptr, "w"))

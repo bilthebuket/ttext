@@ -45,6 +45,39 @@ void print_screen(void)
 	int y, x;
 	getyx(stdscr, y, x);
 
+	// using selection sort becuase tabs->size is small and i'm lazy
+	Tab* tabs_sorted[tabs->size];
+	for (int i = 0; i < tabs->size; i++)
+	{
+		Tab* max = NULL;
+		for (int j = 0; j < tabs->size; j++)
+		{
+			Tab* t = (Tab*) get_elt(tabs, j);
+			bool already_sorted = false;
+			for (int k = 0; k < i; k++)
+			{
+				if (t == tabs_sorted[k])
+				{
+					already_sorted = true;
+					break;
+				}
+			}
+			if (already_sorted)
+			{
+				continue;
+			}
+			if (max == NULL)
+			{
+				max = t;
+			}
+			else if ((t->z_index_changes_saved & ~CHANGES_SAVED) > (max->z_index_changes_saved & ~CHANGES_SAVED))
+			{
+				max = t;
+			}
+		}
+		tabs_sorted[i] = max;
+	}
+
 	for (int i = 0; i < width; i++)
 	{
 		for (int j = 0; j < height; j++)
@@ -52,9 +85,9 @@ void print_screen(void)
 			mvaddch(j, i, ' ');
 		}
 	}
-	for (int i = tabs->size - 1; i >= 0; i--)
+	for (int i = 0; i < tabs->size; i++)
 	{
-		print_tab((Tab*) get_elt(tabs, i));
+		print_tab(tabs_sorted[i]);
 	}
 	print_tab(terminal);
 
