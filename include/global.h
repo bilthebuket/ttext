@@ -23,6 +23,10 @@
 #define PINK_TEXT 5
 #define YELLOW_TEXT 6
 
+#define NUM_DATA_TYPES 11
+#define NUM_CONTROL_WORDS 8
+#define NUM_LITERALS 3
+
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;
@@ -39,5 +43,9 @@ extern sem_t sem;
 extern char* listener_buf;
 
 extern bool terminate;
+
+extern const char[NUM_DATA_TYPES][] const data_types;
+extern const char[NUM_CONTROL_WORDS][] const control_words;
+extern const char[NUM_LITERALS][] const literals;
 
 #endif

@@ -16,5 +16,6 @@ typedef struct Line
 } Line;
 
 void update_color_indices(Line* line);
+void free_line(Line* line);
 
 #endif

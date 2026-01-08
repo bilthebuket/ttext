@@ -8,34 +8,9 @@ void print_tab(Tab* t)
 {
 	int y, x;
 	getyx(stdscr, y, x);
-	for (int i = t->ypos; i <= t->ypos + t->height; i++)
+	for (int i = t->top_line_index; i <= t->top_line_index + t->height; i++)
 	{
-		bool endofline = true;
-		char* line;
-		if (t->top_line_index + i - t->ypos < t->lines->size)
-		{
-			line = (char*) get_elt(t->lines, t->top_line_index + i - t->ypos);
-			int j;
-			for (j = 0; line[j] != '\0' && j < t->left_column_index; j++) {}
-			endofline = line[j] == '\0';
-		}
-
-		for (int j = t->xpos; j <= t->xpos + t->width; j++)
-		{
-			if (endofline)
-			{
-				mvaddch(i, j, ' ');
-			}
-			else if (line[t->left_column_index + j - t->xpos] == '\0')
-			{
-				endofline = true;
-				mvaddch(i, j, ' ');
-			}
-			else
-			{
-				mvaddch(i, j, line[t->left_column_index + j - t->xpos]);
-			}
-		}
+		print_line(t, i);
 	}
 	move(y, x);
 }
@@ -103,7 +78,8 @@ void print_line(Tab* t, int line_index)
 	for (i = 0; line[i] != '\0' && i < t->left_column_index; i++) {}
 	bool endofline = line[i] == '\0';
 
-	for (int i = t->xpos; i <= t->xpos + t->width; i++)
+	Node* colorindex = line->ColorIndex->first;
+	for (i = t->xpos; i <= t->xpos + t->width; i++)
 	{
 		if (endofline)
 		{
@@ -116,6 +92,14 @@ void print_line(Tab* t, int line_index)
 		}
 		else
 		{
+			if (colorindex != NULL)
+			{
+				if (((ColorIndex*) colorindex->elt)->index == i)
+				{
+					attron(((ColorIndex*) colorindex->elt)->color);
+					colorindex ->= next;
+				}
+			}
 			mvaddch(t->ypos + line_index - t->top_line_index, i, line[t->left_column_index + i - t->xpos]);
 		}
 	}

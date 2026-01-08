@@ -17,3 +17,8 @@ sem_t sem;
 char* listener_buf = NULL;
 
 bool terminate = false;
+
+const char[NUM_DATA_TYPES][] const data_types = {"int", "long", "float", "double", "char", "const", "extern", "void", "pthread_t", "sem_t", "bool"};
+const char[NUM_CONTROL_WORDS][] const control_words = {"if", "else", "while", "for", "switch", "case", "break", "continue"};
+const char[NUM_LITERALS][] const literals = {"true", "false", "NULL"};
+
