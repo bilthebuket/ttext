@@ -20,6 +20,13 @@ int main(int argc, char* argv[])
 	cbreak();
 	getmaxyx(stdscr, height, width);
 
+	init_pair(WHITE_TEXT, COLOR_WHITE, COLOR_BLACK);
+	init_pair(GREEN_TEXT, COLOR_GREEN, COLOR_BLACK);
+	init_pair(BLUE_TEXT, COLOR_BLUE, COLOR_BLACK);
+	init_pair(RED_TEXT, COLOR_RED, COLOR_BLACK);
+	init_pair(PINK_TEXT, COLOR_PINK, COLOR_BLACK);
+	init_pair(YELLOW_TEXT, YELLOW_TEXT, COLOR_BLACK);
+
 	terminal = malloc(sizeof(Tab));
 	terminal->lines = make_list();
 	char* input_line = malloc(sizeof(char) * LINE_SIZE);

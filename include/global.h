@@ -16,6 +16,13 @@
 
 #define CHANGES_SAVED (1ULL << 63)
 
+#define WHITE_TEXT 1
+#define GREEN_TEXT 2
+#define BLUE_TEXT 3
+#define RED_TEXT 4
+#define PINK_TEXT 5
+#define YELLOW_TEXT 6
+
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;
