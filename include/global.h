@@ -20,8 +20,9 @@
 #define GREEN_TEXT 2
 #define BLUE_TEXT 3
 #define RED_TEXT 4
-#define PINK_TEXT 5
+#define MAGENTA_TEXT 5
 #define YELLOW_TEXT 6
+#define CYAN_TEXT 7
 
 #define NUM_DATA_TYPES 11
 #define NUM_CONTROL_WORDS 8
@@ -44,8 +45,8 @@ extern char* listener_buf;
 
 extern bool terminate;
 
-extern const char[NUM_DATA_TYPES][] const data_types;
-extern const char[NUM_CONTROL_WORDS][] const control_words;
-extern const char[NUM_LITERALS][] const literals;
+extern const char* const data_types[NUM_DATA_TYPES];
+extern const char* const control_words[NUM_CONTROL_WORDS];
+extern const char* const literals[NUM_LITERALS];
 
 #endif

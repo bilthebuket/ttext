@@ -12,7 +12,7 @@ typedef struct ColorIndex
 typedef struct Line
 {
 	char* text;
-	LL* ColorIndices
+	LL* color_indices;
 } Line;
 
 void update_color_indices(Line* line);

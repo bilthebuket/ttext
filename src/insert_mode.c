@@ -6,10 +6,11 @@
 #include "tab.h"
 #include "global.h"
 #include "io_tools.h"
+#include "line.h"
 
 void insert_mode(int ch)
 {
-	char* line = (char*) get_elt(active_tab->lines, active_tab->y);
+	char* line = ((Line*) get_elt(active_tab->lines, active_tab->y))->text;
 	int i;
 
 	switch (ch)
@@ -28,6 +29,7 @@ void insert_mode(int ch)
 			check_right_update(active_tab);
 			move_cursor_to_tab(active_tab);
 
+			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
 			print_line(active_tab, active_tab->y);
 		}
 		break;
@@ -44,11 +46,12 @@ void insert_mode(int ch)
 			check_left_update(active_tab);
 			move_cursor_to_tab(active_tab);
 
+			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
 			print_line(active_tab, active_tab->y);
 		}
 		else if (active_tab->y > 0)
 		{
-			char* line_above = (char*) get_elt(active_tab->lines, active_tab->y - 1);
+			char* line_above = ((Line*) get_elt(active_tab->lines, active_tab->y - 1))->text;
 
 			for (i = 0; line_above[i] != '\0'; i++) {}
 			int len = i;
@@ -75,6 +78,7 @@ void insert_mode(int ch)
 				check_top_update(active_tab);
 				move_cursor_to_tab(active_tab);
 
+				update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
 				print_tab(active_tab);
 			}
 		}
@@ -93,7 +97,10 @@ void insert_mode(int ch)
 		}
 		line[active_tab->x] = '\0';
 		buf[i - active_tab->x] = '\0';
-		add(active_tab->lines, buf, active_tab->y + 1);
+
+		Line* l = malloc(sizeof(Line));
+		l->text = buf;
+		add(active_tab->lines, l, active_tab->y + 1);
 
 		active_tab->x = 0;
 		active_tab->y++;
@@ -102,6 +109,8 @@ void insert_mode(int ch)
 		check_bottom_update(active_tab);
 		move_cursor_to_tab(active_tab);
 
+ 		update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
+ 		update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y - 1));
 		print_tab(active_tab);
 		break;
 	}

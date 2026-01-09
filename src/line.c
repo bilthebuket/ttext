@@ -1,13 +1,15 @@
+#include <stdlib.h>
+#include <string.h>
 #include "line.h"
 #include "global.h"
 
 void update_color_indices(Line* line)
 {
-	if (line->ColorIndicies != NULL)
+	if (line->color_indices != NULL)
 	{
-		free_list(line->ColorIndicies);
+		free_list(line->color_indices);
 	}
-	line->ColorIndicies = make_list();
+	line->color_indices = make_list();
 
 	// after every iteration we need to increment i
 	// however, there are a lot of continue statements, so instead of putting i++ before every continue,
@@ -17,7 +19,7 @@ void update_color_indices(Line* line)
 	{
 		i++;
 		ColorIndex* ci = malloc(sizeof(ColorIndex));
-		add(line->ColorIndicies, ci, line->ColorIndicies->size);
+		add(line->color_indices, ci, line->color_indices->size);
 		ci->index = i;
 		for (; line->text[i] != '\0' && line->text[i] != ' ' && line->text[i] != '('; i++)
 		{
@@ -45,7 +47,17 @@ void update_color_indices(Line* line)
 		char* ptr = &line->text[ci->index];
 		char store = line->text[i];
 		line->text[i] = '\0';
-		for (; ptr[0] == ' ' || ptr[0] == '\t'; ptr++) {}
+		for (; ptr[0] == ' ' || ptr[0] == '\t' || ptr[0] == '*'; ptr++) {}
+		int k;
+		for (k = 0; ptr[k] != '\0'; k++) {}
+		k--;
+		if (k >= 0)
+		{
+			for (; ptr[k] == '*'; k--)
+			{
+				ptr[k] = '\0';
+			}
+		}
 
 		bool match = false;
 		for (int j = 0; j < NUM_DATA_TYPES; j++)
@@ -54,6 +66,15 @@ void update_color_indices(Line* line)
 			{
 				match = true;
 				break;
+			}
+		}
+
+		k++;
+		if (k >= 0)
+		{
+			for (; ptr[k] == '\0' && &ptr[k] != &line->text[i]; k++)
+			{
+				ptr[k] = '*';
 			}
 		}
 
@@ -79,7 +100,7 @@ void update_color_indices(Line* line)
 
 		if (match)
 		{
-			ci->color = WHITE_TEXT;
+			ci->color = MAGENTA_TEXT;
 			if (store == '\0')
 			{
 				break;
@@ -97,14 +118,14 @@ void update_color_indices(Line* line)
 			}
 		}
 
-		if ((ptr[0] >= '0' && ptr[0] <= '9') || ptr[0] == .)
+		if ((ptr[0] >= '0' && ptr[0] <= '9') || ptr[0] == '.')
 		{
 			match = true;
 		}
 
 		if (match)
 		{
-			ci->color = PURPLE_TEXT;
+			ci->color = RED_TEXT;
 			if (store == '\0')
 			{
 				break;
@@ -113,7 +134,7 @@ void update_color_indices(Line* line)
 			continue;
 		}
 
-		ci->color = RED_TEXT;
+		ci->color = CYAN_TEXT;
 		if (store == '\0')
 		{
 			break;
@@ -124,7 +145,7 @@ void update_color_indices(Line* line)
 
 void free_line(Line* line)
 {
-	free_list(line->ColorIndicies);
+	free_list(line->color_indices);
 	free(line->text);
 	free(line);
 }

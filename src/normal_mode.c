@@ -4,6 +4,7 @@
 #include "terminal_mode.h"
 #include "global.h"
 #include "io_tools.h"
+#include "line.h"
 
 void normal_mode(int ch)
 {
@@ -21,7 +22,7 @@ void normal_mode(int ch)
 		case 'j':
 		if (active_tab->y < active_tab->lines->size - 1)
 		{
-			char* line = (char*) get_elt(active_tab->lines, active_tab->y + 1);
+			char* line = ((Line*) get_elt(active_tab->lines, active_tab->y + 1))->text;
 			int i;
 			for (i = 0; line[i] != '\0' && i < active_tab->x; i++) {}
 			if (line[i] == '\0')
@@ -48,7 +49,7 @@ void normal_mode(int ch)
 		case 'k':
 		if (active_tab->y > 0)
 		{
-			char* line = (char*) get_elt(active_tab->lines, active_tab->y - 1);
+			char* line = ((Line*) get_elt(active_tab->lines, active_tab->y - 1))->text;
 			int i;
 			for (i = 0; line[i] != '\0' && i < active_tab->x; i++) {}
 			if (line[i] == '\0')
@@ -73,7 +74,7 @@ void normal_mode(int ch)
 		break;
 
 		case 'l':
-		if (((char*) get_elt(active_tab->lines, active_tab->y))[active_tab->x + 1] != '\0')
+		if (((Line*) get_elt(active_tab->lines, active_tab->y))->text[active_tab->x + 1] != '\0')
 		{
 			active_tab->x++;
 			check_right_update(active_tab);

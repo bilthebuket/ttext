@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "tab.h"
 #include "global.h"
+#include "line.h"
 
 Tab* make_tab(char* fname)
 {
@@ -32,7 +33,9 @@ Tab* make_tab(char* fname)
 	{
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
 		buf[0] = '\0';
-		add(r->lines, buf, 0);
+		Line* l = malloc(sizeof(Line));
+		l->text = buf;
+		add(r->lines, l, 0);
 		return r;
 	}
 
@@ -65,7 +68,10 @@ Tab* make_tab(char* fname)
 		{
 			buf[i - 1] = '\0';
 		}
-		add(r->lines, buf, r->lines->size);
+		Line* l = malloc(sizeof(Line));
+		l->text = buf;
+		update_color_indices(l);
+		add(r->lines, l, r->lines->size);
 	}
 
 	fclose(f);
@@ -75,5 +81,14 @@ Tab* make_tab(char* fname)
 void free_tab(Tab* t)
 {
 	free(t->fname);
+	while (t->lines->size != 0)
+	{
+		Line* l = (Line*) rm(t->lines, 0);
+		free(l->text);
+		if (l->color_indices != NULL)
+		{
+			free_list(l->color_indices);
+		}
+	}
 	free_list(t->lines);
 }

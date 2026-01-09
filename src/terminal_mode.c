@@ -7,12 +7,16 @@
 #include "normal_mode.h"
 #include "global.h"
 #include "io_tools.h"
+#include "line.h"
 
 static void make_input_line(void)
 {
 	char* line = malloc(sizeof(char) * LINE_SIZE);
 	line[0] = '\0';
-	add(terminal->lines, line, terminal->lines->size);
+	Line* l = malloc(sizeof(Line));
+	l->text = line;
+	l->color_indices = NULL;
+	add(terminal->lines, l, terminal->lines->size);
 	terminal->x = 0;
 	terminal->y++;
 	check_bottom_update(terminal);
@@ -21,7 +25,7 @@ static void make_input_line(void)
 
 void terminal_mode(int ch)
 {
-	char* line = (char*) get_elt(terminal->lines, terminal->y);
+	char* line = ((Line*) get_elt(terminal->lines, terminal->y))->text;
 	int i;
 
 	switch (ch)
@@ -351,11 +355,13 @@ void terminal_mode(int ch)
 					{
 						terminate = true;
 					}
-
-					active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
-					free_tab((Tab*) rm(tabs, active_tab_index));
-					active_tab_index--;
-					print_screen();
+					else
+					{
+						active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
+						free_tab((Tab*) rm(tabs, active_tab_index));
+						active_tab_index--;
+						print_screen();
+					}
 				}
 				else
 				{
@@ -444,8 +450,11 @@ void* listener_func(void*)
 		if (bytes_read > 0)
 		{
 			listener_buf[bytes_read] = '\0';
+			Line* l = malloc(sizeof(Line));
+			l->text = listener_buf;
+			l->color_indices = NULL;
 			sem_wait(&sem);
-			add(terminal->lines, listener_buf, terminal->lines->size - 1);
+			add(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;
 			check_bottom_update(terminal);
 			if (mode == &terminal_mode)

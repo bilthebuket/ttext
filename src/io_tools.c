@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include "io_tools.h"
 #include "global.h"
+#include "line.h"
 
 void print_tab(Tab* t)
 {
@@ -73,13 +74,32 @@ void print_line(Tab* t, int line_index)
 {
 	int y, x;
 	getyx(stdscr, y, x);
-	char* line = (char*) get_elt(t->lines, line_index);
-	int i;
-	for (i = 0; line[i] != '\0' && i < t->left_column_index; i++) {}
-	bool endofline = line[i] == '\0';
+	bool endofline;
+	char* line;
+	Node* colorindex;
+	if (line_index < 0 || line_index >= t->lines->size)
+	{
+		endofline = true;
+	}
+	else
+	{
+		line = ((Line*) get_elt(t->lines, line_index))->text;
+		int i;
+		for (i = 0; line[i] != '\0' && i < t->left_column_index; i++) {}
+		endofline = line[i] == '\0';
 
-	Node* colorindex = line->ColorIndex->first;
-	for (i = t->xpos; i <= t->xpos + t->width; i++)
+		Line* l = (Line*) get_elt(t->lines, line_index);
+		if (l->color_indices == NULL)
+		{
+			colorindex = NULL;
+		}
+		else
+		{
+			colorindex = ((Line*) get_elt(t->lines, line_index))->color_indices->first;
+		}
+	}
+
+	for (int i = t->xpos; i <= t->xpos + t->width; i++)
 	{
 		if (endofline)
 		{
@@ -96,8 +116,8 @@ void print_line(Tab* t, int line_index)
 			{
 				if (((ColorIndex*) colorindex->elt)->index == i)
 				{
-					attron(((ColorIndex*) colorindex->elt)->color);
-					colorindex ->= next;
+					attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
+					colorindex = colorindex->next;
 				}
 			}
 			mvaddch(t->ypos + line_index - t->top_line_index, i, line[t->left_column_index + i - t->xpos]);
