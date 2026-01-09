@@ -21,7 +21,9 @@ void update_color_indices(Line* line)
 		ColorIndex* ci = malloc(sizeof(ColorIndex));
 		add(line->color_indices, ci, line->color_indices->size);
 		ci->index = i;
-		for (; line->text[i] != '\0' && line->text[i] != ' ' && line->text[i] != '('; i++)
+		ci->color = -1;
+		for (; line->text[i] != '\0' && line->text[i] != ' ' && line->text[i] != '(' && line->text[i] != ')' && line->text[i] != '[' && line->text[i] != ']' && 
+		line->text[i] != '{' && line->text[i] != '}' && line->text[i] != '\'' && line->text[i] != '"' && line->text[i] != ';' && line->text[i] != ':'; i++)
 		{
 			if (line->text[i] == '/')
 			{
@@ -35,12 +37,53 @@ void update_color_indices(Line* line)
 		if (line->text[i] == '/')
 		{
 			ci->color = GREEN_TEXT;
-			continue;
+			break;
 		}
 		if (line->text[i] == '(')
 		{
 			ci->color = YELLOW_TEXT;
 			continue;
+		}
+
+		if (line->text[i] == '\'' || line->text[i] == '"')
+		{
+			// even if theres spaces inside the quotes we want everything highlighted red, so this skips i to outside the quotes
+
+			if (i == ci->index)
+			{
+				ci->color = RED_TEXT;
+			}
+			else
+			{
+				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				ci->index = i;
+				ci->color = RED_TEXT;
+				add(line->color_indices, ci, line->color_indices->size);
+			}
+			char c = line->text[i];
+			i++;
+			for (; line->text[i] != c && line->text[i] != '\0'; i++) {}
+			if (line->text[i] == '\0')
+			{
+				break;
+			}
+		}
+
+		// this if statement makes it so all grouping symbols except quotes are yellow, but then we still need to find out what color to highlight
+		// the text that precedes it
+		if (line->text[i] != '\0' && line->text[i] != ' ' && line->text[i] != '"' && line->text[i] != '\'' && line->text[i] != ';' && line->text[i] != ':')
+		{
+			if (ci->index == i)
+			{
+				ci->color = YELLOW_TEXT;
+			}
+			else
+			{
+				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				ci->index = i;
+				ci->color = YELLOW_TEXT;
+				add(line->color_indices, ci, line->color_indices->size);
+			}
 		}
 
 		// setting up a string that we can check against different categories of words
@@ -66,6 +109,19 @@ void update_color_indices(Line* line)
 			{
 				match = true;
 				break;
+			}
+		}
+		
+		// lazy solution for highlighting structs as data types:
+		// if it starts with an uppercase but isnt all uppercase, its highlighted like a data type
+		if (ptr[0] != '\0')
+		{
+			if (ptr[1] != '\0')
+			{
+				if (ptr[0] >= 'A' && ptr[0] <= 'Z' && ptr[1] >= 'a' && ptr[1] <= 'z')
+				{
+					match = true;
+				}
 			}
 		}
 
@@ -134,7 +190,10 @@ void update_color_indices(Line* line)
 			continue;
 		}
 
-		ci->color = CYAN_TEXT;
+		if (ci->color == -1)
+		{
+			ci->color = CYAN_TEXT;
+		}
 		if (store == '\0')
 		{
 			break;

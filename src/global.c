@@ -18,7 +18,7 @@ char* listener_buf = NULL;
 
 bool terminate = false;
 
-const char* const data_types[NUM_DATA_TYPES] = {"int", "long", "float", "double", "char", "const", "extern", "void", "pthread_t", "sem_t", "bool"};
-const char* const control_words[NUM_CONTROL_WORDS] = {"if", "else", "while", "for", "switch", "case", "break", "continue"};
+const char* const data_types[NUM_DATA_TYPES] = {"int", "long", "float", "double", "char", "const", "extern", "void", "pthread_t", "sem_t", "bool", "static"};
+const char* const control_words[NUM_CONTROL_WORDS] = {"if", "else", "while", "for", "switch", "case", "break", "continue", "default"};
 const char* const literals[NUM_LITERALS] = {"true", "false", "NULL"};
 

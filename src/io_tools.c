@@ -120,6 +120,7 @@ void print_line(Tab* t, int line_index)
 					colorindex = colorindex->next;
 				}
 			}
+
 			mvaddch(t->ypos + line_index - t->top_line_index, i, line[t->left_column_index + i - t->xpos]);
 		}
 	}

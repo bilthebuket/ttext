@@ -24,8 +24,8 @@
 #define YELLOW_TEXT 6
 #define CYAN_TEXT 7
 
-#define NUM_DATA_TYPES 11
-#define NUM_CONTROL_WORDS 8
+#define NUM_DATA_TYPES 12
+#define NUM_CONTROL_WORDS 9
 #define NUM_LITERALS 3
 
 extern void (*mode)(int);
