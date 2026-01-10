@@ -449,13 +449,76 @@ void* listener_func(void*)
 		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
 		if (bytes_read > 0)
 		{
-			listener_buf[bytes_read] = '\0';
-			Line* l = malloc(sizeof(Line));
-			l->text = listener_buf;
-			l->color_indices = NULL;
+			int count = 1;
+			for (int i = 0; i < bytes_read; i++)
+			{
+				if (listener_buf[i] == '\n')
+				{
+					count++;
+				}
+			}
+			char* lines_to_add[count];
+			for (int i = 0; i < count; i++)
+			{
+				lines_to_add[i] = malloc(sizeof(char) * LINE_SIZE);
+			}
+
+			int index1 = 0;
+			int index2 = 0;
+			bool skip = false;
+			int bytes_skipped = 0;
+			for (int i = 0; i < bytes_read; i++)
+			{
+				if (i - index2 == 0 && listener_buf[i] == '^')
+				{
+					skip = true;
+				}
+
+				if (listener_buf[i] == '\0' || listener_buf[i] == '\n')
+				{
+					lines_to_add[index1][i - index2] = '\0';
+					index1++;
+					index2 = i + 1;
+					bytes_skipped = 0;
+					skip = false;
+				}
+				else
+				{
+					if (skip)
+					{
+						if (listener_buf[i] == '[')
+						{
+							skip = false;
+						}
+						bytes_skipped++;
+					}
+					else
+					{
+						lines_to_add[index1][i - index2 - bytes_skipped] = listener_buf[i];
+					}
+				}
+			}
+
+			free(listener_buf);
+			listener_buf = NULL;
+
 			sem_wait(&sem);
-			add(terminal->lines, l, terminal->lines->size - 1);
-			terminal->y++;
+			int lines_skipped = 0;
+			for (int i = 0; i < count; i++)
+			{
+				if (lines_to_add[i][0] == '\0')
+				{
+					lines_skipped++;
+				}
+				else
+				{
+					Line* l = malloc(sizeof(Line));
+					l->text = lines_to_add[i];
+					l->color_indices = NULL;
+					add(terminal->lines, l, terminal->lines->size - 1);
+				}
+			}
+			terminal->y += count - lines_skipped;
 			check_bottom_update(terminal);
 			if (mode == &terminal_mode)
 			{

@@ -70,6 +70,7 @@ Tab* make_tab(char* fname)
 		}
 		Line* l = malloc(sizeof(Line));
 		l->text = buf;
+		l->color_indices = NULL;
 		update_color_indices(l);
 		add(r->lines, l, r->lines->size);
 	}
@@ -80,8 +81,11 @@ Tab* make_tab(char* fname)
 
 void free_tab(Tab* t)
 {
-	free(t->fname);
-	while (t->lines->size != 0)
+	if (t->fname != NULL)
+	{
+		free(t->fname);
+	}
+	while (t->lines->size > 0)
 	{
 		Line* l = (Line*) rm(t->lines, 0);
 		free(l->text);
@@ -89,6 +93,8 @@ void free_tab(Tab* t)
 		{
 			free_list(l->color_indices);
 		}
+		free(l);
 	}
 	free_list(t->lines);
+	free(t);
 }

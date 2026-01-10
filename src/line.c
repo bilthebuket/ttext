@@ -86,6 +86,21 @@ void update_color_indices(Line* line)
 			}
 		}
 
+		if (line->text[i] == ';' && line->text[i] == ':')
+		{
+			if (ci->index == i)
+			{
+				ci->color = CYAN_TEXT;
+			}
+			else
+			{
+				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				ci->index = i;
+				ci->color = CYAN_TEXT;
+				add(line->color_indices, ci, line->color_indices->size);
+			}
+		}
+
 		// setting up a string that we can check against different categories of words
 		char* ptr = &line->text[ci->index];
 		char store = line->text[i];

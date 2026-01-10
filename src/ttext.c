@@ -117,16 +117,11 @@ int main(int argc, char* argv[])
 	endwin();
 	sem_destroy(&sem);
 	close(master_fd);
-	free_list(terminal->lines);
-	free(terminal);
-	for (int i = 0; i < tabs->size; i++)
+	free_tab(terminal);
+	while (tabs->size > 0)
 	{
-		Tab* t = get_elt(tabs, i);
-		free_list(t->lines);
-		if (t->fname != NULL)
-		{
-			free(t->fname);
-		}
+		Tab* t = rm(tabs, 0);
+		free_tab(t);
 	}
 	free_list(tabs);
 }

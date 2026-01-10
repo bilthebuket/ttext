@@ -100,6 +100,7 @@ void insert_mode(int ch)
 
 		Line* l = malloc(sizeof(Line));
 		l->text = buf;
+		l->color_indices = NULL;
 		add(active_tab->lines, l, active_tab->y + 1);
 
 		active_tab->x = 0;
