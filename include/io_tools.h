@@ -16,4 +16,7 @@ void check_right_update(Tab* t);
 void check_top_update(Tab* t);
 void check_bottom_update(Tab* t);
 
+void convert_tabs_to_spaces(char* str);
+int indent_line(Tab* t, int index);
+
 #endif

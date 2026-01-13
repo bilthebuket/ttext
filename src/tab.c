@@ -3,6 +3,7 @@
 #include "tab.h"
 #include "global.h"
 #include "line.h"
+#include "io_tools.h"
 
 Tab* make_tab(char* fname)
 {
@@ -62,12 +63,16 @@ Tab* make_tab(char* fname)
 			return NULL;
 		}
 
-		int i;
-		for (i = 0; buf[i] != '\0'; i++) {}
-		if (buf[i - 1] == '\n')
+		int len;
+		for (len = 0; buf[len] != '\0'; len++) {}
+		if (buf[len - 1] == '\n')
 		{
-			buf[i - 1] = '\0';
+			buf[len - 1] = '\0';
+			len--;
 		}
+
+		convert_tabs_to_spaces(buf);
+
 		Line* l = malloc(sizeof(Line));
 		l->text = buf;
 		l->color_indices = NULL;

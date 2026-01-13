@@ -190,3 +190,81 @@ void check_bottom_update(Tab* t)
 		print_tab(t);
 	}
 }
+
+void convert_tabs_to_spaces(char* str)
+{
+	int len;
+	for (len = 0; str[len] != '\0'; len++) {}
+
+	for (int i = 0; i <= len; i++)
+	{
+		if (str[i] == '\t')
+		{
+			str[i] = ' ';
+			// TAB_SIZE - 1 because we can replace the \t with a space and not have to shift anything
+			for (int j = 1; j < TAB_SIZE; j++)
+			{
+				char c = str[i + j];
+				str[i + j] = ' ';
+				for (int k = i + j; k <= len; k += TAB_SIZE - 1)
+				{
+					char store = str[k + TAB_SIZE - 1];
+					str[k + TAB_SIZE - 1] = c;
+					c = store;
+				}
+			}
+			len += TAB_SIZE - 1;
+		}
+	}
+}
+
+int indent_line(Tab* t, int index)
+{
+	if (index > 0)
+	{
+		char* above = ((Line*) get_elt(t->lines, index - 1))->text;
+		char* line = ((Line*) get_elt(t->lines, index))->text;
+
+		int num_spaces = 0;
+		for (; above[num_spaces] == ' '; num_spaces++) {}
+
+		int braces = 0;
+		for (int i = num_spaces; above[i] != '\0'; i++)
+		{
+			if (above[i] == '{')
+			{
+				braces++;
+			}
+			if (above[i] == '}')
+			{
+				braces--;
+			}
+		}
+		if (braces > 0)
+		{
+			num_spaces += TAB_SIZE * braces;
+		}
+
+		if (num_spaces > 0)
+		{
+			int len;
+			for (len = 0; line[len] != '\0'; len++) {}
+
+			for (int j = 0; j < num_spaces; j++)
+			{
+				char c = line[j];
+				line[j] = ' ';
+				for (int k = j; k <= len; k += num_spaces)
+				{
+					char store = line[k + num_spaces];
+					line[k + num_spaces] = c;
+					c = store;
+				}
+			}
+
+			return num_spaces;
+		}
+	}
+
+	return 0;
+}

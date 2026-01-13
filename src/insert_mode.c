@@ -25,6 +25,44 @@ void insert_mode(int ch)
 			}
 			line[active_tab->x] = ch;
 
+			if (ch == '\t')
+			{
+				convert_tabs_to_spaces(line);
+				active_tab->x += TAB_SIZE - 1;
+			}
+			if (ch == '}')
+			{
+				bool indent = true;
+				int j;
+				for (j = 0; line[j] != '}'; j++)
+				{
+					if (line[j] != ' ')
+					{
+						indent = false;
+						break;
+					}
+				}
+				if (indent)
+				{
+					int amount;
+					if (j >= TAB_SIZE)
+					{
+						amount = TAB_SIZE;
+					}
+					else
+					{
+						amount = j;
+					}
+
+					for (; line[j] != '\0'; j++)
+					{
+						line[j - amount] = line[j];
+					}
+					line[j - amount] = '\0';
+					active_tab->x -= amount;
+				}
+			}
+
 			active_tab->x++;
 			check_right_update(active_tab);
 			move_cursor_to_tab(active_tab);
@@ -103,8 +141,8 @@ void insert_mode(int ch)
 		l->color_indices = NULL;
 		add(active_tab->lines, l, active_tab->y + 1);
 
-		active_tab->x = 0;
 		active_tab->y++;
+		active_tab->x = indent_line(active_tab, active_tab->y);
 
 		check_left_update(active_tab);
 		check_bottom_update(active_tab);

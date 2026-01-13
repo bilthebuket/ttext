@@ -8,6 +8,7 @@
 
 #define LINE_SIZE 2048
 #define FNAME_SIZE 256
+#define TAB_SIZE 4
 
 #define BACKSPACE_KEYCODE1 8
 #define BACKSPACE_KEYCODE2 0x7f
