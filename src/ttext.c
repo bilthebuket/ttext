@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 	init_pair(CYAN_TEXT, COLOR_CYAN, COLOR_BLACK);
 
 	terminal = malloc(sizeof(Tab));
+	terminal->fname = NULL;
 	terminal->lines = make_list();
 	char* input_line = malloc(sizeof(char) * LINE_SIZE);
 	input_line[0] = '\0';

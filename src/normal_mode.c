@@ -106,5 +106,20 @@ void normal_mode(int ch)
 		move_cursor_to_tab(active_tab);
 		mode = &insert_mode;
 		break;
+
+		case '0':
+		active_tab->x = 0;
+		check_left_update(active_tab);
+		move_cursor_to_tab(active_tab);
+		break;
+
+		case '$':
+		char* line = ((Line*) get_elt(active_tab->lines, active_tab->y))->text;
+		int len = 0;
+		for (; line[len] != '\0'; len++) {}
+		active_tab->x = len - 1;
+		check_right_update(active_tab);
+		move_cursor_to_tab(active_tab);
+		break;
 	}
 }

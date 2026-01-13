@@ -112,7 +112,11 @@ void print_line(Tab* t, int line_index)
 		}
 		else
 		{
-			if (colorindex != NULL)
+			if (colorindex == NULL)
+			{
+				attron(COLOR_PAIR(WHITE_TEXT));
+			}
+			else
 			{
 				if (((ColorIndex*) colorindex->elt)->index == i)
 				{
