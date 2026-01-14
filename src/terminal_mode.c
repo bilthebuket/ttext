@@ -449,76 +449,131 @@ void* listener_func(void*)
 		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
 		if (bytes_read > 0)
 		{
-			int count = 1;
-			for (int i = 0; i < bytes_read; i++)
+			sem_wait(&sem);
+			int index = 0;
+			int i = 0;
+			unsigned char sequence = 0;
+			for (; listener_buf[i] != '\0'; i++)
 			{
 				if (listener_buf[i] == '\n')
 				{
-					count++;
+					char* line = malloc(sizeof(char) * (i + 1 - index));
+					int chars_skipped = 0;
+					int j = 0;
+					while (j < (i - index - chars_skipped))
+					{
+						if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE)
+						{
+							line[j] = listener_buf[index + j + chars_skipped];
+							j++;
+						}
+						else if (sequence & CSI_ESC)
+						{
+							if (listener_buf[index + j + chars_skipped] >='@' && listener_buf[index + j + chars_skipped] <= 'z')
+							{
+								sequence = 0;
+							}
+							chars_skipped++;
+						}
+						else if (sequence & OSC_ESC)
+						{
+							if (listener_buf[index + j + chars_skipped] == '\a')
+							{
+								sequence = 0;
+							}
+							chars_skipped++;
+						}
+						else if (sequence & SC_ESC)
+						{
+							sequence = 0;
+							chars_skipped++;
+						}
+						else
+						{
+							if (listener_buf[index + j + chars_skipped + 1] == '[')
+							{
+								sequence = CSI_ESC;
+							}
+							else if (listener_buf[index + j + chars_skipped + 1] == ']')
+							{
+								sequence = OSC_ESC;
+							}
+							else
+							{
+								sequence = SC_ESC;
+							}
+							chars_skipped++;
+						}
+					}
+					line[i - index] = '\0';
+					index = i + 1;
+
+					Line* l = malloc(sizeof(Line));
+					l->text = line;
+					l->color_indices = NULL;
+					add(terminal->lines, l, terminal->lines->size - 1);
+					terminal->y++;
 				}
 			}
-			char* lines_to_add[count];
-			for (int i = 0; i < count; i++)
-			{
-				lines_to_add[i] = malloc(sizeof(char) * LINE_SIZE);
-			}
 
-			int index1 = 0;
-			int index2 = 0;
-			bool skip = false;
-			int bytes_skipped = 0;
-			for (int i = 0; i < bytes_read; i++)
+			char* line = malloc(sizeof(char) * (i + 1 - index));
+			int chars_skipped = 0;
+			int j = 0;
+			while (j < (i - index - chars_skipped))
 			{
-				if (i - index2 == 0 && listener_buf[i] == '^')
+				if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE)
 				{
-					skip = true;
+					line[j] = listener_buf[index + j + chars_skipped];
+					j++;
 				}
-
-				if (listener_buf[i] == '\0' || listener_buf[i] == '\n')
+				else if (sequence & CSI_ESC)
 				{
-					lines_to_add[index1][i - index2] = '\0';
-					index1++;
-					index2 = i + 1;
-					bytes_skipped = 0;
-					skip = false;
+					if (listener_buf[index + j + chars_skipped] >='@' && listener_buf[index + j + chars_skipped] <= 'z')
+					{
+						sequence = 0;
+					}
+					chars_skipped++;
+				}
+				else if (sequence & OSC_ESC)
+				{
+					if (listener_buf[index + j + chars_skipped] == '\a')
+					{
+						sequence = 0;
+					}
+					chars_skipped++;
+				}
+				else if (sequence & SC_ESC)
+				{
+					sequence = 0;
+					chars_skipped++;
 				}
 				else
 				{
-					if (skip)
+					if (listener_buf[index + j + chars_skipped + 1] == '[')
 					{
-						if (listener_buf[i] == '[')
-						{
-							skip = false;
-						}
-						bytes_skipped++;
+						sequence = CSI_ESC;
+						chars_skipped += 2;
+					}
+					else if (listener_buf[index + j + chars_skipped + 1] == ']')
+					{
+						sequence = OSC_ESC;
+						chars_skipped += 2;
 					}
 					else
 					{
-						lines_to_add[index1][i - index2 - bytes_skipped] = listener_buf[i];
+						sequence = SC_ESC;
+						chars_skipped++;
 					}
 				}
 			}
+			line[i - index - chars_skipped] = '\0';
 
-			free(listener_buf);
-			listener_buf = NULL;
+			Line* l = malloc(sizeof(Line));
+			l->text = line;
+			l->color_indices = NULL;
+			add(terminal->lines, l, terminal->lines->size - 1);
+			terminal->y++;
 
-			sem_wait(&sem);
-			int lines_skipped = 0;
-			for (int i = 0; i < count; i++)
-			{
-				if (lines_to_add[i][0] == '\0')
-				{
-					lines_skipped++;
-				}
-				else
-				{
-					Line* l = malloc(sizeof(Line));
-					l->text = lines_to_add[i];
-					l->color_indices = NULL;
-					add(terminal->lines, l, terminal->lines->size - 1);
-				}
-			}
-			terminal->y += count - lines_skipped;
 			check_bottom_update(terminal);
 			if (mode == &terminal_mode)
 			{

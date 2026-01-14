@@ -29,6 +29,10 @@
 #define NUM_CONTROL_WORDS 10
 #define NUM_LITERALS 3
 
+#define CSI_ESC 1
+#define OSC_ESC (1 << 1)
+#define SC_ESC (1 << 2)
+
 extern void (*mode)(int);
 extern LL* tabs;
 extern Tab* active_tab;
