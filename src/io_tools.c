@@ -96,6 +96,25 @@ void print_line(Tab* t, int line_index)
 		else
 		{
 			colorindex = ((Line*) get_elt(t->lines, line_index))->color_indices->first;
+			Node* next = NULL;
+
+			while (((ColorIndex*) colorindex->elt)->index < t->left_column_index)
+			{
+				Node* next = colorindex->next;
+				if (next == NULL)
+				{
+					break;
+				}
+				else
+				{
+					colorindex = next;
+				}
+			}
+
+			if (next != NULL)
+			{
+				colorindex = colorindex->prev;
+			}
 		}
 	}
 
@@ -118,7 +137,7 @@ void print_line(Tab* t, int line_index)
 			}
 			else
 			{
-				if (((ColorIndex*) colorindex->elt)->index == i)
+				if (((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
 				{
 					attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
 					colorindex = colorindex->next;
