@@ -447,22 +447,23 @@ void* listener_func(void*)
 	{
 		listener_buf = malloc(sizeof(char) * LINE_SIZE);
 		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
+		listener_buf[bytes_read] = '\0';
 		if (bytes_read > 0)
 		{
 			sem_wait(&sem);
 			int index = 0;
 			int i = 0;
-			unsigned char sequence = 0;
-			for (; listener_buf[i] != '\0'; i++)
+			for (; i < bytes_read; i++)
 			{
 				if (listener_buf[i] == '\n')
 				{
 					char* line = malloc(sizeof(char) * (i + 1 - index));
 					int chars_skipped = 0;
 					int j = 0;
+					unsigned char sequence = 0;
 					while (j < (i - index - chars_skipped))
 					{
-						if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE)
+						if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE && listener_buf[index + j + chars_skipped] != '\r')
 						{
 							line[j] = listener_buf[index + j + chars_skipped];
 							j++;
@@ -488,24 +489,30 @@ void* listener_func(void*)
 							sequence = 0;
 							chars_skipped++;
 						}
+						else if (listener_buf[index + j + chars_skipped] == '\r')
+						{
+							chars_skipped++;
+						}
 						else
 						{
 							if (listener_buf[index + j + chars_skipped + 1] == '[')
 							{
 								sequence = CSI_ESC;
+								chars_skipped += 2;
 							}
 							else if (listener_buf[index + j + chars_skipped + 1] == ']')
 							{
 								sequence = OSC_ESC;
+								chars_skipped += 2;
 							}
 							else
 							{
 								sequence = SC_ESC;
+								chars_skipped++;
 							}
-							chars_skipped++;
 						}
 					}
-					line[i - index] = '\0';
+					line[j] = '\0';
 					index = i + 1;
 
 					Line* l = malloc(sizeof(Line));
@@ -519,9 +526,10 @@ void* listener_func(void*)
 			char* line = malloc(sizeof(char) * (i + 1 - index));
 			int chars_skipped = 0;
 			int j = 0;
+			unsigned char sequence = 0;
 			while (j < (i - index - chars_skipped))
 			{
-				if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE)
+				if (sequence == 0 && listener_buf[index + j + chars_skipped] != ESCAPE_KEYCODE && listener_buf[index + j + chars_skipped] != '\r')
 				{
 					line[j] = listener_buf[index + j + chars_skipped];
 					j++;
@@ -547,6 +555,10 @@ void* listener_func(void*)
 					sequence = 0;
 					chars_skipped++;
 				}
+				else if (listener_buf[index + j + chars_skipped] == '\r')
+				{
+					chars_skipped++;
+				}
 				else
 				{
 					if (listener_buf[index + j + chars_skipped + 1] == '[')
@@ -566,7 +578,7 @@ void* listener_func(void*)
 					}
 				}
 			}
-			line[i - index - chars_skipped] = '\0';
+			line[j] = '\0';
 
 			Line* l = malloc(sizeof(Line));
 			l->text = line;

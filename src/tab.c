@@ -36,6 +36,7 @@ Tab* make_tab(char* fname)
 		buf[0] = '\0';
 		Line* l = malloc(sizeof(Line));
 		l->text = buf;
+		l->color_indices = NULL;
 		add(r->lines, l, 0);
 		return r;
 	}
