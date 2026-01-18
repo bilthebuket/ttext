@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <ncurses.h>
 #include "normal_mode.h"
 #include "insert_mode.h"
@@ -120,6 +121,19 @@ void normal_mode(int ch)
 		active_tab->x = len - 1;
 		check_right_update(active_tab);
 		move_cursor_to_tab(active_tab);
+		break;
+
+		case 'o':
+		char* text = malloc(sizeof(char) * LINE_SIZE);
+		Line* l = malloc(sizeof(Line));
+		l->text = text;
+		l->color_indices = NULL;
+		active_tab->y++;
+		add(active_tab->lines, l, active_tab->y);
+		active_tab->x = indent_line(active_tab, active_tab->y);
+		print_tab(active_tab);
+		move_cursor_to_tab(active_tab);
+		mode = &insert_mode;
 		break;
 	}
 }
