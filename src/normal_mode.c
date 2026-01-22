@@ -135,5 +135,109 @@ void normal_mode(int ch)
 		move_cursor_to_tab(active_tab);
 		mode = &insert_mode;
 		break;
+
+		case '%':
+		char c = ((Line*) get_elt(active_tab->lines, active_tab->y))->text[active_tab->x];
+		char looking_for;
+		int delta;
+		if (c == '(' || c == '[' || c == '{')
+		{
+			delta = 1;
+
+			if (c == '(')
+			{
+				looking_for = ')';
+			}
+			else if (c == '[')
+			{
+				looking_for = ']';
+			}
+			else
+			{
+				looking_for = '}';
+			}
+		}
+		else if (c == ')' || c == ']' || c== '}')
+		{
+			delta = -1;
+
+			if (c == ')')
+			{
+				looking_for = '(';
+			}
+			else if (c == ']')
+			{
+				looking_for = '[';
+			}
+			else
+			{
+				looking_for = '{';
+			}
+		}
+		else
+		{
+			break;
+		}
+
+		bool found = false;
+		int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
+				  // and we need to exclude it from the counter
+		for (int y_index = active_tab->y; y_index >= 0 && y_index < active_tab->lines->size; y_index += delta)
+		{
+			char* line = ((Line*) get_elt(active_tab->lines, y_index))->text;
+			int x_index;
+			if (y_index == active_tab->y)
+			{
+				x_index = active_tab->x;
+			}
+			else if (delta == 1)
+			{
+				x_index = 0;
+			}
+			else
+			{
+				x_index = 0;
+				for (; line[x_index] != '\0'; x_index++) {}
+				x_index--;
+			}
+			for (int x_index = active_tab->x; line[x_index] != '\0' && x_index >= 0; x_index += delta)
+			{
+				if (line[x_index] == looking_for)
+				{
+					if (counter == 0)
+					{
+						found = true;
+						active_tab->x = x_index;
+						active_tab->y = y_index;
+
+						if (delta == -1)
+						{
+							check_top_update(active_tab);
+						}
+						else
+						{
+							check_bottom_update(active_tab);
+						}
+						check_left_update(active_tab);
+						check_right_update(active_tab);
+
+						move_cursor_to_tab(active_tab);
+						break;
+					}
+					else
+					{
+						counter--;
+					}
+				}
+				else if (line[x_index] == c)
+				{
+					counter++;
+				}
+			}
+			if (found)
+			{
+				break;
+			}
+		}
 	}
 }
