@@ -98,13 +98,16 @@ void normal_mode(int ch)
 		case 'a':
 		active_tab->z_index_changes_saved &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
-		active_tab->x++;
-		if (active_tab->left_column_index + active_tab->width < active_tab->x)
+		if (((Line*) get_elt(active_tab->lines, active_tab->y))->text[0] != '\0')
 		{
-			active_tab->left_column_index = active_tab->x - active_tab->width;
-			print_tab(active_tab);
+			active_tab->x++;
+			if (active_tab->left_column_index + active_tab->width < active_tab->x)
+			{
+				active_tab->left_column_index = active_tab->x - active_tab->width;
+				print_tab(active_tab);
+			}
+			move_cursor_to_tab(active_tab);
 		}
-		move_cursor_to_tab(active_tab);
 		mode = &insert_mode;
 		break;
 
@@ -134,6 +137,28 @@ void normal_mode(int ch)
 		print_tab(active_tab);
 		move_cursor_to_tab(active_tab);
 		mode = &insert_mode;
+		break;
+
+		case 'x':
+		char* str = ((Line*) get_elt(active_tab->lines, active_tab->y))->text;
+		if (str[active_tab->x] != '\0')
+		{
+			for (int i = active_tab->x; str[i] != '\0'; i++)
+			{
+				str[i] = str[i + 1];
+			}
+
+			if (str[active_tab->x] == '\0' && active_tab->x != 0)
+			{
+				active_tab->x--;
+				check_left_update(active_tab);
+				move_cursor_to_tab(active_tab);
+			}
+			else
+			{
+				print_tab(active_tab);
+			}
+		}
 		break;
 
 		case '%':
