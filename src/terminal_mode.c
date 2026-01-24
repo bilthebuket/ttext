@@ -390,7 +390,7 @@ void terminal_mode(int ch)
 				FILE* f = fopen(active_tab->fname, "w");
 				for (int i = 0; i < active_tab->lines->size; i++)
 				{
-					fprintf(f, "%s\n", (char*) get_elt(active_tab->lines, i));
+					fprintf(f, "%s\n", ((Line*) get_elt(active_tab->lines, i))->text);
 				}
 				fclose(f);
 				active_tab->z_index_changes_saved |= CHANGES_SAVED;
