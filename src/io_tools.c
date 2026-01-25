@@ -118,6 +118,7 @@ void print_line(Tab* t, int line_index)
 		}
 	}
 
+	attron(COLOR_PAIR(WHITE_TEXT));
 	for (int i = t->xpos; i <= t->xpos + t->width; i++)
 	{
 		if (endofline)
@@ -131,11 +132,7 @@ void print_line(Tab* t, int line_index)
 		}
 		else
 		{
-			if (colorindex == NULL)
-			{
-				attron(COLOR_PAIR(WHITE_TEXT));
-			}
-			else
+			if (colorindex != NULL)
 			{
 				if (((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
 				{

@@ -148,16 +148,16 @@ void normal_mode(int ch)
 				str[i] = str[i + 1];
 			}
 
+			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
+
 			if (str[active_tab->x] == '\0' && active_tab->x != 0)
 			{
 				active_tab->x--;
 				check_left_update(active_tab);
 				move_cursor_to_tab(active_tab);
 			}
-			else
-			{
-				print_tab(active_tab);
-			}
+
+			print_tab(active_tab);
 		}
 		break;
 
