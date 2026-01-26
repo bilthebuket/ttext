@@ -586,6 +586,9 @@ void* listener_func(void*)
 			add(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;
 
+			free(listener_buf);
+			listener_buf = NULL;
+
 			check_bottom_update(terminal);
 			if (mode == &terminal_mode)
 			{

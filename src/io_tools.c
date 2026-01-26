@@ -7,6 +7,11 @@
 
 void print_tab(Tab* t)
 {
+	if (t == NULL)
+	{
+		return;
+	}
+
 	int y, x;
 	getyx(stdscr, y, x);
 	for (int i = t->top_line_index; i <= t->top_line_index + t->height; i++)
