@@ -19,6 +19,7 @@ Tab* make_tab(char* fname)
 	r->top_line_index = 0;
 	r->left_column_index = 0;
 	r->lines = make_list();
+	r->saved_x_index = 0;
 
 	FILE* f;
 	if (fname != NULL)

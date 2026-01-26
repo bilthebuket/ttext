@@ -124,6 +124,7 @@ void insert_mode(int ch)
 
 		case ESCAPE_KEYCODE:
 		print_message("Normal Mode");
+		active_tab->saved_x_index = active_tab->x;
 		mode = &normal_mode;
 		break;
 

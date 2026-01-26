@@ -15,6 +15,7 @@ void normal_mode(int ch)
 		if (active_tab->x > 0)
 		{
 			active_tab->x--;
+			active_tab->saved_x_index = active_tab->x;
 			check_left_update(active_tab);
 			move_cursor_to_tab(active_tab);
 		}
@@ -25,7 +26,7 @@ void normal_mode(int ch)
 		{
 			char* line = ((Line*) get_elt(active_tab->lines, active_tab->y + 1))->text;
 			int i;
-			for (i = 0; line[i] != '\0' && i < active_tab->x; i++) {}
+			for (i = 0; line[i] != '\0' && i <= active_tab->saved_x_index; i++) {}
 			if (line[i] == '\0')
 			{
 				if (i == 0)
@@ -36,6 +37,10 @@ void normal_mode(int ch)
 				{
 					active_tab->x = i - 1;
 				}
+			}
+			else
+			{
+				active_tab->x = active_tab->saved_x_index;
 			}
 
 			active_tab->y++;
@@ -52,7 +57,7 @@ void normal_mode(int ch)
 		{
 			char* line = ((Line*) get_elt(active_tab->lines, active_tab->y - 1))->text;
 			int i;
-			for (i = 0; line[i] != '\0' && i < active_tab->x; i++) {}
+			for (i = 0; line[i] != '\0' && i <= active_tab->saved_x_index; i++) {}
 			if (line[i] == '\0')
 			{
 				if (i == 0)
@@ -63,6 +68,10 @@ void normal_mode(int ch)
 				{
 					active_tab->x = i - 1;
 				}
+			}
+			else
+			{
+				active_tab->x = active_tab->saved_x_index;
 			}
 
 			active_tab->y--;
@@ -78,6 +87,7 @@ void normal_mode(int ch)
 		if (((Line*) get_elt(active_tab->lines, active_tab->y))->text[active_tab->x + 1] != '\0')
 		{
 			active_tab->x++;
+			active_tab->saved_x_index = active_tab->x;
 			check_right_update(active_tab);
 			move_cursor_to_tab(active_tab);
 		}
@@ -113,6 +123,7 @@ void normal_mode(int ch)
 
 		case '0':
 		active_tab->x = 0;
+		active_tab->saved_x_index = 0;
 		check_left_update(active_tab);
 		move_cursor_to_tab(active_tab);
 		break;
@@ -121,9 +132,13 @@ void normal_mode(int ch)
 		char* line = ((Line*) get_elt(active_tab->lines, active_tab->y))->text;
 		int len = 0;
 		for (; line[len] != '\0'; len++) {}
-		active_tab->x = len - 1;
-		check_right_update(active_tab);
-		move_cursor_to_tab(active_tab);
+		if (len > 0)
+		{
+			active_tab->x = len - 1;
+			active_tab->saved_x_index = len - 1;
+			check_right_update(active_tab);
+			move_cursor_to_tab(active_tab);
+		}
 		break;
 
 		case 'o':
@@ -153,6 +168,7 @@ void normal_mode(int ch)
 			if (str[active_tab->x] == '\0' && active_tab->x != 0)
 			{
 				active_tab->x--;
+				active_tab->saved_x_index = active_tab->x;
 				check_left_update(active_tab);
 				move_cursor_to_tab(active_tab);
 			}
@@ -264,5 +280,7 @@ void normal_mode(int ch)
 				break;
 			}
 		}
+
+		active_tab->saved_x_index = active_tab->x;
 	}
 }
