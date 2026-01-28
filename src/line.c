@@ -1,10 +1,24 @@
 #include <stdlib.h>
 #include <string.h>
+#include "io_tools.h"
 #include "line.h"
 #include "global.h"
 
 void update_color_indices(Line* line)
 {
+	if (line == NULL)
+	{
+		return;
+	}
+	if (line->text == NULL)
+	{
+		if (line->color_indices != NULL)
+		{
+			free_list(line->color_indices);
+		}
+		line->color_indices = NULL;
+		return;
+	}
 	if (line->color_indices != NULL)
 	{
 		free_list(line->color_indices);
@@ -19,6 +33,11 @@ void update_color_indices(Line* line)
 	{
 		i++;
 		ColorIndex* ci = malloc(sizeof(ColorIndex));
+		if (ci == NULL)
+		{
+			log_error("malloc failed in update_color_indices\n");
+			return;
+		}
 		add(line->color_indices, ci, line->color_indices->size);
 		ci->index = i;
 		ci->color = -1;
@@ -56,6 +75,11 @@ void update_color_indices(Line* line)
 			else
 			{
 				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				if (ci == NULL)
+				{
+					log_error("malloc failed in update_color_indices\n");
+					return;
+				}
 				ci->index = i;
 				ci->color = RED_TEXT;
 				add(line->color_indices, ci, line->color_indices->size);
@@ -80,6 +104,11 @@ void update_color_indices(Line* line)
 			else
 			{
 				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				if (ci == NULL)
+				{
+					log_error("malloc failed in update_color_indices\n");
+					return;
+				}
 				ci->index = i;
 				ci->color = YELLOW_TEXT;
 				add(line->color_indices, ci, line->color_indices->size);
@@ -95,6 +124,11 @@ void update_color_indices(Line* line)
 			else
 			{
 				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				if (ci == NULL)
+				{
+					log_error("malloc failed in update_color_indices\n");
+					return;
+				}
 				ci->index = i;
 				ci->color = CYAN_TEXT;
 				add(line->color_indices, ci, line->color_indices->size);
@@ -219,7 +253,17 @@ void update_color_indices(Line* line)
 
 void free_line(Line* line)
 {
-	free_list(line->color_indices);
-	free(line->text);
+	if (line == NULL)
+	{
+		return;
+	}
+	if (line->color_indices != NULL)
+	{
+		free_list(line->color_indices);
+	}
+	if (line->text != NULL)
+	{
+		free(line->text);
+	}
 	free(line);
 }

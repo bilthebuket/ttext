@@ -8,6 +8,11 @@
 Tab* make_tab(char* fname)
 {
 	Tab* r = malloc(sizeof(Tab));
+	if (r == NULL)
+	{
+		log_error("malloc failed in make_tab\n");
+		return NULL;
+	}
 	r->fname = fname;
 	r->z_index_changes_saved = CHANGES_SAVED;
 	r->x = 0;
@@ -25,6 +30,10 @@ Tab* make_tab(char* fname)
 	if (fname != NULL)
 	{
 		f = fopen(fname, "r");
+		if (f == NULL)
+		{
+			log_error("unable to open file in make_tab\n");
+		}
 	}
 	else
 	{
@@ -34,8 +43,22 @@ Tab* make_tab(char* fname)
 	if (f == NULL)
 	{
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
+		if (buf == NULL)
+		{
+			log_error("malloc failed in make_tab\n");
+			free(r);
+			return NULL;
+		}
 		buf[0] = '\0';
+
 		Line* l = malloc(sizeof(Line));
+		if (l == NULL)
+		{
+			log_error("malloc failed in make_tab\n");
+			free(r);
+			free(buf);
+			return NULL;
+		}
 		l->text = buf;
 		l->color_indices = NULL;
 		add(r->lines, l, 0);
@@ -45,6 +68,13 @@ Tab* make_tab(char* fname)
 	while (1)
 	{
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
+		if (buf == NULL)
+		{
+			log_error("malloc failed in make_tab\n");
+			free_tab(r);
+			fclose(f);
+			return NULL;
+		}
 		// setting the last character in the buffer to a random character that is not the null character so we can check
 		// after fgets() to see if the buffer was filled completely, in which case the line is too long for the editor we 
 		// terminate
@@ -58,10 +88,10 @@ Tab* make_tab(char* fname)
 		}
 		if (buf[LINE_SIZE - 1] == '\0')
 		{
-			free(buf);
-			free_list(r->lines);
-			free(fname);
+			log_error("attempted to load file with a line exceeding the max line size\n");
+			free_tab(r);
 			fclose(f);
+			free(buf);
 			return NULL;
 		}
 
@@ -76,6 +106,15 @@ Tab* make_tab(char* fname)
 		convert_tabs_to_spaces(buf);
 
 		Line* l = malloc(sizeof(Line));
+		if (l == NULL)
+		{
+			log_error("malloc failed in make_tab\n");
+			free_tab(r);
+			fclose(f);
+			free(buf);
+			return NULL;
+		}
+
 		l->text = buf;
 		l->color_indices = NULL;
 		update_color_indices(l);
@@ -88,20 +127,27 @@ Tab* make_tab(char* fname)
 
 void free_tab(Tab* t)
 {
-	if (t->fname != NULL)
+	if (t != NULL)
 	{
-		free(t->fname);
-	}
-	while (t->lines->size > 0)
-	{
-		Line* l = (Line*) rm(t->lines, 0);
-		free(l->text);
-		if (l->color_indices != NULL)
+		if (t->fname != NULL)
 		{
-			free_list(l->color_indices);
+			free(t->fname);
 		}
-		free(l);
+		void* elt;
+		while ((elt = rm(t->lines, 0)) != NULL)
+		{
+			Line* l = (Line*) elt;
+			if (l->text != NULL)
+			{
+				free(l->text);
+			}
+			if (l->color_indices != NULL)
+			{
+				free_list(l->color_indices);
+			}
+			free(l);
+		}
+		free_list(t->lines);
+		free(t);
 	}
-	free_list(t->lines);
-	free(t);
 }
