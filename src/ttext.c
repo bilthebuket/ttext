@@ -98,6 +98,8 @@ int main(int argc, char* argv[])
 	refresh();
 	sem_post(&sem);
 
+	error_log = fopen("errors.log", "a");
+
 	while (!terminate)
 	{
 		char c = getch();
@@ -105,6 +107,11 @@ int main(int argc, char* argv[])
 		(*mode)(c);
 		refresh();
 		sem_post(&sem);
+	}
+
+	if (error_log != NULL)
+	{
+		fclose(error_log);
 	}
 
 	sem_wait(&sem);

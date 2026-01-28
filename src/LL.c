@@ -4,6 +4,11 @@
 
 static Node* helper(LL* lst, int index)
 {
+	if (lst == NULL)
+	{
+		return NULL;
+	}
+
 	Node* r;
 
 	int i = 0;
@@ -25,7 +30,7 @@ static Node* helper(LL* lst, int index)
 		incrementer = -1;
 	}
 
-	for (; i != index; i += incrementer)
+	for (; i != index && r != NULL; i += incrementer)
 	{
 		if (incrementer == 1)
 		{
@@ -55,17 +60,31 @@ void* get_elt(LL* lst, int index)
 	{
 		return NULL;
 	}
-	return get_node(lst, index)->elt;
+	Node* n = get_node(lst, index);
+	if (n == NULL)
+	{
+		return NULL;
+	}
+	return n->elt;
 }
 
 void add(LL* lst, void* elt, int index)
 {
+	if (lst == NULL)
+	{
+		return;
+	}
+
 	if (index < 0)
 	{
 		index = 0;
 	}
 
 	Node* new = malloc(sizeof(Node));
+	if (new == NULL)
+	{
+		return;
+	}
 	new->elt = elt;
 
 	if (index == lst->size)
@@ -88,6 +107,11 @@ void add(LL* lst, void* elt, int index)
 	else
 	{
 		Node* n = helper(lst, index);
+		if (n == NULL)
+		{
+			free(new);
+			return;
+		}
 		new->next = n;
 		new->prev = n->prev;
 		if (index == 0)
@@ -108,7 +132,15 @@ void add(LL* lst, void* elt, int index)
 
 void* rm(LL* lst, int index)
 {
+	if (lst == NULL)
+	{
+		return NULL;
+	}
 	Node* n = helper(lst, index);
+	if (n == NULL)
+	{
+		return NULL;
+	}
 	void* r = n->elt;
 
 	if (n->prev != NULL)
@@ -140,28 +172,38 @@ void* rm(LL* lst, int index)
 LL* make_list(void)
 {
 	LL* r = malloc(sizeof(LL));
+	if (r == NULL)
+	{
+		return NULL;
+	}
 	r->size = 0;
 	return r;
 }
 
 void free_list(LL* lst)
 {
+	if (lst == NULL)
+	{
+		return;
+	}
 	if (lst->size > 0)
 	{
 		Node* ptr = lst->first;
-
-		if (lst->size > 1)
+		if (ptr != NULL)
 		{
-			for (int i = 0; i < lst->size - 1; i++)
+			if (lst->size > 1)
 			{
-				ptr = ptr->next;
-				free(ptr->prev->elt);
-				free(ptr->prev);
+				for (int i = 0; i < lst->size - 1; i++)
+				{
+					ptr = ptr->next;
+					free(ptr->prev->elt);
+					free(ptr->prev);
+				}
 			}
-		}
 
-		free(ptr->elt);
-		free(ptr);
+			free(ptr->elt);
+			free(ptr);
+		}
 	}
 	free(lst);
 }

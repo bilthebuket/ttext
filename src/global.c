@@ -22,3 +22,4 @@ const char* const data_types[NUM_DATA_TYPES] = {"int", "long", "float", "double"
 const char* const control_words[NUM_CONTROL_WORDS] = {"if", "else", "while", "for", "switch", "case", "break", "continue", "default", "return", "typedef"};
 const char* const literals[NUM_LITERALS] = {"true", "false", "NULL"};
 
+FILE* error_log = NULL;

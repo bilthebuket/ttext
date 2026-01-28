@@ -1,6 +1,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include "LL.h"
 #include "tab.h"
@@ -53,5 +54,7 @@ extern bool terminate;
 extern const char* const data_types[NUM_DATA_TYPES];
 extern const char* const control_words[NUM_CONTROL_WORDS];
 extern const char* const literals[NUM_LITERALS];
+
+extern FILE* error_log;
 
 #endif

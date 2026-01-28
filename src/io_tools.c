@@ -26,14 +26,29 @@ void print_screen(void)
 	int y, x;
 	getyx(stdscr, y, x);
 
-	// using selection sort becuase tabs->size is small and i'm lazy
+	if (tabs == NULL)
+	{
+		return;
+	}
+
+	// sorting algorithm (selection sort) is not very efficent but tabs->size is small
 	Tab* tabs_sorted[tabs->size];
+	for (int i = 0; i < tabs->size; i++)
+	{
+		tabs_sorted[i] = NULL;
+	}
 	for (int i = 0; i < tabs->size; i++)
 	{
 		Tab* max = NULL;
 		for (int j = 0; j < tabs->size; j++)
 		{
 			Tab* t = (Tab*) get_elt(tabs, j);
+			if (t == NULL)
+			{
+				log_error("bad get_elt() on tabs\n");
+				continue;
+			}
+
 			bool already_sorted = false;
 			for (int k = 0; k < i; k++)
 			{
@@ -77,33 +92,68 @@ void print_screen(void)
 
 void print_line(Tab* t, int line_index)
 {
+	if (t == NULL)
+	{
+		log_error("attempted to print line on NULL tab\n");
+		return;
+	}
+
 	int y, x;
 	getyx(stdscr, y, x);
 	bool endofline;
-	char* line;
-	Node* colorindex;
+
+	Line* line = (Line*) get_elt(t->lines, line_index);
+	char* text;
+	if (line == NULL)
+	{
+		log_error("found NULL line while attempting to print_line on a tab\n");
+		text = NULL;
+	}
+	else
+	{
+		text = line->text;
+	}
+	Node* colorindex = NULL;
+	if (text == NULL)
+	{
+		log_error("found NULL text in a line while attempting to print_line on a tab\n");
+		endofline = true;
+	}
+	else
+	{
+		if (line->color_indices != NULL)
+		{
+			colorindex = line->color_indices->first;
+			if (colorindex == NULL)
+			{
+				log_error("found NULL colorindex\n");
+				return;
+			}
+		}
+	}
+
 	if (line_index < 0 || line_index >= t->lines->size)
 	{
 		endofline = true;
 	}
 	else
 	{
-		line = ((Line*) get_elt(t->lines, line_index))->text;
-		int i;
-		for (i = 0; line[i] != '\0' && i < t->left_column_index; i++) {}
-		endofline = line[i] == '\0';
+		if (text != NULL)
+		{
+			int i;
+			for (i = 0; text[i] != '\0' && i < t->left_column_index; i++) {}
+			endofline = text[i] == '\0';
+		}
 
-		Line* l = (Line*) get_elt(t->lines, line_index);
-		if (l->color_indices == NULL)
+		if (line->color_indices == NULL)
 		{
 			colorindex = NULL;
 		}
 		else
 		{
-			colorindex = ((Line*) get_elt(t->lines, line_index))->color_indices->first;
 			Node* next = NULL;
 
-			while (((ColorIndex*) colorindex->elt)->index < t->left_column_index)
+			while (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index < t->left_column_index)
 			{
 				Node* next = colorindex->next;
 				if (next == NULL)
@@ -114,6 +164,11 @@ void print_line(Tab* t, int line_index)
 				{
 					colorindex = next;
 				}
+			}
+
+			if (colorindex->elt == NULL)
+			{
+				log_error("found NULL elt in colorindex linked list\n");
 			}
 
 			if (next != NULL)
@@ -130,7 +185,7 @@ void print_line(Tab* t, int line_index)
 		{
 			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 		}
-		else if (line[t->left_column_index + i - t->xpos] == '\0')
+		else if (text[t->left_column_index + i - t->xpos] == '\0')
 		{
 			endofline = true;
 			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
@@ -139,14 +194,23 @@ void print_line(Tab* t, int line_index)
 		{
 			if (colorindex != NULL)
 			{
-				if (((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
+				if (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
 				{
 					attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
 					colorindex = colorindex->next;
 				}
+				// we have to check again because its possible we did colorindex = colorindex->next in the previous line
+				if (colorindex != NULL)
+				{
+					if (colorindex->elt == NULL)
+					{
+						log_error("found NULL elt in colorindex linked list\n");
+						colorindex = colorindex->next;
+					}
+				}
 			}
 
-			mvaddch(t->ypos + line_index - t->top_line_index, i, line[t->left_column_index + i - t->xpos]);
+			mvaddch(t->ypos + line_index - t->top_line_index, i, text[t->left_column_index + i - t->xpos]);
 		}
 	}
 	move(y, x);
@@ -154,6 +218,11 @@ void print_line(Tab* t, int line_index)
 
 void print_message(const char* const str)
 {
+	if (str == NULL)
+	{
+		log_error("found NULL string in print_message\n");
+		return;
+	}
 	int y, x;
 	getyx(stdscr, y, x);
 	for (int i = 0; i < width; i++)
@@ -177,11 +246,21 @@ void clear_message_line(void)
 
 void move_cursor_to_tab(Tab* t)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL tab in move_cursor_to_tab\n");
+		return;
+	}
 	move(t->ypos + t->y - t->top_line_index, t->xpos + t->x - t->left_column_index);
 }
 
 void check_left_update(Tab* t)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL in check_left_update\n");
+		return;
+	}
 	if (t->left_column_index > t->x)
 	{
 		t->left_column_index = t->x;
@@ -191,6 +270,11 @@ void check_left_update(Tab* t)
 
 void check_right_update(Tab* t)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL in check_right_update\n");
+		return;
+	}
 	if (t->left_column_index + t->width < t->x)
 	{
 		t->left_column_index = t->x - t->width;
@@ -200,6 +284,11 @@ void check_right_update(Tab* t)
 
 void check_top_update(Tab* t)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL in check_top_update\n");
+		return;
+	}
 	if (t->y < t->top_line_index)
 	{
 		t->top_line_index = t->y;
@@ -209,6 +298,11 @@ void check_top_update(Tab* t)
 
 void check_bottom_update(Tab* t)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL in check_bottom_update\n");
+		return;
+	}
 	if (t->y > t->top_line_index + t->height)
 	{
 		t->top_line_index = t->y - t->height;
@@ -218,6 +312,11 @@ void check_bottom_update(Tab* t)
 
 void convert_tabs_to_spaces(char* str)
 {
+	if (str == NULL)
+	{
+		log_error("found NULL in convert_tabs_to_spaces\n");
+		return;
+	}
 	int len;
 	for (len = 0; str[len] != '\0'; len++) {}
 
@@ -245,22 +344,39 @@ void convert_tabs_to_spaces(char* str)
 
 int indent_line(Tab* t, int index)
 {
+	if (t == NULL)
+	{
+		log_error("found NULL tab in indent_line\n");
+		return 0;
+	}
 	if (index > 0)
 	{
-		char* above = ((Line*) get_elt(t->lines, index - 1))->text;
-		char* line = ((Line*) get_elt(t->lines, index))->text;
+		Line* line = (Line*) get_elt(t->lines, index);
+		Line* line_above = (Line*) get_elt(t->lines, index - 1);
+		if (line == NULL || line_above == NULL)
+		{
+			log_error("found NULL line(s) in indent_line\n");
+			return 0;
+		}
+		char* text = line->text;
+		char* text_above = line_above->text;
+		if (text == NULL || text_above == NULL)
+		{
+			log_error("found NULL text(s) in indent_line\n");
+			return 0;
+		}
 
 		int num_spaces = 0;
-		for (; above[num_spaces] == ' '; num_spaces++) {}
+		for (; text_above[num_spaces] == ' '; num_spaces++) {}
 
 		int braces = 0;
-		for (int i = num_spaces; above[i] != '\0'; i++)
+		for (int i = num_spaces; text_above[i] != '\0'; i++)
 		{
-			if (above[i] == '{')
+			if (text_above[i] == '{')
 			{
 				braces++;
 			}
-			if (above[i] == '}')
+			if (text_above[i] == '}')
 			{
 				braces--;
 			}
@@ -273,16 +389,16 @@ int indent_line(Tab* t, int index)
 		if (num_spaces > 0)
 		{
 			int len;
-			for (len = 0; line[len] != '\0'; len++) {}
+			for (len = 0; text[len] != '\0'; len++) {}
 
 			for (int j = 0; j < num_spaces; j++)
 			{
-				char c = line[j];
-				line[j] = ' ';
+				char c = text[j];
+				text[j] = ' ';
 				for (int k = j; k <= len; k += num_spaces)
 				{
-					char store = line[k + num_spaces];
-					line[k + num_spaces] = c;
+					char store = text[k + num_spaces];
+					text[k + num_spaces] = c;
 					c = store;
 				}
 			}
@@ -292,4 +408,12 @@ int indent_line(Tab* t, int index)
 	}
 
 	return 0;
+}
+
+void log_error(const char* str)
+{
+	if (error_log != NULL)
+	{
+		fprintf(error_log, str);
+	}
 }

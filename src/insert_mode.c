@@ -10,33 +10,45 @@
 
 void insert_mode(int ch)
 {
-	char* line = ((Line*) get_elt(active_tab->lines, active_tab->y))->text;
+	Line* line = (Line*) get_elt(active_tab->lines, active_tab->y);
+	if (line == NULL)
+	{
+		log_error("Accessing line in tab results in NULL\n");
+		return;
+	}
+	char* text = line->text;
+	if (text == NULL)
+	{
+		log_error("Accessing text in line results in NULL\n");
+		return;
+	}
+
 	int i;
 
 	switch (ch)
 	{
 		default:
-		for (i = active_tab->x; line[i] != '\0'; i++) {}
+		for (i = active_tab->x; text[i] != '\0'; i++) {}
 		if (i != LINE_SIZE - 1)
 		{
 			for (; i >= active_tab->x; i--)
 			{
-				line[i + 1] = line[i];
+				text[i + 1] = text[i];
 			}
-			line[active_tab->x] = ch;
+			text[active_tab->x] = ch;
 
 			if (ch == '\t')
 			{
-				convert_tabs_to_spaces(line);
+				convert_tabs_to_spaces(text);
 				active_tab->x += TAB_SIZE - 1;
 			}
 			if (ch == '}')
 			{
 				bool indent = true;
 				int j;
-				for (j = 0; line[j] != '}'; j++)
+				for (j = 0; text[j] != '}'; j++)
 				{
-					if (line[j] != ' ')
+					if (text[j] != ' ')
 					{
 						indent = false;
 						break;
@@ -54,11 +66,11 @@ void insert_mode(int ch)
 						amount = j;
 					}
 
-					for (; line[j] != '\0'; j++)
+					for (; text[j] != '\0'; j++)
 					{
-						line[j - amount] = line[j];
+						text[j - amount] = text[j];
 					}
-					line[j - amount] = '\0';
+					text[j - amount] = '\0';
 					active_tab->x -= amount;
 				}
 			}
@@ -75,9 +87,9 @@ void insert_mode(int ch)
 		case BACKSPACE_KEYCODE2:
 		if (active_tab->x > 0)
 		{
-			for (int i = active_tab->x - 1; line[i] != '\0'; i++)
+			for (int i = active_tab->x - 1; text[i] != '\0'; i++)
 			{
-				line[i] = line[i + 1];
+				text[i] = text[i + 1];
 			}
 
 			active_tab->x--;
@@ -89,24 +101,35 @@ void insert_mode(int ch)
 		}
 		else if (active_tab->y > 0)
 		{
-			char* line_above = ((Line*) get_elt(active_tab->lines, active_tab->y - 1))->text;
-
-			for (i = 0; line_above[i] != '\0'; i++) {}
-			int len = i;
-			for (; line[i - len] != '\0' && i < LINE_SIZE; i++)
+			Line* line_above = (Line*) get_elt(active_tab->lines, active_tab->y - 1);
+			if (line_above == NULL)
 			{
-				line_above[i] = line[i - len];
+				log_error("Accessing line in tab results in NULL\n");
+				return;
 			}
-			if (line[i - len] != '\0')
+			char* text_above = line_above->text;
+			if (text_above == NULL)
 			{
-				line[len] = '\0';
+				log_error("Accessing text in line results in NULL\n");
+				return;
+			}
+
+			for (i = 0; text_above[i] != '\0'; i++) {}
+			int len = i;
+			for (; text[i - len] != '\0' && i < LINE_SIZE; i++)
+			{
+				text_above[i] = text[i - len];
+			}
+			if (text[i - len] != '\0')
+			{
+				text[len] = '\0';
 				print_message("Operation would cause a line to exceed the maximum line size");
 			}
 			else
 			{
 				rm(active_tab->lines, active_tab->y);
-				line_above[i] = '\0';
-				free(line);
+				text_above[i] = '\0';
+				free(text);
 
 				active_tab->x = i;
 				active_tab->y--;
@@ -130,14 +153,27 @@ void insert_mode(int ch)
 
 		case ENTER_KEYCODE1:
 		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		for (i = active_tab->x; line[i] != '\0'; i++)
+		if (buf == NULL)
 		{
-			buf[i - active_tab->x] = line[i];
+			log_error("malloc failure\n");
+			return;
 		}
-		line[active_tab->x] = '\0';
+
+		for (i = active_tab->x; text[i] != '\0'; i++)
+		{
+			buf[i - active_tab->x] = text[i];
+		}
+		text[active_tab->x] = '\0';
 		buf[i - active_tab->x] = '\0';
 
 		Line* l = malloc(sizeof(Line));
+		if (l == NULL)
+		{
+			log_error("malloc failure\n");
+			free(buf);
+			return;
+		}
+
 		l->text = buf;
 		l->color_indices = NULL;
 		add(active_tab->lines, l, active_tab->y + 1);
