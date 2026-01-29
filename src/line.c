@@ -115,7 +115,7 @@ void update_color_indices(Line* line)
 			}
 		}
 
-		if (line->text[i] == ';' && line->text[i] == ':')
+		if (line->text[i] == ';' || line->text[i] == ':')
 		{
 			if (ci->index == i)
 			{

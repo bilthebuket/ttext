@@ -186,7 +186,7 @@ void normal_mode(int ch)
 			return;
 		}
 
-		new_line->text = text;
+		new_line->text = new_text;
 		new_line->color_indices = NULL;
 		active_tab->y++;
 		add(active_tab->lines, new_line, active_tab->y);
