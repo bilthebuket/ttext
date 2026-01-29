@@ -12,8 +12,19 @@
 static void make_input_line(void)
 {
 	char* line = malloc(sizeof(char) * LINE_SIZE);
+	if (line == NULL)
+	{
+		log_error("malloc failed in make_input_line\n");
+		return;
+	}
 	line[0] = '\0';
+
 	Line* l = malloc(sizeof(Line));
+	if (l == NULL)
+	{
+		log_error("malloc failed in make_input_line\n");
+		return;
+	}
 	l->text = line;
 	l->color_indices = NULL;
 	add(terminal->lines, l, terminal->lines->size);
@@ -25,20 +36,31 @@ static void make_input_line(void)
 
 void terminal_mode(int ch)
 {
-	char* line = ((Line*) get_elt(terminal->lines, terminal->y))->text;
+	Line* line = (Line*) get_elt(terminal->lines, terminal->y);
+	if (line == NULL)
+	{
+		log_error("NULL line in terminal_mode\n");
+		return;
+	}
+	char* text = line->text;
+	if (text == NULL)
+	{
+		log_error("NULL text in terminal_mode\n");
+		return;
+	}
 	int i;
 
 	switch (ch)
 	{
 		default:
-		for (i = terminal->x; line[i] != '\0'; i++) {}
+		for (i = terminal->x; text[i] != '\0'; i++) {}
 		if (i != LINE_SIZE - 1)
 		{
 			for (; i >= terminal->x; i--)
 			{
-				line[i + 1] = line[i];
+				text[i + 1] = text[i];
 			}
-			line[terminal->x] = ch;
+			text[terminal->x] = ch;
 
 			terminal->x++;
 			check_right_update(terminal);
@@ -49,9 +71,9 @@ void terminal_mode(int ch)
 		break;
 
 		case ENTER_KEYCODE1:
-		if (line[0] == ':')
+		if (text[0] == ':')
 		{
-			char* ptr = &line[1];
+			char* ptr = &text[1];
 			bool only_one_arg = false;
 
 			int i = 0;
@@ -76,6 +98,11 @@ void terminal_mode(int ch)
 				ptr = &ptr[i + 1];
 
 				char* fname = malloc(sizeof(char) * LINE_SIZE);
+				if (fname == NULL)
+				{
+					log_error("malloc failed in terminal_mode\n");
+					return;
+				}
 				int i;
 				for (i = 0; ptr[i] != '\0'; i++)
 				{
@@ -84,9 +111,24 @@ void terminal_mode(int ch)
 				fname[i] = '\0';
 
 				active_tab = make_tab(fname);
+				if (active_tab == NULL)
+				{
+					log_error("make_tab failed in terminal_mode\n");
+					active_tab = (Tab*) get_elt(tabs, active_tab_index);
+					if (active_tab == NULL)
+					{
+						log_error("active_tab_index references NULL element in tabs linked list\n");
+					}
+					return;
+				}
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
+					{
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						continue;
+					}
 					t->z_index_changes_saved++;
 				}
 				add(tabs, active_tab, tabs->size);
@@ -105,9 +147,37 @@ void terminal_mode(int ch)
 				}
 
 				active_tab = (Tab*) get_elt(tabs, active_tab_index);
+				if (active_tab == NULL)
+				{
+					log_error("found NULL tab in tabs in terminal_mode\n");
+					Node* n = get_node(tabs, active_tab_index);
+					if (n != NULL)
+					{
+						n->elt = make_tab(NULL);
+						if (n->elt != NULL)
+						{
+							active_tab = (Tab*) n->elt;
+						}
+						else
+						{
+							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							return;
+						}
+					}
+					else
+					{
+						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+						return;
+					}
+				}
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
+					{
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						continue;
+					}
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
@@ -125,9 +195,37 @@ void terminal_mode(int ch)
 				}
 
 				active_tab = (Tab*) get_elt(tabs, active_tab_index);
+				if (active_tab == NULL)
+				{
+					log_error("found NULL tab in tabs in terminal_mode\n");
+					Node* n = get_node(tabs, active_tab_index);
+					if (n != NULL)
+					{
+						n->elt = make_tab(NULL);
+						if (n->elt != NULL)
+						{
+							active_tab = (Tab*) n->elt;
+						}
+						else
+						{
+							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							return;
+						}
+					}
+					else
+					{
+						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+						return;
+					}
+				}
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
+					{
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						continue;
+					}
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
@@ -154,9 +252,37 @@ void terminal_mode(int ch)
 				}
 
 				active_tab = (Tab*) get_elt(tabs, index);
+				if (active_tab == NULL)
+				{
+					log_error("found NULL tab in tabs in terminal_mode\n");
+					Node* n = get_node(tabs, active_tab_index);
+					if (n != NULL)
+					{
+						n->elt = make_tab(NULL);
+						if (n->elt != NULL)
+						{
+							active_tab = (Tab*) n->elt;
+						}
+						else
+						{
+							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							return;
+						}
+					}
+					else
+					{
+						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+						return;
+					}
+				}
 				for (int i = 0; i < tabs->size; i++)
 				{
 					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
+					{
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						continue;
+					}
 					t->z_index_changes_saved++;
 				}
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
@@ -345,6 +471,20 @@ void terminal_mode(int ch)
 						free_tab((Tab*) rm(tabs, active_tab_index));
 						print_screen();
 					}
+
+					if (active_tab == NULL)
+					{
+						log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
+						active_tab = make_tab(NULL);
+						if (active_tab == NULL)
+						{
+							log_error("make_tab failed in terminal_mode\n");
+						}
+						else
+						{
+							add(tabs, active_tab, active_tab_index);
+						}
+					}
 				}
 			}
 			else if (!strcmp(ptr, "q!"))
@@ -354,6 +494,7 @@ void terminal_mode(int ch)
 					if (tabs->size == 1)
 					{
 						terminate = true;
+						return;
 					}
 					else
 					{
@@ -369,12 +510,31 @@ void terminal_mode(int ch)
 					free_tab((Tab*) rm(tabs, active_tab_index));
 					print_screen();
 				}
+
+				if (active_tab == NULL)
+				{
+					log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
+					active_tab = make_tab(NULL);
+					if (active_tab == NULL)
+					{
+						log_error("make_tab failed in terminal_mode\n");
+					}
+					else
+					{
+						add(tabs, active_tab, active_tab_index);
+					}
+				}
 			}
 			else if (!strcmp(ptr, "w"))
 			{
 				if (active_tab->fname == NULL)
 				{
 					char* fname = malloc(sizeof(char) * 10);
+					if (fname == NULL)
+					{
+						log_error("malloc failed in terminal_mode\n");
+						return;
+					}
 					fname[0] = 'u';
 					fname[1] = 'n';
 					fname[2] = 't';
@@ -388,6 +548,11 @@ void terminal_mode(int ch)
 				}
 
 				FILE* f = fopen(active_tab->fname, "w");
+				if (f == NULL)
+				{
+					log_error("failed to open file to write to in terminal_mode\n");
+					return;
+				}
 				for (int i = 0; i < active_tab->lines->size; i++)
 				{
 					fprintf(f, "%s\n", ((Line*) get_elt(active_tab->lines, i))->text);
@@ -406,11 +571,11 @@ void terminal_mode(int ch)
 		else
 		{
 			int i = 0;
-			for (; line[i] != '\0'; i++) {}
-			line[i] = '\n';
-			line[i + 1] = '\0';
-			write(master_fd, line, i + 2);
-			line[0] = '\0';
+			for (; text[i] != '\0'; i++) {}
+			text[i] = '\n';
+			text[i + 1] = '\0';
+			write(master_fd, text, i + 2);
+			text[0] = '\0';
 			terminal->x = 0;
 			check_bottom_update(terminal);
 			move_cursor_to_tab(terminal);
@@ -420,9 +585,9 @@ void terminal_mode(int ch)
 		case BACKSPACE_KEYCODE2:
 		if (terminal->x > 0)
 		{
-			for (int i = terminal->x - 1; line[i] != '\0'; i++)
+			for (int i = terminal->x - 1; text[i] != '\0'; i++)
 			{
-				line[i] = line[i + 1];
+				text[i] = text[i + 1];
 			}
 
 			terminal->x--;
@@ -446,6 +611,11 @@ void* listener_func(void*)
 	while (!terminate)
 	{
 		listener_buf = malloc(sizeof(char) * LINE_SIZE);
+		if (listener_buf == NULL)
+		{
+			log_error("malloc failed in forkpty thread\n");
+			continue;
+		}
 		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
 		listener_buf[bytes_read] = '\0';
 		if (bytes_read > 0)
@@ -458,6 +628,12 @@ void* listener_func(void*)
 				if (listener_buf[i] == '\n')
 				{
 					char* line = malloc(sizeof(char) * (i + 1 - index));
+					if (line == NULL)
+					{
+						log_error("malloc failed in forkpty thread\n");
+						continue;
+					}
+
 					int chars_skipped = 0;
 					int j = 0;
 					unsigned char sequence = 0;
@@ -516,6 +692,12 @@ void* listener_func(void*)
 					index = i + 1;
 
 					Line* l = malloc(sizeof(Line));
+					if (l == NULL)
+					{
+						log_error("malloc failed in forkpty thread\n");
+						free(line);
+						continue;
+					}
 					l->text = line;
 					l->color_indices = NULL;
 					add(terminal->lines, l, terminal->lines->size - 1);
@@ -524,6 +706,14 @@ void* listener_func(void*)
 			}
 
 			char* line = malloc(sizeof(char) * (i + 1 - index));
+			if (line == NULL)
+			{
+				log_error("malloc failed in forkpty thread\n");
+				free(listener_buf);
+				listener_buf = NULL;
+				continue;
+			}
+
 			int chars_skipped = 0;
 			int j = 0;
 			unsigned char sequence = 0;
@@ -581,6 +771,15 @@ void* listener_func(void*)
 			line[j] = '\0';
 
 			Line* l = malloc(sizeof(Line));
+			if (l == NULL)
+			{
+				log_error("malloc failed in forkpty thread\n");
+				free(listener_buf);
+				free(line);
+				listener_buf = NULL;
+				continue;
+			}
+
 			l->text = line;
 			l->color_indices = NULL;
 			add(terminal->lines, l, terminal->lines->size - 1);
