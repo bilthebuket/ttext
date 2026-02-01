@@ -14,7 +14,7 @@ void print_tab(Tab* t)
 
 	int y, x;
 	getyx(stdscr, y, x);
-	for (int i = t->top_line_index; i <= t->top_line_index + t->height; i++)
+	for (int i = t->top_line_index; i <= t->top_line_index + t->height && i - t->top_line_index < height - 1; i++)
 	{
 		print_line(t, i);
 	}

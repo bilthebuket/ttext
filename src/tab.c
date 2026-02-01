@@ -17,7 +17,7 @@ Tab* make_tab(char* fname)
 	r->z_index_changes_saved = CHANGES_SAVED;
 	r->x = 0;
 	r->y = 0;
-	r->height = height - 1;
+	r->height = height - 2;
 	r->width = width;
 	r->xpos = 0;
 	r->ypos = 0;

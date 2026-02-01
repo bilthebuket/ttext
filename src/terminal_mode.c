@@ -298,6 +298,9 @@ void terminal_mode(int ch)
 				int* num_to_change2 = NULL;
 				int sign2;
 
+				// for making sure the new dimensions still fit on the screen
+				int upper_bound;
+
 				if (only_one_arg)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
@@ -322,19 +325,23 @@ void terminal_mode(int ch)
 				{
 					num_to_change1 = &active_tab->ypos;
 					num_to_change2 = &active_tab->height;
+					upper_bound = height - 2;
 				}
 				else if (!strcmp(ptr, "bottom"))
 				{
 					num_to_change1 = &active_tab->height;
+					upper_bound = height - 2;
 				}
 				else if (!strcmp(ptr, "left"))
 				{
 					num_to_change1 = &active_tab->xpos;
 					num_to_change2 = &active_tab->width;
+					upper_bound = width - 1;
 				}
 				else if (!strcmp(ptr, "right"))
 				{
 					num_to_change1 = &active_tab->width;
+					upper_bound = width - 1;
 				}
 
 				ptr[i] = ' ';
@@ -382,11 +389,49 @@ void terminal_mode(int ch)
 
 				if (num_to_change1 != NULL)
 				{
-					*num_to_change1 = *num_to_change1 + sign1 * amount;
-				}
-				if (num_to_change2 != NULL)
-				{
-					*num_to_change2 = *num_to_change2 + sign2 * amount;
+					if (num_to_change2 != NULL)
+					{
+						if (*num_to_change1 + sign1 * amount + *num_to_change2 + sign2 * amount <= upper_bound && *num_to_change1 + sign1 * amount >= 0 && *num_to_change2 + sign2 * amount >= 0)
+						{
+							*num_to_change1 = *num_to_change1 + sign1 * amount;
+							*num_to_change2 = *num_to_change2 + sign2 * amount;
+						}
+						else
+						{
+							print_message("Resize would cause tab to go off screen");
+							make_input_line();
+							return;
+						}
+					}
+					else
+					{
+						if (upper_bound == width - 1)
+						{
+							if (active_tab->width + sign1 * amount + active_tab->xpos <= upper_bound && active_tab->width + sign1 * amount >= 0)
+							{
+								active_tab->width = active_tab->width + sign1 * amount;
+							}
+							else
+							{
+								print_message("Resize would cause tab to go off screen");
+								make_input_line();
+								return;
+							}
+						}
+						else
+						{
+							if (active_tab->height + sign1 * amount + active_tab->ypos <= upper_bound && active_tab->height + sign1 * amount >= 0)
+							{
+								active_tab->height = active_tab->height + sign1 * amount;
+							}
+							else
+							{
+								print_message("Resize would cause tab to go off screen");
+								make_input_line();
+								return;
+							}
+						}
+					}
 				}
 
 				print_screen();

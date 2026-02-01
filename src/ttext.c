@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	terminal->x = 0;
 	terminal->y = 0;
 	terminal->xpos = 0;
-	terminal->ypos = height - terminal->height - 1;
+	terminal->ypos = height - terminal->height - 2;
 	terminal->left_column_index = 0;
 	terminal->top_line_index = 0;
 
