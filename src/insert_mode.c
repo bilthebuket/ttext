@@ -16,8 +16,8 @@ void insert_mode(int ch)
 		log_error("Accessing line in tab results in NULL\n");
 		return;
 	}
-	char* text = line->text;
-	if (text == NULL)
+	GapBuffer* gb = line->gb;
+	if (gb == NULL)
 	{
 		log_error("Accessing text in line results in NULL\n");
 		return;
@@ -28,27 +28,24 @@ void insert_mode(int ch)
 	switch (ch)
 	{
 		default:
-		for (i = active_tab->x; text[i] != '\0'; i++) {}
+		for (i = active_tab->x; gb_get(gb, i) != '\0'; i++) {}
 		if (i != LINE_SIZE - 1)
 		{
-			for (; i >= active_tab->x; i--)
-			{
-				text[i + 1] = text[i];
-			}
-			text[active_tab->x] = ch;
+			gb_goto(gb, active_tab->x);
+			gb_put(gb, ch);
 
 			if (ch == '\t')
 			{
-				convert_tabs_to_spaces(text);
+				convert_tabs_to_spaces(gb);
 				active_tab->x += TAB_SIZE - 1;
 			}
 			if (ch == '}')
 			{
 				bool indent = true;
 				int j;
-				for (j = 0; text[j] != '}'; j++)
+				for (j = 0; gb_get(gb, j) != '}'; j++)
 				{
-					if (text[j] != ' ')
+					if (gb_get(gb, j) != ' ')
 					{
 						indent = false;
 						break;
@@ -66,11 +63,11 @@ void insert_mode(int ch)
 						amount = j;
 					}
 
-					for (; text[j] != '\0'; j++)
+					for (int i = 0; i < amount; i++)
 					{
-						text[j - amount] = text[j];
+						gb_goleft(gb);
+						gb_rm(gb);
 					}
-					text[j - amount] = '\0';
 					active_tab->x -= amount;
 				}
 			}
@@ -87,10 +84,8 @@ void insert_mode(int ch)
 		case BACKSPACE_KEYCODE2:
 		if (active_tab->x > 0)
 		{
-			for (int i = active_tab->x - 1; text[i] != '\0'; i++)
-			{
-				text[i] = text[i + 1];
-			}
+			gb_goto(gb, active_tab->x - 1);
+			gb_rm(gb);
 
 			active_tab->x--;
 			check_left_update(active_tab);
@@ -107,41 +102,34 @@ void insert_mode(int ch)
 				log_error("Accessing line in tab results in NULL\n");
 				return;
 			}
-			char* text_above = line_above->text;
-			if (text_above == NULL)
+			char* gb_above = line_above->gb;
+			if (gb_above == NULL)
 			{
 				log_error("Accessing text in line results in NULL\n");
 				return;
 			}
 
-			for (i = 0; text_above[i] != '\0'; i++) {}
-			int len = i;
-			for (; text[i - len] != '\0' && i < LINE_SIZE; i++)
+			int store = gb_above->num_chars - 1;
+			gb_goto(gb_above, store);
+			for (i = 0; i < gb->num_chars - 1; i++)
 			{
-				text_above[i] = text[i - len];
+				gb_put(gb_above, gb_get(gb, i));
 			}
-			if (text[i - len] != '\0')
-			{
-				text[len] = '\0';
-				print_message("Operation would cause a line to exceed the maximum line size");
-			}
-			else
-			{
-				rm(active_tab->lines, active_tab->y);
-				text_above[i] = '\0';
-				free(text);
 
-				active_tab->x = i;
-				active_tab->y--;
+			rm(active_tab->lines, active_tab->y);
+			free_line(line);
+			gb_goto(gb_above, store);
 
-				check_left_update(active_tab);
-				check_right_update(active_tab);
-				check_top_update(active_tab);
-				move_cursor_to_tab(active_tab);
+			active_tab->x = store;
+			active_tab->y--;
 
-				update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
-				print_tab(active_tab);
-			}
+			check_left_update(active_tab);
+			check_right_update(active_tab);
+			check_top_update(active_tab);
+			move_cursor_to_tab(active_tab);
+
+			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
+			print_tab(active_tab);
 		}
 		break;
 
@@ -152,29 +140,22 @@ void insert_mode(int ch)
 		break;
 
 		case ENTER_KEYCODE1:
-		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		if (buf == NULL)
+		GapBuffer* gb_new = gb_create(NULL, -1);
+		gb_goto(gb, active_tab->x);
+		while (gb_get(gb, active_tab->x) != '\0')
 		{
-			log_error("malloc failure\n");
-			return;
+			gb_put(gb_new, gb_rm(gb));
 		}
-
-		for (i = active_tab->x; text[i] != '\0'; i++)
-		{
-			buf[i - active_tab->x] = text[i];
-		}
-		text[active_tab->x] = '\0';
-		buf[i - active_tab->x] = '\0';
 
 		Line* l = malloc(sizeof(Line));
 		if (l == NULL)
 		{
 			log_error("malloc failure\n");
-			free(buf);
+			gb_free(gb_new);
 			return;
 		}
 
-		l->text = buf;
+		l->gb = gb_new;
 		l->color_indices = NULL;
 		add(active_tab->lines, l, active_tab->y + 1);
 
