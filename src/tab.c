@@ -67,43 +67,47 @@ Tab* make_tab(char* fname)
 
 	while (1)
 	{
-		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		if (buf == NULL)
+		int bufsize = 0;
+		bool eof = false;
+		char* buf;
+		do
 		{
-			log_error("malloc failed in make_tab\n");
-			free_tab(r);
-			fclose(f);
-			return NULL;
-		}
-		// setting the last character in the buffer to a random character that is not the null character so we can check
-		// after fgets() to see if the buffer was filled completely, in which case the line is too long for the editor we 
-		// terminate
-		buf[LINE_SIZE - 1] = 'a';
-		buf[0] = '\0';
+			bufsize += LINE_SIZE;
+			char* buf = malloc(sizeof(char) * bufsize);
+			if (buf == NULL)
+			{
+				log_error("malloc failed in make_tab\n");
+				free_tab(r);
+				fclose(f);
+				return NULL;
+			}
+			// setting the last character in the buffer to a random character that is not the null character so we can check
+			// after fgets() to see if the buffer was filled completely, in which case the line is too long for the editor we 
+			// terminate
+			buf[bufsize - 1] = 'a';
+			buf[0] = '\0';
 
-		if (!fgets(buf, LINE_SIZE, f))
+			if (!fgets(buf, bufsize, f))
+			{
+				free(buf);
+				eof = true;
+				break;
+			}
+		}
+		while (buf[bufsize - 1] == '\0');
+		if (eof)
 		{
-			free(buf);
 			break;
 		}
-		if (buf[LINE_SIZE - 1] == '\0')
+
+		GapBuffer* gb = gb_create(buf, bufsize);
+		if (gb_get(gb, gb->num_chars - 2) == '\n')
 		{
-			log_error("attempted to load file with a line exceeding the max line size\n");
-			free_tab(r);
-			fclose(f);
-			free(buf);
-			return NULL;
+			gb_goto(gb, gb->num_chars - 2);
+			gb_rm(gb);
 		}
 
-		int len;
-		for (len = 0; buf[len] != '\0'; len++) {}
-		if (buf[len - 1] == '\n')
-		{
-			buf[len - 1] = '\0';
-			len--;
-		}
-
-		convert_tabs_to_spaces(buf);
+		convert_tabs_to_spaces(gb);
 
 		Line* l = malloc(sizeof(Line));
 		if (l == NULL)
@@ -115,7 +119,7 @@ Tab* make_tab(char* fname)
 			return NULL;
 		}
 
-		l->text = buf;
+		l->gb = gb;
 		l->color_indices = NULL;
 		update_color_indices(l);
 		add(r->lines, l, r->lines->size);
@@ -137,15 +141,7 @@ void free_tab(Tab* t)
 		while ((elt = rm(t->lines, 0)) != NULL)
 		{
 			Line* l = (Line*) elt;
-			if (l->text != NULL)
-			{
-				free(l->text);
-			}
-			if (l->color_indices != NULL)
-			{
-				free_list(l->color_indices);
-			}
-			free(l);
+			free_line(l);
 		}
 		free_list(t->lines);
 		free(t);

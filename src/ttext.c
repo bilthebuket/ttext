@@ -33,10 +33,8 @@ int main(int argc, char* argv[])
 	terminal = malloc(sizeof(Tab));
 	terminal->fname = NULL;
 	terminal->lines = make_list();
-	char* input_line = malloc(sizeof(char) * LINE_SIZE);
-	input_line[0] = '\0';
 	Line* l = malloc(sizeof(Line));
-	l->text = input_line;
+	l->gb = gb_create(NULL, -1);
 	l->color_indices = NULL;
 	add(terminal->lines, l, 0);
 

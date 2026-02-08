@@ -103,18 +103,18 @@ void print_line(Tab* t, int line_index)
 	bool endofline;
 
 	Line* line = (Line*) get_elt(t->lines, line_index);
-	char* text;
+	GapBuffer* gb;
 	if (line == NULL)
 	{
 		log_error("found NULL line while attempting to print_line on a tab\n");
-		text = NULL;
+		gb = NULL;
 	}
 	else
 	{
-		text = line->text;
+		gb = line->gb;
 	}
 	Node* colorindex = NULL;
-	if (text == NULL)
+	if (gb == NULL)
 	{
 		log_error("found NULL text in a line while attempting to print_line on a tab\n");
 		endofline = true;
@@ -141,8 +141,8 @@ void print_line(Tab* t, int line_index)
 		if (text != NULL)
 		{
 			int i;
-			for (i = 0; text[i] != '\0' && i < t->left_column_index; i++) {}
-			endofline = text[i] == '\0';
+			for (i = 0; gb_get(gb, i) != '\0' && i < t->left_column_index; i++) {}
+			endofline = gb_get(gb, i) == '\0';
 		}
 
 		if (line->color_indices == NULL)
@@ -185,7 +185,7 @@ void print_line(Tab* t, int line_index)
 		{
 			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 		}
-		else if (text[t->left_column_index + i - t->xpos] == '\0')
+		else if (gb_get(gb, t->left_column_index + i - t->xpos) == '\0')
 		{
 			endofline = true;
 			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
@@ -210,7 +210,7 @@ void print_line(Tab* t, int line_index)
 				}
 			}
 
-			mvaddch(t->ypos + line_index - t->top_line_index, i, text[t->left_column_index + i - t->xpos]);
+			mvaddch(t->ypos + line_index - t->top_line_index, i, gb_get(gb, t->left_column_index + i - t->xpos));
 		}
 	}
 	move(y, x);
@@ -310,30 +310,33 @@ void check_bottom_update(Tab* t)
 	}
 }
 
-void convert_tabs_to_spaces(char* str)
+void convert_tabs_to_spaces(GapBuffer* gb)
 {
-	if (str == NULL)
+	if (gb == NULL)
 	{
 		log_error("found NULL in convert_tabs_to_spaces\n");
 		return;
 	}
-	int len;
-	for (len = 0; str[len] != '\0'; len++) {}
+	int len = gb->num_chars - 1;
 
 	for (int i = 0; i <= len; i++)
 	{
-		if (str[i] == '\t')
+		if (gb_get(gb, i) == '\t')
 		{
-			str[i] = ' ';
+			gb_goto(gb, i);
+			gb_rm(gb);
+			gb_put(gb, ' ');
 			// TAB_SIZE - 1 because we can replace the \t with a space and not have to shift anything
 			for (int j = 1; j < TAB_SIZE; j++)
 			{
-				char c = str[i + j];
-				str[i + j] = ' ';
+				gb_goto(gb, i + j);
+				char c = gb_rm(gb);
+				gb_put(gb, ' ');
 				for (int k = i + j; k <= len; k += TAB_SIZE - 1)
 				{
-					char store = str[k + TAB_SIZE - 1];
-					str[k + TAB_SIZE - 1] = c;
+					gb_goto(gb, k + TAB_SIZE - 1);
+					char store = gb_rm(gb, k + TAB_SIZE - 1);
+					gb_put(gb, c);
 					c = store;
 				}
 			}
@@ -358,25 +361,25 @@ int indent_line(Tab* t, int index)
 			log_error("found NULL line(s) in indent_line\n");
 			return 0;
 		}
-		char* text = line->text;
-		char* text_above = line_above->text;
-		if (text == NULL || text_above == NULL)
+		GapBuffer* gb = line->gb;
+		GapBuffer* gb_above = line_above->gb;
+		if (gb == NULL || gb_above == NULL)
 		{
 			log_error("found NULL text(s) in indent_line\n");
 			return 0;
 		}
 
 		int num_spaces = 0;
-		for (; text_above[num_spaces] == ' '; num_spaces++) {}
+		for (; gb_get(gb_above, num_spaces) == ' '; num_spaces++) {}
 
 		int braces = 0;
-		for (int i = num_spaces; text_above[i] != '\0'; i++)
+		for (int i = num_spaces; gb_get(gb_above, i) != '\0'; i++)
 		{
-			if (text_above[i] == '{')
+			if (gb_get(gb_above, i) == '{')
 			{
 				braces++;
 			}
-			if (text_above[i] == '}')
+			if (gb_get(gb_above, i) == '}')
 			{
 				braces--;
 			}
@@ -388,19 +391,10 @@ int indent_line(Tab* t, int index)
 
 		if (num_spaces > 0)
 		{
-			int len;
-			for (len = 0; text[len] != '\0'; len++) {}
-
+			gb_goto(gb, 0);
 			for (int j = 0; j < num_spaces; j++)
 			{
-				char c = text[j];
-				text[j] = ' ';
-				for (int k = j; k <= len; k += num_spaces)
-				{
-					char store = text[k + num_spaces];
-					text[k + num_spaces] = c;
-					c = store;
-				}
+				gb_put(gb, ' ');
 			}
 
 			return num_spaces;

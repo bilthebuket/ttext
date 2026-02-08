@@ -2,6 +2,7 @@
 #define IO_TOOLS_H
 
 #include "tab.h"
+#include "line.h"
 
 void print_tab(Tab* t);
 void print_line(Tab* t, int line_index);
@@ -16,7 +17,7 @@ void check_right_update(Tab* t);
 void check_top_update(Tab* t);
 void check_bottom_update(Tab* t);
 
-void convert_tabs_to_spaces(char* str);
+void convert_tabs_to_spaces(GapBuffer* gb);
 int indent_line(Tab* t, int index);
 
 void log_error(const char* str);

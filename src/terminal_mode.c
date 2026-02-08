@@ -11,13 +11,12 @@
 
 static void make_input_line(void)
 {
-	char* line = malloc(sizeof(char) * LINE_SIZE);
-	if (line == NULL)
+	GapBuffer* gb = gb_create(NULL, -1);
+	if (gb == NULL)
 	{
 		log_error("malloc failed in make_input_line\n");
 		return;
 	}
-	line[0] = '\0';
 
 	Line* l = malloc(sizeof(Line));
 	if (l == NULL)
@@ -25,9 +24,10 @@ static void make_input_line(void)
 		log_error("malloc failed in make_input_line\n");
 		return;
 	}
-	l->text = line;
+	l->gb = gb;
 	l->color_indices = NULL;
 	add(terminal->lines, l, terminal->lines->size);
+	gb_goto(gb, 0);
 	terminal->x = 0;
 	terminal->y++;
 	check_bottom_update(terminal);
@@ -42,8 +42,8 @@ void terminal_mode(int ch)
 		log_error("NULL line in terminal_mode\n");
 		return;
 	}
-	char* text = line->text;
-	if (text == NULL)
+	GapBuffer* gb = line->gb;
+	if (gb == NULL)
 	{
 		log_error("NULL text in terminal_mode\n");
 		return;
@@ -53,39 +53,30 @@ void terminal_mode(int ch)
 	switch (ch)
 	{
 		default:
-		for (i = terminal->x; text[i] != '\0'; i++) {}
-		if (i != LINE_SIZE - 1)
-		{
-			for (; i >= terminal->x; i--)
-			{
-				text[i + 1] = text[i];
-			}
-			text[terminal->x] = ch;
-
-			terminal->x++;
-			check_right_update(terminal);
-			move_cursor_to_tab(terminal);
-
-			print_line(terminal, terminal->y);
-		}
+		gb_put(gb, ch);
+		terminal->x++;
+		check_right_update(terminal);
+		move_cursor_to_tab(terminal);
+		print_line(terminal, terminal->y);
 		break;
 
 		case ENTER_KEYCODE1:
-		if (text[0] == ':')
+		if (gb_get(gb, 0) == ':')
 		{
-			char* ptr = &text[1];
+			int start_index = 1;
+			int end_index;
 			bool only_one_arg = false;
 
 			int i = 0;
-			for (; ptr[i] != ' ' && ptr[i] != '\0'; i++) {}
+			for (; gb_get(gb, i) != ' ' && gb_get(gb, i) != '\0'; i++) {}
 
-			if (ptr[i] == '\0')
+			if (gb_get(gb, i) == '\0')
 			{
 				only_one_arg = true;
 			}
-			ptr[i] = '\0';
+			end_index = i;
 
-			if (!strcmp(ptr, "tabnew"))
+			if (!gb_strcmp(gb, start_index, end_index, "tabnew"))
 			{
 				if (only_one_arg)
 				{
@@ -94,8 +85,7 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
+				start_index = end_index + 1;
 
 				char* fname = malloc(sizeof(char) * LINE_SIZE);
 				if (fname == NULL)
@@ -104,11 +94,11 @@ void terminal_mode(int ch)
 					return;
 				}
 				int i;
-				for (i = 0; ptr[i] != '\0'; i++)
+				for (i = start_index; gb_get(gb, i) != '\0'; i++)
 				{
-					fname[i] = ptr[i];
+					fname[i - start_index] = ptr[i];
 				}
-				fname[i] = '\0';
+				fname[i - start_index] = '\0';
 
 				active_tab = make_tab(fname);
 				if (active_tab == NULL)
@@ -135,7 +125,7 @@ void terminal_mode(int ch)
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
-			else if (!strcmp(ptr, "tabn"))
+			else if (!gb_strcmp(gb, start_index, end_index, "tabn"))
 			{
 				if (active_tab_index == tabs->size - 1)
 				{
@@ -183,7 +173,7 @@ void terminal_mode(int ch)
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
 				print_screen();
 			}
-			else if (!strcmp(ptr, "tabp"))
+			else if (!gb_strcmp(gb, start_index, end_index, "tabp"))
 			{
 				if (active_tab_index == 0)
 				{
@@ -231,7 +221,7 @@ void terminal_mode(int ch)
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
 				print_screen();
 			}
-			else if (!strcmp(ptr, "tab"))
+			else if (!gb_strcmp(gb, start_index, end_index, "tab"))
 			{
 				if (only_one_arg)
 				{
@@ -240,9 +230,9 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				int index = atoi(ptr);
+				start_index = i + 1;
+				end_index = gb->num_chars - 1;
+				int index = gb_atoi(gb, start_index, end_index);
 
 				if (index < 0 || index >= tabs->size)
 				{
@@ -288,7 +278,7 @@ void terminal_mode(int ch)
 				active_tab->z_index_changes_saved &= CHANGES_SAVED;
 				print_screen();
 			}
-			else if (!strcmp(ptr, "rs"))
+			else if (!gb_strcmp(gb, start_index, end_index, "rs"))
 			{
 				int amount; 
 
@@ -308,56 +298,54 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				for (i = 0; ptr[i] != '\0' && ptr[i] != ' '; i++) {}
+				start_index = i + 1;
+				for (i = 0; gb_get(gb, i) != '\0' && gb_get(gb, i) != ' '; i++) {}
 
-				if (ptr[i] == '\0')
+				if (gb_get(gb, i) == '\0')
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
 					return;
 				}
 
-				ptr[i] = '\0';
+				end_index = i;
 
-				if (!strcmp(ptr, "top"))
+				if (!gb_strcmp(gb, start_index, end_index, "top"))
 				{
 					num_to_change1 = &active_tab->ypos;
 					num_to_change2 = &active_tab->height;
 					upper_bound = height - 2;
 				}
-				else if (!strcmp(ptr, "bottom"))
+				else if (!gb_strcmp(gb, start_index, end_index, "bottom"))
 				{
 					num_to_change1 = &active_tab->height;
 					upper_bound = height - 2;
 				}
-				else if (!strcmp(ptr, "left"))
+				else if (!gb_strcmp(gb, start_index, end_index, "left"))
 				{
 					num_to_change1 = &active_tab->xpos;
 					num_to_change2 = &active_tab->width;
 					upper_bound = width - 1;
 				}
-				else if (!strcmp(ptr, "right"))
+				else if (!gb_strcmp(gb, start_index, end_index, "right"))
 				{
 					num_to_change1 = &active_tab->width;
 					upper_bound = width - 1;
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				for (i = 0; ptr[i] != '\0' && ptr[i] != ' '; i++) {}
+				start_index = i + 1;
+				for (i = 0; gb_get(gb, i) != '\0' && gb_get(gb, i) != ' '; i++) {}
 
-				if (ptr[i] == '\0')
+				if (gb_get(gb, i) == '\0')
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
 					return;
 				}
 
-				ptr[i] = '\0';
+				end_index = i;
 
-				if (!strcmp(ptr, "add"))
+				if (!gb_strcmp(gb, start_index, end_index, "add"))
 				{
 					if (num_to_change2 == NULL)
 					{
@@ -369,7 +357,7 @@ void terminal_mode(int ch)
 						sign2 = 1;
 					}
 				}
-				else if (!strcmp(ptr, "sub"))
+				else if (!gb_strcmp(gb, start_index, end_index, "sub"))
 				{
 					if (num_to_change2 == NULL)
 					{
@@ -382,10 +370,9 @@ void terminal_mode(int ch)
 					}
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				amount = atoi(ptr);
-				amount = atoi(ptr);
+				start_index = i + 1;
+				end_index = gb->num_chars - 1;
+				amount = gb_atoi(gb, start_index, end_index);
 
 				if (num_to_change1 != NULL)
 				{
@@ -436,7 +423,7 @@ void terminal_mode(int ch)
 
 				print_screen();
 			}
-			else if (!strcmp(ptr, "mv"))
+			else if (!gb_strcmp(gb, start_index, end_index, "mv"))
 			{
 				if (only_one_arg)
 				{
@@ -449,41 +436,40 @@ void terminal_mode(int ch)
 				int sign;
 				int amount;
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				for (i = 0; ptr[i] != ' ' && ptr[i] != '\0'; i++) {}
-				if (ptr[i] == '\0')
+				start_index = i + 1;
+				for (i = 0; gb_get(gb, i) != ' ' && gb_get(gb, i) != '\0'; i++) {}
+				if (gb_get(gb, i) == '\0')
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
 					return;
 				}
-				ptr[i] = '\0';
+				end_index = i;
 
-				if (!strcmp(ptr, "left"))
+				if (!gb_strcmp(gb, start_index, end_index, "left"))
 				{
 					num_to_change = &active_tab->xpos;
 					sign = -1;
 				}
-				else if (!strcmp(ptr, "right"))
+				else if (!gb_strcmp(gb, start_index, end_index, "right"))
 				{
 					num_to_change = &active_tab->xpos;
 					sign = 1;
 				}
-				else if (!strcmp(ptr, "up"))
+				else if (!gb_strcmp(gb, start_index, end_index, "up"))
 				{
 					num_to_change = &active_tab->ypos;
 					sign = -1;
 				}
-				else if (!strcmp(ptr, "down"))
+				else if (!gb_strcmp(gb, start_index, end_index, "down"))
 				{
 					num_to_change = &active_tab->ypos;
 					sign = 1;
 				}
 
-				ptr[i] = ' ';
-				ptr = &ptr[i + 1];
-				amount = atoi(ptr);
+				start_index = i + 1;
+				end_index = gb->num_chars - 1;
+				amount = gb_atoi(gb, start_index, end_index);
 
 				if (num_to_change != NULL)
 				{
@@ -492,7 +478,7 @@ void terminal_mode(int ch)
 
 				print_screen();
 			}
-			else if (!strcmp(ptr, "q"))
+			else if (!gb_strcmp(gb, start_index, end_index, "q"))
 			{
 				if (active_tab->z_index_changes_saved & CHANGES_SAVED)
 				{
@@ -532,7 +518,7 @@ void terminal_mode(int ch)
 					}
 				}
 			}
-			else if (!strcmp(ptr, "q!"))
+			else if (!gb_strcmp(gb, start_index, end_index, "q!"))
 			{
 				if (active_tab_index == tabs->size - 1)
 				{
@@ -570,7 +556,7 @@ void terminal_mode(int ch)
 					}
 				}
 			}
-			else if (!strcmp(ptr, "w"))
+			else if (!gb_strcmp(gb, start_index, end_index, "w"))
 			{
 				if (active_tab->fname == NULL)
 				{
@@ -616,11 +602,12 @@ void terminal_mode(int ch)
 		else
 		{
 			int i = 0;
-			for (; text[i] != '\0'; i++) {}
-			text[i] = '\n';
-			text[i + 1] = '\0';
-			write(master_fd, text, i + 2);
-			text[0] = '\0';
+			gb_goto(gb, gb->num_chars - 1);
+			gb_put(gb, '\n');
+			write(master_fd, gb->text, gb->num_chars - 1);
+			gb_goto(gb, 0);
+			gb_put(gb, '\0');
+			gb_goleft(gb);
 			terminal->x = 0;
 			check_bottom_update(terminal);
 			move_cursor_to_tab(terminal);
@@ -630,15 +617,10 @@ void terminal_mode(int ch)
 		case BACKSPACE_KEYCODE2:
 		if (terminal->x > 0)
 		{
-			for (int i = terminal->x - 1; text[i] != '\0'; i++)
-			{
-				text[i] = text[i + 1];
-			}
-
+			gb_rm(gb);
 			terminal->x--;
 			check_left_update(terminal);
 			move_cursor_to_tab(terminal);
-
 			print_line(terminal, terminal->y);
 		}
 		break;
@@ -743,7 +725,7 @@ void* listener_func(void*)
 						free(line);
 						continue;
 					}
-					l->text = line;
+					l->gb = gb_create(line, i + 1 - index);
 					l->color_indices = NULL;
 					add(terminal->lines, l, terminal->lines->size - 1);
 					terminal->y++;
@@ -825,7 +807,7 @@ void* listener_func(void*)
 				continue;
 			}
 
-			l->text = line;
+			l->gb = gb_create(line, i + 1 - index);
 			l->color_indices = NULL;
 			add(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;

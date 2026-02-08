@@ -38,6 +38,11 @@ int gb_rm(GapBuffer* gb);
 int gb_get(GapBuffer* gb, int index);
 void free_gb(GapBuffer* gb);
 
+// start_index is inclusive, end_index is not
+// returns 0 if same, 1 if gb is longer than str, -1 if str is longer than gb, -2 if there was invalid arg(s), and 2 if they are same length but different strings
+int gb_strcmp(GapBuffer* gb, int start_index, int end_index, const char* const str);
+int gb_atoi(GapBuffer* gb, int start_index, int end_index);
+
 void update_color_indices(Line* line);
 void free_line(Line* line);
 
