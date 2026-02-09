@@ -95,13 +95,6 @@ void normal_mode(int ch)
 				return;
 			}
 
-			GapBuffer* gb_below = line_below->gb;
-			if (gb_below == NULL)
-			{
-				log_error("found NULL gb in active_tab while attempting to move cursor down\n");
-				return;
-			}
-
 			int i;
 			if (gb_above->num_chars - 2 <= active_tab->saved_x_index)
 			{
@@ -288,7 +281,7 @@ void normal_mode(int ch)
 				log_error("found NULL line in normal_mode\n");
 				return;
 			}
-			GapBuffer* gb_we_are_on = line_we_are_on->text;
+			GapBuffer* gb_we_are_on = line_we_are_on->gb;
 			if (gb_we_are_on == NULL)
 			{
 				continue;
@@ -307,7 +300,7 @@ void normal_mode(int ch)
 			{
 				x_index = gb_get(gb_we_are_on, gb_we_are_on->num_chars - 2);
 			}
-			for (int x_index = active_tab->x; gb_get(gb_we_are_on, x_index) != '\0' && x_index >= 0; x_index += delta)
+			for (; gb_get(gb_we_are_on, x_index) != '\0' && x_index >= 0; x_index += delta)
 			{
 				if (gb_get(gb_we_are_on, x_index) == looking_for)
 				{

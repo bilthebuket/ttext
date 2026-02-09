@@ -138,7 +138,7 @@ void print_line(Tab* t, int line_index)
 	}
 	else
 	{
-		if (text != NULL)
+		if (gb != NULL)
 		{
 			int i;
 			for (i = 0; gb_get(gb, i) != '\0' && i < t->left_column_index; i++) {}
@@ -335,7 +335,7 @@ void convert_tabs_to_spaces(GapBuffer* gb)
 				for (int k = i + j; k <= len; k += TAB_SIZE - 1)
 				{
 					gb_goto(gb, k + TAB_SIZE - 1);
-					char store = gb_rm(gb, k + TAB_SIZE - 1);
+					char store = gb_rm(gb);
 					gb_put(gb, c);
 					c = store;
 				}

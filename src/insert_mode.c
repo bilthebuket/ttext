@@ -102,7 +102,7 @@ void insert_mode(int ch)
 				log_error("Accessing line in tab results in NULL\n");
 				return;
 			}
-			char* gb_above = line_above->gb;
+			GapBuffer* gb_above = line_above->gb;
 			if (gb_above == NULL)
 			{
 				log_error("Accessing text in line results in NULL\n");

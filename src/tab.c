@@ -59,54 +59,59 @@ Tab* make_tab(char* fname)
 			free(buf);
 			return NULL;
 		}
-		l->text = buf;
+		l->gb = gb_create(NULL, -1);
 		l->color_indices = NULL;
 		add(r->lines, l, 0);
 		return r;
 	}
 
+	fseek(f, 0, SEEK_END);
+	int size = ftell(f);
+	rewind(f);
+	char* buf = malloc(sizeof(char) * (size + 1));
+	if (buf == NULL)
+	{
+		log_error("malloc failed in make_tab\n");
+		free(buf);
+		free(r);
+		fclose(f);
+		return NULL;
+	}
+	if (fread(buf, sizeof(char), size, f) <= 0)
+	{
+		log_error("fgets failed in make_tab\n");
+		free(buf);
+		fclose(f);
+		free(r);
+		return NULL;
+	}
+	buf[size] = '\0';
+	int i = 0;
+	int prev = 0;
 	while (1)
 	{
-		int bufsize = 0;
-		bool eof = false;
-		char* buf;
-		do
+		for (; buf[i] != '\n' && buf[i] != '\0'; i++) {}
+		int len = (((i - prev) / LINE_SIZE) + 1) * LINE_SIZE;
+		char* text = malloc(sizeof(char) * len);
+		if (text == NULL)
 		{
-			bufsize += LINE_SIZE;
-			char* buf = malloc(sizeof(char) * bufsize);
-			if (buf == NULL)
-			{
-				log_error("malloc failed in make_tab\n");
-				free_tab(r);
-				fclose(f);
-				return NULL;
-			}
-			// setting the last character in the buffer to a random character that is not the null character so we can check
-			// after fgets() to see if the buffer was filled completely, in which case the line is too long for the editor we 
-			// terminate
-			buf[bufsize - 1] = 'a';
-			buf[0] = '\0';
-
-			if (!fgets(buf, bufsize, f))
-			{
-				free(buf);
-				eof = true;
-				break;
-			}
+			log_error("malloc failed in make_tab\n");
+			free_tab(r);
+			fclose(f);
+			free(buf);
+			return NULL;
 		}
-		while (buf[bufsize - 1] == '\0');
-		if (eof)
+		int j;
+		for (j = prev; j < i; j++)
 		{
-			break;
+			text[j - prev] = buf[j];
 		}
+		text[j - prev] = '\0';
 
-		GapBuffer* gb = gb_create(buf, bufsize);
-		if (gb_get(gb, gb->num_chars - 2) == '\n')
-		{
-			gb_goto(gb, gb->num_chars - 2);
-			gb_rm(gb);
-		}
+		prev = i + 1;
+		i++;
 
+		GapBuffer* gb = gb_create(text, len);
 		convert_tabs_to_spaces(gb);
 
 		Line* l = malloc(sizeof(Line));
@@ -123,6 +128,11 @@ Tab* make_tab(char* fname)
 		l->color_indices = NULL;
 		update_color_indices(l);
 		add(r->lines, l, r->lines->size);
+
+		if (buf[j] == '\0')
+		{
+			break;
+		}
 	}
 
 	fclose(f);

@@ -48,7 +48,7 @@ void update_color_indices(Line* line)
 		{
 			if (gb_get(gb, i) == '/')
 			{
-				if (line->text[i + 1] == '/')
+				if (gb_get(gb, i + 1) == '/')
 				{
 					break;
 				}
@@ -241,14 +241,14 @@ void free_line(Line* line)
 	{
 		free_list(line->color_indices);
 	}
-	free_gb(gb);
+	gb_free(line->gb);
 	free(line);
 }
 
 GapBuffer* gb_create(char* text, int text_size)
 {
 	GapBuffer* gb = malloc(sizeof(GapBuffer));
-	if (gb == NULL)
+	if (gb == NULL || text_size < 0)
 	{
 		return NULL;
 	}
@@ -310,7 +310,7 @@ int gb_goto(GapBuffer* gb, int index)
 	}
 	if (index > gb->gap_index)
 	{
-		if (index >= num_chars)
+		if (index >= gb->num_chars)
 		{
 			return -1;
 		}
@@ -390,6 +390,7 @@ int gb_put(GapBuffer* gb, char c)
 	gb->text[gb->gap_index + 1] = gb->text[gb->gap_index];
 	gb->text[gb->gap_index] = c;
 	gb->gap_index++;
+	gb->num_chars++;
 	gb->gap_size--;
 	return gb->gap_index;
 }
@@ -406,8 +407,8 @@ int gb_rm(GapBuffer* gb)
 	}
 	if (gb->text[gb->gap_index] != '\0')
 	{
-		char c = gb->text[gap_index];
-		gb->text[gap_index] = gb->text[gap_index + gb->gap_size + 1];
+		char c = gb->text[gb->gap_index];
+		gb->text[gb->gap_index] = gb->text[gb->gap_index + gb->gap_size + 1];
 		gb->gap_size++;
 		return c;
 	}
@@ -431,7 +432,7 @@ int gb_get(GapBuffer* gb, int index)
 	return gb->text[index];
 }
 
-void free_gb(GapBuffer* gb)
+void gb_free(GapBuffer* gb)
 {
 	if (gb != NULL)
 	{

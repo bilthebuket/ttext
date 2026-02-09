@@ -36,7 +36,8 @@ int gb_goright(GapBuffer* gb);
 int gb_put(GapBuffer* gb, char c);
 int gb_rm(GapBuffer* gb);
 int gb_get(GapBuffer* gb, int index);
-void free_gb(GapBuffer* gb);
+GapBuffer* gb_create(char* text, int text_size);
+void gb_free(GapBuffer* gb);
 
 // start_index is inclusive, end_index is not
 // returns 0 if same, 1 if gb is longer than str, -1 if str is longer than gb, -2 if there was invalid arg(s), and 2 if they are same length but different strings

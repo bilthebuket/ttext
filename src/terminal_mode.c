@@ -48,7 +48,6 @@ void terminal_mode(int ch)
 		log_error("NULL text in terminal_mode\n");
 		return;
 	}
-	int i;
 
 	switch (ch)
 	{
@@ -96,7 +95,7 @@ void terminal_mode(int ch)
 				int i;
 				for (i = start_index; gb_get(gb, i) != '\0'; i++)
 				{
-					fname[i - start_index] = ptr[i];
+					fname[i - start_index] = gb_get(gb, i);
 				}
 				fname[i - start_index] = '\0';
 
@@ -586,12 +585,23 @@ void terminal_mode(int ch)
 				}
 				for (int i = 0; i < active_tab->lines->size; i++)
 				{
-					fprintf(f, "%s\n", ((Line*) get_elt(active_tab->lines, i))->text);
+					Line* l = (Line*) get_elt(active_tab->lines, i);
+					if (l != NULL)
+					{
+						GapBuffer* gb = l->gb;
+						if (gb != NULL)
+						{
+							int store = gb->gap_index;
+							gb_goto(gb, gb->num_chars - 1);
+							fprintf(f, "%s\n", gb->text);
+							gb_goto(gb, store);
+						}
+					}
 				}
 				fclose(f);
 				active_tab->z_index_changes_saved |= CHANGES_SAVED;
 			}
-			else if (!strcmp(ptr, "findreplace"))
+			else if (!gb_strcmp(gb, start_index, end_index, "findreplace"))
 			{
 
 			}
@@ -601,7 +611,6 @@ void terminal_mode(int ch)
 		}
 		else
 		{
-			int i = 0;
 			gb_goto(gb, gb->num_chars - 1);
 			gb_put(gb, '\n');
 			write(master_fd, gb->text, gb->num_chars - 1);
