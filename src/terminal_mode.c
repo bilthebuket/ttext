@@ -14,7 +14,7 @@ static void make_input_line(void)
 	GapBuffer* gb = gb_create(NULL, -1);
 	if (gb == NULL)
 	{
-		log_error("malloc failed in make_input_line\n");
+		log_error("gb_create failed in make_input_line\n");
 		return;
 	}
 
@@ -45,7 +45,7 @@ void terminal_mode(int ch)
 	GapBuffer* gb = line->gb;
 	if (gb == NULL)
 	{
-		log_error("NULL text in terminal_mode\n");
+		log_error("NULL gb in terminal_mode\n");
 		return;
 	}
 
@@ -615,8 +615,10 @@ void terminal_mode(int ch)
 			gb_put(gb, '\n');
 			write(master_fd, gb->text, gb->num_chars - 1);
 			gb_goto(gb, 0);
-			gb_put(gb, '\0');
-			gb_goleft(gb);
+			while (gb->num_chars > 1)
+			{
+				gb_rm(gb);
+			}
 			terminal->x = 0;
 			check_bottom_update(terminal);
 			move_cursor_to_tab(terminal);
@@ -626,6 +628,7 @@ void terminal_mode(int ch)
 		case BACKSPACE_KEYCODE2:
 		if (terminal->x > 0)
 		{
+			gb_goto(gb, terminal->x - 1);
 			gb_rm(gb);
 			terminal->x--;
 			check_left_update(terminal);
@@ -663,7 +666,8 @@ void* listener_func(void*)
 			{
 				if (listener_buf[i] == '\n')
 				{
-					char* line = malloc(sizeof(char) * (i + 1 - index));
+					int size = i + 1 - index;
+					char* line = malloc(sizeof(char) * size);
 					if (line == NULL)
 					{
 						log_error("malloc failed in forkpty thread\n");
@@ -734,14 +738,15 @@ void* listener_func(void*)
 						free(line);
 						continue;
 					}
-					l->gb = gb_create(line, i + 1 - index);
+					l->gb = gb_create(line, -1);
 					l->color_indices = NULL;
 					add(terminal->lines, l, terminal->lines->size - 1);
 					terminal->y++;
 				}
 			}
 
-			char* line = malloc(sizeof(char) * (i + 1 - index));
+			int size = i + 1 - index;
+			char* line = malloc(sizeof(char) * size);
 			if (line == NULL)
 			{
 				log_error("malloc failed in forkpty thread\n");
@@ -816,7 +821,7 @@ void* listener_func(void*)
 				continue;
 			}
 
-			l->gb = gb_create(line, i + 1 - index);
+			l->gb = gb_create(line, -1);
 			l->color_indices = NULL;
 			add(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;

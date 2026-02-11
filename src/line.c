@@ -248,10 +248,11 @@ void free_line(Line* line)
 GapBuffer* gb_create(char* text, int text_size)
 {
 	GapBuffer* gb = malloc(sizeof(GapBuffer));
-	if (gb == NULL || text_size < 0)
+	if (gb == NULL)
 	{
 		return NULL;
 	}
+
 	gb->gap_index = 0;
 	gb->gap_size = GB_SIZE;
 
@@ -259,7 +260,15 @@ GapBuffer* gb_create(char* text, int text_size)
 	{
 		int len = 0;
 		for (; text[len] != '\0'; len++) {}
-		if (len + GB_SIZE >= text_size)
+		if (text_size < 0)
+		{
+			gb->gap_size = 0;
+			gb->text = text;
+			gb->num_chars = len + 1;
+			gb->text_size = text_size;
+			return gb;
+		}
+		else if (len + GB_SIZE >= text_size)
 		{
 			char* new_text = malloc(sizeof(char) * (text_size + LINE_SIZE));
 			if (new_text == NULL)
@@ -410,6 +419,7 @@ int gb_rm(GapBuffer* gb)
 		char c = gb->text[gb->gap_index];
 		gb->text[gb->gap_index] = gb->text[gb->gap_index + gb->gap_size + 1];
 		gb->gap_size++;
+		gb->num_chars--;
 		return c;
 	}
 	return -1;

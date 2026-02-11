@@ -317,30 +317,17 @@ void convert_tabs_to_spaces(GapBuffer* gb)
 		log_error("found NULL in convert_tabs_to_spaces\n");
 		return;
 	}
-	int len = gb->num_chars - 1;
 
-	for (int i = 0; i <= len; i++)
+	for (int i = 0; i < gb->num_chars - 1; i++)
 	{
 		if (gb_get(gb, i) == '\t')
 		{
 			gb_goto(gb, i);
 			gb_rm(gb);
-			gb_put(gb, ' ');
-			// TAB_SIZE - 1 because we can replace the \t with a space and not have to shift anything
-			for (int j = 1; j < TAB_SIZE; j++)
+			for (int j = 0; j < TAB_SIZE; j++)
 			{
-				gb_goto(gb, i + j);
-				char c = gb_rm(gb);
 				gb_put(gb, ' ');
-				for (int k = i + j; k <= len; k += TAB_SIZE - 1)
-				{
-					gb_goto(gb, k + TAB_SIZE - 1);
-					char store = gb_rm(gb);
-					gb_put(gb, c);
-					c = store;
-				}
 			}
-			len += TAB_SIZE - 1;
 		}
 	}
 }
@@ -409,5 +396,6 @@ void log_error(const char* str)
 	if (error_log != NULL)
 	{
 		fprintf(error_log, str);
+		fflush(error_log);
 	}
 }

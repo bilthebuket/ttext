@@ -36,6 +36,7 @@ int gb_goright(GapBuffer* gb);
 int gb_put(GapBuffer* gb, char c);
 int gb_rm(GapBuffer* gb);
 int gb_get(GapBuffer* gb, int index);
+// if text is not NULL and text_size is less than 0, gb struct will be created but will have no gap (used for lines from forkpty(), as those do not need to be modified)
 GapBuffer* gb_create(char* text, int text_size);
 void gb_free(GapBuffer* gb);
 
