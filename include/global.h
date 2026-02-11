@@ -9,7 +9,7 @@
 
 #define LINE_SIZE 2048
 #define FNAME_SIZE 256
-#define GB_SIZE 8
+#define GB_SIZE 256
 #define TAB_SIZE 4
 
 #define BACKSPACE_KEYCODE1 8
@@ -17,7 +17,7 @@
 #define ESCAPE_KEYCODE 27
 #define ENTER_KEYCODE1 10
 
-#define CHANGES_SAVED (1ULL << 63)
+#define CHANGES_SAVED 1
 
 #define WHITE_TEXT 1
 #define GREEN_TEXT 2
@@ -36,6 +36,8 @@
 #define SC_ESC (1 << 2)
 
 extern void (*mode)(int);
+
+// maintained in ascending order of z_index (last element in list is on top of screen)
 extern LL* tabs;
 extern Tab* active_tab;
 extern int active_tab_index;

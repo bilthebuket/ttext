@@ -142,13 +142,13 @@ void normal_mode(int ch)
 		break;
 
 		case 'i':
-		active_tab->z_index_changes_saved &= ~CHANGES_SAVED;
+		active_tab->flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
 		mode = &insert_mode;
 		break;
 
 		case 'a':
-		active_tab->z_index_changes_saved &= ~CHANGES_SAVED;
+		active_tab->flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
 		if (gb_get(gb, 0) != '\0')
 		{
@@ -211,6 +211,7 @@ void normal_mode(int ch)
 		case 'x':
 		if (gb_get(gb, active_tab->x) != '\0')
 		{
+			active_tab->flags &= ~CHANGES_SAVED;
 			gb_rm(gb);
 			update_color_indices(line);
 
@@ -298,7 +299,7 @@ void normal_mode(int ch)
 			}
 			else
 			{
-				x_index = gb_get(gb_we_are_on, gb_we_are_on->num_chars - 2);
+				x_index = gb_we_are_on->num_chars - 2;
 			}
 			for (; gb_get(gb_we_are_on, x_index) != '\0' && x_index >= 0; x_index += delta)
 			{

@@ -63,17 +63,15 @@ void terminal_mode(int ch)
 		if (gb_get(gb, 0) == ':')
 		{
 			int start_index = 1;
-			int end_index;
+			int end_index = 1;
 			bool only_one_arg = false;
 
-			int i = 0;
-			for (; gb_get(gb, i) != ' ' && gb_get(gb, i) != '\0'; i++) {}
+			for (; gb_get(gb, end_index) != ' ' && gb_get(gb, end_index) != '\0'; end_index++) {}
 
-			if (gb_get(gb, i) == '\0')
+			if (gb_get(gb, end_index) == '\0')
 			{
 				only_one_arg = true;
 			}
-			end_index = i;
 
 			if (!gb_strcmp(gb, start_index, end_index, "tabnew"))
 			{
@@ -110,16 +108,7 @@ void terminal_mode(int ch)
 					}
 					return;
 				}
-				for (int i = 0; i < tabs->size; i++)
-				{
-					Tab* t = (Tab*) get_elt(tabs, i);
-					if (t == NULL)
-					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						continue;
-					}
-					t->z_index_changes_saved++;
-				}
+
 				add(tabs, active_tab, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
@@ -159,17 +148,10 @@ void terminal_mode(int ch)
 						return;
 					}
 				}
-				for (int i = 0; i < tabs->size; i++)
-				{
-					Tab* t = (Tab*) get_elt(tabs, i);
-					if (t == NULL)
-					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						continue;
-					}
-					t->z_index_changes_saved++;
-				}
-				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+
+				rm(tabs, active_tab_index);
+				add(tabs, active_tab, tabs->size);
+				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tabp"))
@@ -207,17 +189,10 @@ void terminal_mode(int ch)
 						return;
 					}
 				}
-				for (int i = 0; i < tabs->size; i++)
-				{
-					Tab* t = (Tab*) get_elt(tabs, i);
-					if (t == NULL)
-					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						continue;
-					}
-					t->z_index_changes_saved++;
-				}
-				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+
+				rm(tabs, active_tab_index);
+				add(tabs, active_tab, tabs->size);
+				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tab"))
@@ -229,7 +204,7 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				start_index = i + 1;
+				start_index = end_index + 1;
 				end_index = gb->num_chars - 1;
 				int index = gb_atoi(gb, start_index, end_index);
 
@@ -264,17 +239,10 @@ void terminal_mode(int ch)
 						return;
 					}
 				}
-				for (int i = 0; i < tabs->size; i++)
-				{
-					Tab* t = (Tab*) get_elt(tabs, i);
-					if (t == NULL)
-					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						continue;
-					}
-					t->z_index_changes_saved++;
-				}
-				active_tab->z_index_changes_saved &= CHANGES_SAVED;
+
+				rm(tabs, active_tab_index);
+				add(tabs, active_tab, tabs->size);
+				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "rs"))
@@ -297,17 +265,16 @@ void terminal_mode(int ch)
 					return;
 				}
 
-				start_index = i + 1;
-				for (i = 0; gb_get(gb, i) != '\0' && gb_get(gb, i) != ' '; i++) {}
+				start_index = end_index + 1;
+				end_index++;
+				for (; gb_get(gb, end_index) != '\0' && gb_get(gb, end_index) != ' '; end_index++) {}
 
-				if (gb_get(gb, i) == '\0')
+				if (gb_get(gb, end_index) == '\0')
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
 					return;
 				}
-
-				end_index = i;
 
 				if (!gb_strcmp(gb, start_index, end_index, "top"))
 				{
@@ -332,17 +299,16 @@ void terminal_mode(int ch)
 					upper_bound = width - 1;
 				}
 
-				start_index = i + 1;
-				for (i = 0; gb_get(gb, i) != '\0' && gb_get(gb, i) != ' '; i++) {}
+				start_index = end_index + 1;
+				end_index++;
+				for (; gb_get(gb, end_index) != '\0' && gb_get(gb, end_index) != ' '; end_index++) {}
 
-				if (gb_get(gb, i) == '\0')
+				if (gb_get(gb, end_index) == '\0')
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
 					return;
 				}
-
-				end_index = i;
 
 				if (!gb_strcmp(gb, start_index, end_index, "add"))
 				{
@@ -369,7 +335,7 @@ void terminal_mode(int ch)
 					}
 				}
 
-				start_index = i + 1;
+				start_index = end_index + 1;;
 				end_index = gb->num_chars - 1;
 				amount = gb_atoi(gb, start_index, end_index);
 
@@ -432,54 +398,80 @@ void terminal_mode(int ch)
 				}
 
 				int* num_to_change = NULL;
+				int bound = -1;
 				int sign;
 				int amount;
 
-				start_index = i + 1;
-				for (i = 0; gb_get(gb, i) != ' ' && gb_get(gb, i) != '\0'; i++) {}
-				if (gb_get(gb, i) == '\0')
+				start_index = end_index + 1;
+				end_index++;
+				for (; gb_get(gb, end_index) != ' ' && gb_get(gb, end_index) != '\0'; end_index++) {}
+				if (gb_get(gb, end_index) == '\0')
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
 					return;
 				}
-				end_index = i;
 
 				if (!gb_strcmp(gb, start_index, end_index, "left"))
 				{
 					num_to_change = &active_tab->xpos;
 					sign = -1;
+					bound = 0;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "right"))
 				{
 					num_to_change = &active_tab->xpos;
 					sign = 1;
+					bound = width - active_tab->width;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "up"))
 				{
 					num_to_change = &active_tab->ypos;
 					sign = -1;
+					bound = 0;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "down"))
 				{
 					num_to_change = &active_tab->ypos;
 					sign = 1;
+					bound = height - active_tab->height - 2;
 				}
 
-				start_index = i + 1;
+				start_index = end_index + 1;
 				end_index = gb->num_chars - 1;
 				amount = gb_atoi(gb, start_index, end_index);
 
 				if (num_to_change != NULL)
 				{
-					*num_to_change = *num_to_change + amount * sign;
+					if (sign == -1)
+					{
+						if (*num_to_change + amount * sign >= bound)
+						{
+							*num_to_change = *num_to_change + amount * sign;
+							print_screen();
+						}
+						else
+						{
+							print_message("Move would cause tab to go off screen");
+						}
+					}
+					else
+					{
+						if (*num_to_change + amount * sign <= bound)
+						{
+							*num_to_change = *num_to_change + amount * sign;
+							print_screen();
+						}
+						else
+						{
+							print_message("Move would cause tab to go off screen");
+						}
+					}
 				}
-
-				print_screen();
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "q"))
 			{
-				if (active_tab->z_index_changes_saved & CHANGES_SAVED)
+				if (active_tab->flags & CHANGES_SAVED)
 				{
 					if (active_tab_index == tabs->size - 1)
 					{
@@ -599,7 +591,7 @@ void terminal_mode(int ch)
 					}
 				}
 				fclose(f);
-				active_tab->z_index_changes_saved |= CHANGES_SAVED;
+				active_tab->flags |= CHANGES_SAVED;
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "findreplace"))
 			{
