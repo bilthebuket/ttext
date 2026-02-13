@@ -14,7 +14,7 @@ Tab* make_tab(char* fname)
 		return NULL;
 	}
 	r->fname = fname;
-	r->flags = CHANGES_SAVED;
+	r->tab_num_flags = CHANGES_SAVED;
 	r->x = 0;
 	r->y = 0;
 	r->height = height - 2;
@@ -135,6 +135,7 @@ Tab* make_tab(char* fname)
 		}
 	}
 
+	free(buf);
 	fclose(f);
 	return r;
 }

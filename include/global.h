@@ -17,7 +17,9 @@
 #define ESCAPE_KEYCODE 27
 #define ENTER_KEYCODE1 10
 
-#define CHANGES_SAVED 1
+#define CHANGES_SAVED (1 << 31)
+#define FLAG_BITS (1 << 31)
+#define TAB_NUM_BITS ~FLAG_BITS
 
 #define WHITE_TEXT 1
 #define GREEN_TEXT 2

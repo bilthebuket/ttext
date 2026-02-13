@@ -74,6 +74,8 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
+			t->tab_num_flags &= FLAG_BITS;
+			t->tab_num_flags |= tabs->size;
 			add(tabs, t, tabs->size);
 		}
 	}
@@ -86,8 +88,8 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		active_tab = (Tab*) get_elt(tabs, 0);
-		active_tab_index = 0;
+		active_tab = (Tab*) get_elt(tabs, argc - 2);
+		active_tab_index = argc - 2;
 	}
 	mode = &normal_mode;
 

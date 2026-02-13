@@ -109,32 +109,43 @@ void terminal_mode(int ch)
 					return;
 				}
 
+				active_tab->tab_num_flags &= FLAG_BITS;
+				active_tab->tab_num_flags |= tabs->size;
 				add(tabs, active_tab, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tabn"))
 			{
-				if (active_tab_index == tabs->size - 1)
+				int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+				if (tab_num == tabs->size - 1)
 				{
-					active_tab_index = 0;
+					tab_num = 0;
 				}
 				else
 				{
-					active_tab_index++;
+					tab_num++;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, active_tab_index);
-				if (active_tab == NULL)
+				for (int i = 0; i < tabs->size; i++)
 				{
-					log_error("found NULL tab in tabs in terminal_mode\n");
-					Node* n = get_node(tabs, active_tab_index);
-					if (n != NULL)
+					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
 					{
-						n->elt = make_tab(NULL);
-						if (n->elt != NULL)
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						Node* n = get_node(tabs, i);
+						if (n != NULL)
 						{
-							active_tab = (Tab*) n->elt;
+							n->elt = make_tab(NULL);
+							if (n->elt != NULL)
+							{
+								active_tab = (Tab*) n->elt;
+							}
+							else
+							{
+								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								return;
+							}
 						}
 						else
 						{
@@ -142,10 +153,11 @@ void terminal_mode(int ch)
 							return;
 						}
 					}
-					else
+					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-						return;
+						active_tab = t;
+						active_tab_index = i;
+						break;
 					}
 				}
 
@@ -156,26 +168,35 @@ void terminal_mode(int ch)
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tabp"))
 			{
-				if (active_tab_index == 0)
+				int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+				if (tab_num == 0)
 				{
-					active_tab_index = tabs->size - 1;
+					tab_num = tabs->size - 1;
 				}
 				else
 				{
-					active_tab_index--;
+					tab_num--;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, active_tab_index);
-				if (active_tab == NULL)
+				for (int i = 0; i < tabs->size; i++)
 				{
-					log_error("found NULL tab in tabs in terminal_mode\n");
-					Node* n = get_node(tabs, active_tab_index);
-					if (n != NULL)
+					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
 					{
-						n->elt = make_tab(NULL);
-						if (n->elt != NULL)
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						Node* n = get_node(tabs, i);
+						if (n != NULL)
 						{
-							active_tab = (Tab*) n->elt;
+							n->elt = make_tab(NULL);
+							if (n->elt != NULL)
+							{
+								active_tab = (Tab*) n->elt;
+							}
+							else
+							{
+								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								return;
+							}
 						}
 						else
 						{
@@ -183,10 +204,11 @@ void terminal_mode(int ch)
 							return;
 						}
 					}
-					else
+					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-						return;
+						active_tab = t;
+						active_tab_index = i;
+						break;
 					}
 				}
 
@@ -206,26 +228,34 @@ void terminal_mode(int ch)
 
 				start_index = end_index + 1;
 				end_index = gb->num_chars - 1;
-				int index = gb_atoi(gb, start_index, end_index);
+				int tab_num = gb_atoi(gb, start_index, end_index);
 
-				if (index < 0 || index >= tabs->size)
+				if (tab_num < 0 || tab_num >= tabs->size)
 				{
-					print_message("Index invalid");
+					print_message("tab number invalid");
 					make_input_line();
 					return;
 				}
 
-				active_tab = (Tab*) get_elt(tabs, index);
-				if (active_tab == NULL)
+				for (int i = 0; i < tabs->size; i++)
 				{
-					log_error("found NULL tab in tabs in terminal_mode\n");
-					Node* n = get_node(tabs, active_tab_index);
-					if (n != NULL)
+					Tab* t = (Tab*) get_elt(tabs, i);
+					if (t == NULL)
 					{
-						n->elt = make_tab(NULL);
-						if (n->elt != NULL)
+						log_error("found NULL tab in tabs in terminal_mode\n");
+						Node* n = get_node(tabs, i);
+						if (n != NULL)
 						{
-							active_tab = (Tab*) n->elt;
+							n->elt = make_tab(NULL);
+							if (n->elt != NULL)
+							{
+								active_tab = (Tab*) n->elt;
+							}
+							else
+							{
+								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								return;
+							}
 						}
 						else
 						{
@@ -233,10 +263,11 @@ void terminal_mode(int ch)
 							return;
 						}
 					}
-					else
+					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-						return;
+						active_tab = t;
+						active_tab_index = i;
+						break;
 					}
 				}
 
@@ -471,7 +502,7 @@ void terminal_mode(int ch)
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "q"))
 			{
-				if (active_tab->flags & CHANGES_SAVED)
+				if (active_tab->tab_num_flags & CHANGES_SAVED)
 				{
 					if (active_tab_index == tabs->size - 1)
 					{
@@ -481,6 +512,15 @@ void terminal_mode(int ch)
 						}
 						else
 						{
+							int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+							for (int i = 0; i < tabs->size; i++)
+							{
+								Tab* t = get_elt(tabs, i);
+								if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
+								{
+									t->tab_num_flags--;
+								}
+							}
 							active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
 							free_tab((Tab*) rm(tabs, active_tab_index));
 							active_tab_index--;
@@ -489,6 +529,15 @@ void terminal_mode(int ch)
 					}
 					else
 					{
+						int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+						for (int i = 0; i < tabs->size; i++)
+						{
+							Tab* t = get_elt(tabs, i);
+							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
+							{
+								t->tab_num_flags--;
+							}
+						}
 						active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
 						free_tab((Tab*) rm(tabs, active_tab_index));
 						print_screen();
@@ -520,6 +569,15 @@ void terminal_mode(int ch)
 					}
 					else
 					{
+						int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+						for (int i = 0; i < tabs->size; i++)
+						{
+							Tab* t = get_elt(tabs, i);
+							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
+							{
+								t->tab_num_flags--;
+							}
+						}
 						active_tab = (Tab*) get_elt(tabs, active_tab_index - 1);
 						free_tab((Tab*) rm(tabs, active_tab_index));
 						active_tab_index--;
@@ -528,6 +586,15 @@ void terminal_mode(int ch)
 				}
 				else
 				{
+					int tab_num = active_tab->tab_num_flags & TAB_NUM_BITS;
+					for (int i = 0; i < tabs->size; i++)
+					{
+						Tab* t = get_elt(tabs, i);
+						if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
+						{
+							t->tab_num_flags--;
+						}
+					}
 					active_tab = (Tab*) get_elt(tabs, active_tab_index + 1);
 					free_tab((Tab*) rm(tabs, active_tab_index));
 					print_screen();
@@ -591,7 +658,7 @@ void terminal_mode(int ch)
 					}
 				}
 				fclose(f);
-				active_tab->flags |= CHANGES_SAVED;
+				active_tab->tab_num_flags |= CHANGES_SAVED;
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "findreplace"))
 			{
