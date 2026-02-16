@@ -2,25 +2,45 @@
 #include <stdlib.h>
 #include "line.h"
 #include "global.h"
+#include "tree.h"
+
+int compare(void* one, void* two)
+{
+	int* x = (int*) one;
+	int* y = (int*) two;
+	if (x == NULL || y == NULL)
+	{
+		printf("NULL pointer in compare function\n");
+		exit(1);
+	}
+	if (*y > *x)
+	{
+		return 1;
+	}
+	else if (*y < *x)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void free(void* v)
+{
+	return;
+}
 
 int main(int argc, char* argv[])
 {
-	if (argc > 1)
-	{
-		char* buf = malloc(sizeof(char) * LINE_SIZE);
-		int i;
-		for (i = 0; argv[1][i] != '\0'; i++)
-		{
-			buf[i] = argv[1][i];
-		}
-		buf[i] = '\0';
-		GapBuffer* gb = gb_create(buf, LINE_SIZE);
-		gb_goright(gb);
-		gb_put(gb, 'e');
-		for (int i = 0; gb_get(gb, i) != '\0'; i++)
-		{
-			printf("%d ", gb_get(gb, i));
-		}
-		printf("\n");
-	}
+	int x = 3;
+	int y = 2;
+	int z = 1;
+	Tree* t = tree_create(&x);
+	tree_add_elt(t, &y, &compare);
+	tree_add_elt(t, &z, &compare);
+
+	printf("  %d\n", *((int*) t->elt));
+	printf(" %d %d\n", *((int*) t->left->elt), *((int*) t->right->elt));
 }
