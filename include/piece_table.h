@@ -1,0 +1,32 @@
+#ifndef PIECE_TABLE_H
+#define PIECE_TABLE_H
+
+typedef struct Piece
+{
+	char* text;
+	int start_index;
+	int len;
+	int lines_contained; // includes '\n's in this piece and all subpieces
+	int chars_contained; // same as lines_contained except for all characters
+}
+
+typedef struct PieceTable
+{
+	char* original;
+	char* append;
+	Tree* pieces;
+	int append_size;
+	int append_len;
+} PieceTable;
+
+void pt_insert(PieceTable* pt, char c, int index);
+void pt_rm(PieceTable* pt, int index);
+char pt_get(PieceTable* pt, int index);
+PieceTable* pt_create(char* buf, int len);
+void pt_free(PieceTable* pt);
+
+Piece* make_piece(char* text, int start_index, int len, int chars_contained);
+int piece_compare(void* p1, void* p2);
+void update_info(Tree* t);
+
+#endif
