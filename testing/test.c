@@ -46,22 +46,34 @@ void free_thing(void* v)
 
 int main(int argc, char* argv[])
 {
+	bool arr[21];
+	for (int i = 0; i < 20; i++)
+	{
+		arr[i] = true;
+	}
+	srand(time(NULL));
+	arr[20] = false;
+
 	int* x = malloc(sizeof(int));
 	*x = 20;
 	Tree* t = tree_create(x);
 	for (int i = 0; i < 20; i++)
 	{
 		int* p = malloc(sizeof(int));
-		*p = i;
+		int y = rand() % 21;
+		while (!arr[y])
+		{
+			y = rand() % 21;
+		}
+		arr[y] = false;
+		printf("adding next: %c\n", 'a' + y);
+		*p = y;
 		t = tree_add_elt(t, p, &compare, NULL);
-	}
-	bool arr[21];
-	for (int i = 0; i < 21; i++)
-	{
-		arr[i] = false;
+		print_tree(t, true, 0, 0);
+		fflush(stdout);
 	}
 
-	srand(time(NULL));
+	/*
 	for (int i = 0; i <= 20; i++)
 	{
 		int y = rand() % 21;
@@ -76,5 +88,6 @@ int main(int argc, char* argv[])
 		print_tree(t, true, 0, 0);
 		fflush(stdout);
 	}
+	*/
 	tree_free(t, free_thing);
 }

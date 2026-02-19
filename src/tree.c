@@ -98,33 +98,51 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 		(*free_node)(t->elt);
 		if (t->left == NULL && t->right == NULL)
 		{
-			Tree* store = t->prev;
+			Tree* store;
 			if (spot_to_fill != NULL)
 			{
 				*spot_to_fill = NULL;
+				store = t->prev;
+			}
+			else
+			{
+				free(t);
+				return NULL;
 			}
 			free(t);
 			return tree_balance(store, cmp, update_relative_info);
 		}
 		else if (t->left == NULL)
 		{
+			Tree* store;
 			if (spot_to_fill != NULL)
 			{
 				*spot_to_fill = t->right;
+				store = t->prev;
+			}
+			else
+			{
+				store = t->right;
 			}
 			t->right->prev = t->prev;
 			free(t);
-			return tree_balance(*spot_to_fill, cmp, update_relative_info);
+			return tree_balance(store, cmp, update_relative_info);
 		}
 		else if (t->right == NULL)
 		{
+			Tree* store;
 			if (spot_to_fill != NULL)
 			{
 				*spot_to_fill = t->left;
+				store = t->prev;
+			}
+			else
+			{
+				store = t->left;
 			}
 			t->left->prev = t->prev;
 			free(t);
-			return tree_balance(*spot_to_fill, cmp, update_relative_info);
+			return tree_balance(store, cmp, update_relative_info);
 		}
 		else
 		{
@@ -140,7 +158,14 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 				t->right->prev = t->left;
 				t->left->prev = t->prev;
 				free(t);
-				return tree_add_tree(store2, store, cmp, update_relative_info, true);
+				if (store == NULL)
+				{
+					return tree_balance(store2->prev, cmp, update_relative_info);
+				}
+				else
+				{
+					return tree_add_tree(store2, store, cmp, update_relative_info, true);
+				}
 			}
 			else
 			{
@@ -154,7 +179,14 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 				t->left->prev = t->right;
 				t->right->prev = t->prev;
 				free(t);
-				return tree_add_tree(store2, store, cmp, update_relative_info, true);
+				if (store == NULL)
+				{
+					return tree_balance(store2->prev, cmp, update_relative_info);
+				}
+				else
+				{
+					return tree_add_tree(store2, store, cmp, update_relative_info, true);
+				}
 			}
 		}
 	}
@@ -244,7 +276,6 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*), void (*update_relative_inf
 	{
 		return NULL;
 	}
-	print_tree(t, true, 0, 0);
 	int left_height;
 	int right_height;
 	if (t->left == NULL)
