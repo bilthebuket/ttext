@@ -78,7 +78,11 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 	if (t != NULL)
 	{
 		Tree** spot_to_fill;
-		if (t->prev->right == t)
+		if (t->prev == NULL)
+		{
+			spot_to_fill = NULL;
+		}
+		else if (t->prev->right == t)
 		{
 			spot_to_fill = &t->prev->right;
 		}
@@ -90,36 +94,59 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 		(*free_node)(t->elt);
 		if (t->left == NULL && t->right == NULL)
 		{
-			*spot_to_fill = NULL;
-			return tree_balance(t, cmp);
+			Tree* store = t->prev;
+			if (spot_to_fill != NULL)
+			{
+				*spot_to_fill = NULL;
+			}
+			free(t);
+			return tree_balance(store, cmp);
 		}
 		else if (t->left == NULL)
 		{
-			*spot_to_fill = t->right;
-			return tree_balance(t, cmp);
+			if (spot_to_fill != NULL)
+			{
+				*spot_to_fill = t->right;
+			}
+			free(t);
+			return tree_balance(*spot_to_fill, cmp);
 		}
 		else if (t->right == NULL)
 		{
-			*spot_to_fill = t->left;
-			return tree_balance(t, cmp);
+			if (spot_to_fill != NULL)
+			{
+				*spot_to_fill = t->left;
+			}
+			free(t);
+			return tree_balance(*spot_to_fill, cmp);
 		}
 		else
 		{
 			if (t->left->height >= t->right->height)
 			{
 				Tree* store = t->left->right;
-				*spot_to_fill = t->left;
+				Tree* store2 = t->right;
+				if (spot_to_fill != NULL)
+				{
+					*spot_to_fill = t->left;
+				}
 				t->left->right = t->right;
 				t->right->prev = t->left;
-				return tree_add_tree(t->right, store, cmp);
+				free(t);
+				return tree_add_tree(store2, store, cmp);
 			}
 			else
 			{
 				Tree* store = t->right->left;
-				*spot_to_fill = t->right;
+				Tree* store2 = t->left;
+				if (spot_to_fill != NULL)
+				{
+					*spot_to_fill = t->right;
+				}
 				t->right->left = t->left;
 				t->left->prev = t->left;
-				return tree_add_tree(t->left, store, cmp);
+				free(t);
+				return tree_add_tree(store2, store, cmp);
 			}
 		}
 	}
@@ -129,12 +156,16 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 
 Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(void*, void*))
 {
-	if (t == NULL || to_add == NULL)
+	if (t == NULL)
 	{
 		return NULL;
 	}
+	if (to_add == NULL)
+	{
+		return t;
+	}
 
-	int delta = cmp(t->elt, to_add->elt);
+	int delta = (*cmp)(t->elt, to_add->elt);
 	if (delta == 1)
 	{
 		if (t->right == NULL)
@@ -251,12 +282,19 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
 				right_height = t->right->right->height;
 			}
 
-			if (left_height - right_height > 1)
+			if (left_height > right_height)
 			{
 				tree_rotate(t->right, cmp);
 			}
 			t = tree_rotate(t, cmp);
-			return tree_balance(t->prev, cmp);
+			if (t->prev == NULL)
+			{
+				return t;
+			}
+			else
+			{
+				return tree_balance(t->prev, cmp);
+			}
 		}
 		else
 		{
@@ -279,18 +317,29 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
 				right_height = t->left->right->height;
 			}
 
-			if (right_height - left_height > 1)
+			if (right_height > left_height)
 			{
 				tree_rotate(t->left, cmp);
 			}
 			t = tree_rotate(t, cmp);
-			return tree_balance(t->prev, cmp);
+			if (t->prev == NULL)
+			{
+				return t;
+			}
+			else
+			{
+				return tree_balance(t->prev, cmp);
+			}
 		}
 	}
 }
 
 Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
 {
+	if (t == NULL)
+	{
+		return NULL;
+	}
 	int left_height;
 	int right_height;
 	if (t->left == NULL)
@@ -325,10 +374,14 @@ Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
 		}
 
 		Tree* store = t->left->right;
+		Tree* store2 = t->left;
 		t->left->right = t;
 		t->left->prev = t->prev;
 		t->prev = t->left;
-		return tree_add_tree(t->left, store, cmp);
+		t->left = NULL;
+		update_height(t);
+		update_height(store2);
+		return tree_add_tree(store2, store, cmp);
 	}
 	else
 	{
@@ -345,9 +398,45 @@ Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
 		}
 
 		Tree* store = t->right->left;
+		Tree* store2 = t->right;
 		t->right->left = t;
 		t->right->prev = t->prev;
 		t->prev = t->right;
-		return tree_add_tree(t->right, store, cmp);
+		t->right = NULL;
+		update_height(t);
+		update_height(store2);
+		return tree_add_tree(store2, store, cmp);
+	}
+}
+
+void update_height(Tree* t)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+
+	if (t->right == NULL && t->left == NULL)
+	{
+		t->height = 0;
+	}
+	else if (t->left == NULL)
+	{
+		t->height = t->right->height + 1;
+	}
+	else if (t->right == NULL)
+	{
+		t->height = t->left->height + 1;
+	}
+	else
+	{
+		if (t->right->height > t->left->height)
+		{
+			t->height = t->right->height + 1;
+		}
+		else
+		{
+			t->height = t->left->height + 1;
+		}
 	}
 }
