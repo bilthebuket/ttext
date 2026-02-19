@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 #include "line.h"
 #include "global.h"
 #include "tree.h"
-
-#define SIZE 200
 
 int power(int x, int y)
 {
@@ -45,25 +44,6 @@ void free_thing(void* v)
 	free(v);
 }
 
-void print_tree(Tree* t, char lines[][SIZE], int row, int col)
-{
-	if (t == NULL)
-	{
-		return;
-	}
-	lines[row][col + (SIZE / 2)] = (*(int*) t->elt) + 'a';
-	print_tree(t->left, lines, row + 1, col - (SIZE / (3 * (row + 1))));
-	print_tree(t->right, lines, row + 1, col + (SIZE / (3 * (row + 1))));
-	if (row == 0)
-	{
-		for (int i = 0; i < SIZE; i++)
-		{
-			lines[i][SIZE - 1] = '\0';
-			printf("%s\n", lines[i]);
-		}
-	}
-}
-
 int main(int argc, char* argv[])
 {
 	int* x = malloc(sizeof(int));
@@ -73,19 +53,28 @@ int main(int argc, char* argv[])
 	{
 		int* p = malloc(sizeof(int));
 		*p = i;
-		t = tree_add_elt(t, p, &compare);
+		t = tree_add_elt(t, p, &compare, NULL);
 	}
-	int y = 0;
-	t = tree_rm(t, &y, &compare, &free_thing);
-	y = 12;
-	t = tree_rm(t, &y, &compare, &free_thing);
-	char lines[SIZE][SIZE];
-	for (int i = 0; i < SIZE; i++)
+	bool arr[21];
+	for (int i = 0; i < 21; i++)
 	{
-		for (int j = 0; j < SIZE; j++)
-		{
-			lines[i][j] = ' ';
-		}
+		arr[i] = false;
 	}
-	print_tree(t, lines, 0, 0);
+
+	srand(time(NULL));
+	for (int i = 0; i <= 20; i++)
+	{
+		int y = rand() % 21;
+		while (arr[y])
+		{
+			y = rand() % 21;
+		}
+		arr[y] = true;
+		printf("removing next: %c\n", 'a' + y);
+		t = tree_rm(t, &y, &compare, &free_thing, NULL);
+
+		print_tree(t, true, 0, 0);
+		fflush(stdout);
+	}
+	tree_free(t, free_thing);
 }

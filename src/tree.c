@@ -1,5 +1,8 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "tree.h"
+
+#define SIZE 190
 
 Tree* tree_create(void* elt)
 {
@@ -11,6 +14,7 @@ Tree* tree_create(void* elt)
 		r->right = NULL;
 		r->prev = NULL;
 		r->height = 0;
+		printf("%d: %p\n", *(int*) elt, r);
 	}
 	return r;
 }
@@ -37,7 +41,7 @@ Tree* tree_helper(Tree* t, void* elt, int (*cmp)(void*, void*))
 	}
 }
 
-Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*))
+Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*), void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
@@ -51,9 +55,9 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*))
 		{
 			t->right = tree_create(elt);
 			t->right->prev = t;
-			return tree_balance(t, cmp);
+			return tree_balance(t, cmp, update_relative_info);
 		}
-		return tree_add_elt(t->right, elt, cmp);
+		return tree_add_elt(t->right, elt, cmp, update_relative_info);
 	}
 	else if (delta == -1)
 	{
@@ -61,9 +65,9 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*))
 		{
 			t->left = tree_create(elt);
 			t->left->prev = t;
-			return tree_balance(t, cmp);
+			return tree_balance(t, cmp, update_relative_info);
 		}
-		return tree_add_elt(t->left, elt, cmp);
+		return tree_add_elt(t->left, elt, cmp, update_relative_info);
 	}
 	else
 	{
@@ -71,7 +75,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*))
 	}
 }
 
-Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(void*))
+Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(void*), void (*update_relative_info)(Tree*))
 {
 	t = tree_helper(t, elt, cmp);
 	
@@ -100,7 +104,7 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 				*spot_to_fill = NULL;
 			}
 			free(t);
-			return tree_balance(store, cmp);
+			return tree_balance(store, cmp, update_relative_info);
 		}
 		else if (t->left == NULL)
 		{
@@ -108,8 +112,9 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 			{
 				*spot_to_fill = t->right;
 			}
+			t->right->prev = t->prev;
 			free(t);
-			return tree_balance(*spot_to_fill, cmp);
+			return tree_balance(*spot_to_fill, cmp, update_relative_info);
 		}
 		else if (t->right == NULL)
 		{
@@ -117,8 +122,9 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 			{
 				*spot_to_fill = t->left;
 			}
+			t->left->prev = t->prev;
 			free(t);
-			return tree_balance(*spot_to_fill, cmp);
+			return tree_balance(*spot_to_fill, cmp, update_relative_info);
 		}
 		else
 		{
@@ -132,8 +138,9 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 				}
 				t->left->right = t->right;
 				t->right->prev = t->left;
+				t->left->prev = t->prev;
 				free(t);
-				return tree_add_tree(store2, store, cmp);
+				return tree_add_tree(store2, store, cmp, update_relative_info, true);
 			}
 			else
 			{
@@ -144,9 +151,10 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 					*spot_to_fill = t->right;
 				}
 				t->right->left = t->left;
-				t->left->prev = t->left;
+				t->left->prev = t->right;
+				t->right->prev = t->prev;
 				free(t);
-				return tree_add_tree(store2, store, cmp);
+				return tree_add_tree(store2, store, cmp, update_relative_info, true);
 			}
 		}
 	}
@@ -154,7 +162,7 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(void*, void*), void (*free_node)(vo
 	return NULL;
 }
 
-Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(void*, void*))
+Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(void*, void*), void (*update_relative_info)(Tree*), bool balance)
 {
 	if (t == NULL)
 	{
@@ -171,18 +179,34 @@ Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(void*, void*))
 		if (t->right == NULL)
 		{
 			t->right = to_add;
-			return tree_balance(t, cmp);
+			to_add->prev = t;
+			if (balance)
+			{
+				return tree_balance(t, cmp, update_relative_info);
+			}
+			else
+			{
+				return NULL;
+			}
 		}
-		return tree_add_tree(t->right, to_add, cmp);
+		return tree_add_tree(t->right, to_add, cmp, update_relative_info, balance);
 	}
 	else if (delta == -1)
 	{
 		if (t->left == NULL)
 		{
 			t->left = to_add;
-			return tree_balance(t, cmp);
+			to_add->prev = t;
+			if (balance)
+			{
+				return tree_balance(t, cmp, update_relative_info);
+			}
+			else
+			{
+				return NULL;
+			}
 		}
-		return tree_add_tree(t->left, to_add, cmp);
+		return tree_add_tree(t->left, to_add, cmp, update_relative_info, balance);
 	}
 	else
 	{
@@ -202,28 +226,25 @@ void* tree_get(Tree* t, void* elt, int (*cmp)(void*, void*))
 
 void tree_free(Tree* t, void (*free_node)(void*))
 {
+	if (t == NULL)
+	{
+		return;
+	}
 	(*free_node)(t->elt);
-	if (t->prev != NULL)
-	{
-		free(t->prev);
-	}
-	if (t->right == NULL && t->left == NULL)
-	{
-		free(t);
-	}
-	else
-	{
-		tree_free(t->left, free_node);
-		tree_free(t->right, free_node);
-	}
+	Tree* storel = t->left;
+	Tree* storer = t->right;
+	free(t);
+	tree_free(storel, free_node);
+	tree_free(storer, free_node);
 }
 
-Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
+Tree* tree_balance(Tree* t, int (*cmp)(void*, void*), void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
 		return NULL;
 	}
+	print_tree(t, true, 0, 0);
 	int left_height;
 	int right_height;
 	if (t->left == NULL)
@@ -245,19 +266,12 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
 
 	if (left_height - right_height <= 1 && left_height - right_height >= -1)
 	{
-		if (right_height > left_height)
-		{
-			t->height = right_height + 1;
-		}
-		else
-		{
-			t->height = left_height + 1;
-		}
+		update_height(t, update_relative_info);
 		if (t->prev == NULL)
 		{
 			return t;
 		}
-		return tree_balance(t->prev, cmp);
+		return tree_balance(t->prev, cmp, update_relative_info);
 	}
 	else
 	{
@@ -284,16 +298,16 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
 
 			if (left_height > right_height)
 			{
-				tree_rotate(t->right, cmp);
+				tree_rotate(t->right, cmp, update_relative_info, false);
 			}
-			t = tree_rotate(t, cmp);
+			t = tree_rotate(t, cmp, update_relative_info, true);
 			if (t->prev == NULL)
 			{
 				return t;
 			}
 			else
 			{
-				return tree_balance(t->prev, cmp);
+				return tree_balance(t->prev, cmp, update_relative_info);
 			}
 		}
 		else
@@ -319,22 +333,22 @@ Tree* tree_balance(Tree* t, int (*cmp)(void*, void*))
 
 			if (right_height > left_height)
 			{
-				tree_rotate(t->left, cmp);
+				tree_rotate(t->left, cmp, update_relative_info, false);
 			}
-			t = tree_rotate(t, cmp);
+			t = tree_rotate(t, cmp, update_relative_info, true);
 			if (t->prev == NULL)
 			{
 				return t;
 			}
 			else
 			{
-				return tree_balance(t->prev, cmp);
+				return tree_balance(t->prev, cmp, update_relative_info);
 			}
 		}
 	}
 }
 
-Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
+Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*), void (*update_relative_info)(Tree*), bool balance)
 {
 	if (t == NULL)
 	{
@@ -379,9 +393,9 @@ Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
 		t->left->prev = t->prev;
 		t->prev = t->left;
 		t->left = NULL;
-		update_height(t);
-		update_height(store2);
-		return tree_add_tree(store2, store, cmp);
+		update_height(t, update_relative_info);
+		update_height(store2, update_relative_info);
+		return tree_add_tree(store2, store, cmp, update_relative_info, balance);
 	}
 	else
 	{
@@ -403,19 +417,23 @@ Tree* tree_rotate(Tree* t, int (*cmp)(void*, void*))
 		t->right->prev = t->prev;
 		t->prev = t->right;
 		t->right = NULL;
-		update_height(t);
-		update_height(store2);
-		return tree_add_tree(store2, store, cmp);
+		update_height(t, update_relative_info);
+		update_height(store2, update_relative_info);
+		return tree_add_tree(store2, store, cmp, update_relative_info, balance);
 	}
 }
 
-void update_height(Tree* t)
+void update_height(Tree* t, void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
 		return;
 	}
 
+	if (update_relative_info != NULL)
+	{
+		(*update_relative_info)(t);
+	}
 	if (t->right == NULL && t->left == NULL)
 	{
 		t->height = 0;
@@ -438,5 +456,52 @@ void update_height(Tree* t)
 		{
 			t->height = t->left->height + 1;
 		}
+	}
+}
+
+void print_info(Tree* t)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+	printf("elt: %c | ptr: %p | left: %p | right: %p | prev: %p\n", 'a' + *(int*) t->elt, t, t->left, t->right, t->prev);
+	print_info(t->left);
+	print_info(t->right);
+}
+
+void print_tree(Tree* t, bool reset, int row, int col)
+{
+	static char lines[SIZE][SIZE];
+	static int max_row = 0;
+	if (reset)
+	{
+		for (int i = 0; i < SIZE; i++)
+		{
+			for (int j = 0; j < SIZE; j++)
+			{
+				lines[i][j] = ' ';
+			}
+		}
+	}
+	if (t == NULL)
+	{
+		return;
+	}
+	if (row > max_row)
+	{
+		max_row = row;
+	}
+	lines[row][col + (SIZE / 2)] = (*(int*) t->elt) + 'a';
+	print_tree(t->left, false, row + 1, col - (SIZE / (5 * (row + 1))));
+	print_tree(t->right, false, row + 1, col + (SIZE / (5 * (row + 1))));
+	if (row == 0)
+	{
+		for (int i = 0; i <= max_row; i++)
+		{
+			lines[i][SIZE - 1] = '\0';
+			printf("row %d: %s\n", i, lines[i]);
+		}
+		print_info(t);
 	}
 }
