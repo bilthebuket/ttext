@@ -14,7 +14,6 @@ Tree* tree_create(void* elt)
 		r->right = NULL;
 		r->prev = NULL;
 		r->height = 0;
-		printf("%d: %p\n", *(int*) elt, r);
 	}
 	return r;
 }
@@ -45,7 +44,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(void*, void*), void (*update_r
 {
 	if (t == NULL)
 	{
-		return NULL;
+		return tree_create(elt);
 	}
 
 	int delta = (*cmp)(t->elt, elt);

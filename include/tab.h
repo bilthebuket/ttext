@@ -23,7 +23,7 @@ typedef struct Tab
 	int left_column_index;
 
 	int saved_x_index;
-	unsigned int tab_num_flags;
+	int tab_num_flags;
 } Tab;
 
 Tab* make_tab(char* fname);

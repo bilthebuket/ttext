@@ -5,6 +5,7 @@
 #include "line.h"
 #include "global.h"
 #include "tree.h"
+#include "piece_table.h"
 
 int power(int x, int y)
 {
@@ -44,7 +45,7 @@ void free_thing(void* v)
 	free(v);
 }
 
-int main(int argc, char* argv[])
+void test_tree(void)
 {
 	bool arr[21];
 	for (int i = 0; i < 20; i++)
@@ -90,4 +91,29 @@ int main(int argc, char* argv[])
 	}
 	*/
 	tree_free(t, free_thing);
+}
+
+int main(int argc, char* argv[])
+{
+	if (argc != 2)
+	{
+		return -1;
+	}
+	int len = 0;
+	for (; argv[1][len] != '\0'; len++) {}
+	char* buf = malloc(sizeof(char) * len);
+	for (int i = 0; i < len; i++)
+	{
+		buf[i] = argv[1][i];
+	}
+	PieceTable* pt = pt_create(buf, len);
+	pt_insert(pt, 'z', len);
+	pt_insert(pt, 'a', len + 1);
+	pt_insert(pt, 'z', len + 2);
+	pt_rm(pt, len + 2);
+	for (int i = 0; pt_get(pt, i) != '\0'; i++)
+	{
+		printf("%c", pt_get(pt, i));
+	}
+	printf("\n");
 }

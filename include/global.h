@@ -11,6 +11,7 @@
 #define FNAME_SIZE 256
 #define GB_SIZE 256
 #define TAB_SIZE 4
+#define APPEND_SIZE 8192
 
 #define BACKSPACE_KEYCODE1 8
 #define BACKSPACE_KEYCODE2 0x7f

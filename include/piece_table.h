@@ -1,14 +1,16 @@
 #ifndef PIECE_TABLE_H
 #define PIECE_TABLE_H
 
+#include "tree.h"
+
 typedef struct Piece
 {
-	char* text;
+	char** text;
 	int start_index;
 	int len;
-	int lines_contained; // includes '\n's in this piece and all subpieces
+	int lines_contained; // includes '\n's in this piece and all subpieces to the left
 	int chars_contained; // same as lines_contained except for all characters
-}
+} Piece;
 
 typedef struct PieceTable
 {
@@ -25,7 +27,8 @@ char pt_get(PieceTable* pt, int index);
 PieceTable* pt_create(char* buf, int len);
 void pt_free(PieceTable* pt);
 
-Piece* make_piece(char* text, int start_index, int len, int chars_contained);
+Piece* make_piece(char** text, int start_index, int len, int chars_contained);
+void free_piece(void* v);
 int piece_compare(void* p1, void* p2);
 void update_info(Tree* t);
 

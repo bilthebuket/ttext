@@ -1,1 +1,1 @@
-gcc -g -O0 -Wall -Wextra -g -o ttext_test testing/test.c src/global.c src/io_tools.c src/normal_mode.c src/insert_mode.c src/terminal_mode.c src/tab.c src/LL.c src/line.c src/tree.c -Iinclude -lm -lncurses -lpthread
+gcc -g -O0 -Wall -Wextra -g -o ttext_test testing/test.c src/global.c src/io_tools.c src/normal_mode.c src/insert_mode.c src/terminal_mode.c src/tab.c src/LL.c src/line.c src/tree.c src/piece_table.c -Iinclude -lm -lncurses -lpthread
