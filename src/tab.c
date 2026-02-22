@@ -68,7 +68,7 @@ Tab* make_tab(char* fname)
 	fseek(f, 0, SEEK_END);
 	int size = ftell(f);
 	rewind(f);
-	char* buf = malloc(sizeof(char) * (size + 1));
+	char* buf = malloc(sizeof(char) * size);
 	if (buf == NULL)
 	{
 		log_error("malloc failed in make_tab\n");
@@ -85,57 +85,9 @@ Tab* make_tab(char* fname)
 		free(r);
 		return NULL;
 	}
-	buf[size] = '\0';
-	int i = 0;
-	int prev = 0;
-	while (1)
-	{
-		for (; buf[i] != '\n' && buf[i] != '\0'; i++) {}
-		int len = (((i - prev) / LINE_SIZE) + 1) * LINE_SIZE;
-		char* text = malloc(sizeof(char) * len);
-		if (text == NULL)
-		{
-			log_error("malloc failed in make_tab\n");
-			free_tab(r);
-			fclose(f);
-			free(buf);
-			return NULL;
-		}
-		int j;
-		for (j = prev; j < i; j++)
-		{
-			text[j - prev] = buf[j];
-		}
-		text[j - prev] = '\0';
 
-		prev = i + 1;
-		i++;
+	r->pt = pt_create(buf, size);
 
-		GapBuffer* gb = gb_create(text, len);
-		convert_tabs_to_spaces(gb);
-
-		Line* l = malloc(sizeof(Line));
-		if (l == NULL)
-		{
-			log_error("malloc failed in make_tab\n");
-			free_tab(r);
-			fclose(f);
-			free(buf);
-			return NULL;
-		}
-
-		l->gb = gb;
-		l->color_indices = NULL;
-		update_color_indices(l);
-		add(r->lines, l, r->lines->size);
-
-		if (buf[j] == '\0')
-		{
-			break;
-		}
-	}
-
-	free(buf);
 	fclose(f);
 	return r;
 }
@@ -155,6 +107,7 @@ void free_tab(Tab* t)
 			free_line(l);
 		}
 		free_list(t->lines);
+		pt_free(t->pt);
 		free(t);
 	}
 }

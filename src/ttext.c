@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 	{
 		char c = getch();
 		sem_wait(&sem);
-		(*mode)(c);
+		active_tab = (*mode)(active_tab, c);
 		refresh();
 		sem_post(&sem);
 	}

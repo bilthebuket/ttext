@@ -2,10 +2,12 @@
 #define TAB_H
 
 #include "LL.h"
+#include "piece_table,h"
 
 typedef struct Tab
 {
 	LL* lines;
+	PieceTable* pt;
 	char* fname;
 
 	// cursor position

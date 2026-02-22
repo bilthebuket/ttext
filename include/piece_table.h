@@ -27,9 +27,13 @@ char pt_get(PieceTable* pt, int index);
 PieceTable* pt_create(char* buf, int len);
 void pt_free(PieceTable* pt);
 
+// gets the index of the first character in the line in the piece table of index line_index
+int pt_get_line_index(PieceTable* pt, int line_index);
+
 Piece* make_piece(char** text, int start_index, int len, int chars_contained);
 void free_piece(void* v);
 int piece_compare(void* p1, void* p2);
+int piece_compare_lines(void* p1, void* p2);
 void update_info(Tree* t);
 
 #endif

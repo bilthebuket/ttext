@@ -57,6 +57,34 @@ int piece_compare(void* p1, void* p2)
 	}
 }
 
+int piece_compare_lines(void* p1, void* p2)
+{
+	Piece* one = (Piece*) p1;
+	Piece* two = (Piece*) p2;
+
+	if (one == NULL || two == NULL)
+	{
+		return 0;
+	}
+
+	if (two->lines_contained > one->lines_contained)
+	{
+		return 1;
+	}
+	else if (two->lines_contained <= one->lines_contained)
+	{
+		if (two->lines_contained > one->lines_contained - one->len)
+		{
+			return 0;
+		}
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void update_info(Tree* t)
 {
 	if (t == NULL)
@@ -228,13 +256,14 @@ void pt_insert(PieceTable* pt, char c, int index)
 		pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
 		pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
 
+		pt->append[pt->append_len] = c;
+		pt->append_len++;
+
 		Piece* new_piece = make_piece(&pt->append, pt->append_len, 1, index + 1);
 		if (new_piece == NULL)
 		{
 			return;
 		}
-		pt->append[pt->append_len] = c;
-		pt->append_len++;
 		pt->pieces = tree_add_elt(pt->pieces, new_piece, &piece_compare, &update_info);
 	}
 }
@@ -317,6 +346,43 @@ char pt_get(PieceTable* pt, int index)
 		return '\0';
 	}
 	return (*p->text)[p->start_index + index - p->chars_contained + p->len];
+}
+
+int pt_get_line_index(PieceTable* pt, int line_index)
+{
+	if (pt == NULL)
+	{
+		return -1;
+	}
+	if (pt->pieces == NULL)
+	{
+		return -1;
+	}
+	Piece finder;
+	finder.lines_contained = index + 1;
+	Piece* p = tree_get_elt(pt, &finder, &piece_compare_lines);
+	if (p == NULL)
+	{
+		return -1;
+	}
+
+	if (p->lines_contained == line_index + 1)
+	{
+		return p->chars_contained - p->len;
+	}
+	int n = p->lines_contained;
+	for (int i = p->start_index; i < len; i++)
+	{
+		if ((*p->text)[i] == '\n')
+		{
+			n++;
+			if (n == line_index + 1)
+			{
+				return i + p->chars_contained - p->len;
+			}
+		}
+	}
+	return -1;
 }
 
 void pt_free(PieceTable* pt)

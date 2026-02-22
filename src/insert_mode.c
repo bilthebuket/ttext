@@ -7,168 +7,127 @@
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"
+#include "piece_table.h"
 
-void insert_mode(int ch)
+Tab* insert_mode(Tab* t, int ch)
 {
-	Line* line = (Line*) get_elt(active_tab->lines, active_tab->y);
-	if (line == NULL)
+	if (t == NULL)
 	{
-		log_error("Accessing line in tab results in NULL\n");
-		return;
+		return NULL;
 	}
-	GapBuffer* gb = line->gb;
-	if (gb == NULL)
+	if (t->pt == NULL)
 	{
-		log_error("Accessing text in line results in NULL\n");
-		return;
+		return t;
 	}
 
-	int i;
+	int line_index = pt_get_line_index(t->pt, t->y)
 
 	switch (ch)
 	{
 		default:
-		for (i = active_tab->x; gb_get(gb, i) != '\0'; i++) {}
-		if (i != LINE_SIZE - 1)
+		pt_insert(t->pt, ch, line_index + t->x);
+		if (ch == '}')
 		{
-			gb_goto(gb, active_tab->x);
-			gb_put(gb, ch);
-
-			if (ch == '\t')
+			bool indent = true;
+			int j;
+			for (j = 0; pt_get(t->pt, j + line_index) != '}'; j++)
 			{
-				convert_tabs_to_spaces(gb);
-				active_tab->x += TAB_SIZE - 1;
-			}
-			if (ch == '}')
-			{
-				bool indent = true;
-				int j;
-				for (j = 0; gb_get(gb, j) != '}'; j++)
+				if (pt_get(t->pt, j + line_index) != ' ')
 				{
-					if (gb_get(gb, j) != ' ')
-					{
-						indent = false;
-						break;
-					}
-				}
-				if (indent)
-				{
-					int amount;
-					if (j >= TAB_SIZE)
-					{
-						amount = TAB_SIZE;
-					}
-					else
-					{
-						amount = j;
-					}
-
-					for (int i = 0; i < amount; i++)
-					{
-						gb_goleft(gb);
-						gb_rm(gb);
-					}
-					active_tab->x -= amount;
+					indent = false;
+					break;
 				}
 			}
+			if (indent)
+			{
+				int amount;
+				if (j >= TAB_SIZE)
+				{
+					amount = TAB_SIZE;
+				}
+				else
+				{
+					amount = j;
+				}
 
-			active_tab->x++;
-			check_right_update(active_tab);
-			move_cursor_to_tab(active_tab);
-
-			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
-			print_line(active_tab, active_tab->y);
+				for (int i = 0; i < amount; i++)
+				{
+					pt_rm(t->pt, line_index);
+				}
+				t->x -= amount;
+			}
 		}
+
+		active_tab->x++;
+		check_right_update(t);
+		move_cursor_to_tab(t);
+
+		update_color_indices(t, line_index);
+		print_line(t, t->y);
+		break;
+
+		case '\t':
+		for (int i = 0; i < TAB_SIZE; i++)
+		{
+			pt_insert(t->pt, ' ', line_index + t->x + i);
+		}
+		t->x += TAB_SIZE;
+		check_right_update(t);
+		move_cursor_to_tab(t);
+		update_color_indices(t, line_index);
+		print_line(t, line_index);
 		break;
 
 		case BACKSPACE_KEYCODE2:
-		if (active_tab->x > 0)
+		if (t->x > 0)
 		{
-			gb_goto(gb, active_tab->x - 1);
-			gb_rm(gb);
+			pt_rm(t->pt, index + t->x - 1);
 
-			active_tab->x--;
-			check_left_update(active_tab);
-			move_cursor_to_tab(active_tab);
+			t->x--;
+			check_left_update(t);
+			move_cursor_to_tab(t);
 
-			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
-			print_line(active_tab, active_tab->y);
+			update_color_indices(t, line_index);
+			print_line(t, t->y);
 		}
-		else if (active_tab->y > 0)
+		else if (t->y > 0)
 		{
-			Line* line_above = (Line*) get_elt(active_tab->lines, active_tab->y - 1);
-			if (line_above == NULL)
+			pt_rm(t->pt, line_index + i->x - 1);
+
+			for (int i = line_index - 1; pt_get(t->pt, i) != '\n'; i--)
 			{
-				log_error("Accessing line in tab results in NULL\n");
-				return;
+				t->x++;
 			}
-			GapBuffer* gb_above = line_above->gb;
-			if (gb_above == NULL)
-			{
-				log_error("Accessing text in line results in NULL\n");
-				return;
-			}
+			t->y--;
 
-			int store = gb_above->num_chars - 1;
-			gb_goto(gb_above, store);
-			for (i = 0; i < gb->num_chars - 1; i++)
-			{
-				gb_put(gb_above, gb_get(gb, i));
-			}
+			check_left_update(t);
+			check_right_update(t);
+			check_top_update(t);
+			move_cursor_to_tab(t);
 
-			rm(active_tab->lines, active_tab->y);
-			free_line(line);
-			gb_goto(gb_above, store);
-
-			active_tab->x = store;
-			active_tab->y--;
-
-			check_left_update(active_tab);
-			check_right_update(active_tab);
-			check_top_update(active_tab);
-			move_cursor_to_tab(active_tab);
-
-			update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
-			print_tab(active_tab);
+			update_color_indices(t, line_index);
+			print_tab(t);
 		}
 		break;
 
 		case ESCAPE_KEYCODE:
 		print_message("Normal Mode");
-		active_tab->saved_x_index = active_tab->x;
+		t->saved_x_index = t->x;
 		mode = &normal_mode;
 		break;
 
 		case ENTER_KEYCODE1:
-		GapBuffer* gb_new = gb_create(NULL, -1);
-		gb_goto(gb, active_tab->x);
-		while (gb_get(gb, active_tab->x) != '\0')
-		{
-			gb_put(gb_new, gb_rm(gb));
-		}
+		pt_insert(t->pt, '\n', line_index + t->x);
+		t->y++;
+		t->x = indent_line(t, t->y);
 
-		Line* l = malloc(sizeof(Line));
-		if (l == NULL)
-		{
-			log_error("malloc failure\n");
-			gb_free(gb_new);
-			return;
-		}
+		check_left_update(t);
+		check_bottom_update(t);
+		move_cursor_to_tab(t);
 
-		l->gb = gb_new;
-		l->color_indices = NULL;
-		add(active_tab->lines, l, active_tab->y + 1);
-
-		active_tab->y++;
-		active_tab->x = indent_line(active_tab, active_tab->y);
-
-		check_left_update(active_tab);
-		check_bottom_update(active_tab);
-		move_cursor_to_tab(active_tab);
-
- 		update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y));
- 		update_color_indices((Line*) get_elt(active_tab->lines, active_tab->y - 1));
-		print_tab(active_tab);
+ 		update_color_indices(t, line_index);
+ 		update_color_indices(t, line_index + t->x + 1);
+		print_tab(t);
 		break;
 	}
 }

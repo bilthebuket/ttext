@@ -58,113 +58,142 @@ void print_line(Tab* t, int line_index)
 	getyx(stdscr, y, x);
 	bool endofline;
 
-	Line* line = (Line*) get_elt(t->lines, line_index);
-	GapBuffer* gb;
-	if (line == NULL)
+	if (t->pt != NULL)
 	{
-		gb = NULL;
-	}
-	else
-	{
-		gb = line->gb;
-	}
-	Node* colorindex = NULL;
-	if (gb == NULL)
-	{
-		endofline = true;
-	}
-	else
-	{
-		if (line->color_indices != NULL)
-		{
-			colorindex = line->color_indices->first;
-			if (colorindex == NULL)
-			{
-				log_error("found NULL colorindex\n");
-				return;
-			}
-		}
-	}
-
-	if (line_index < 0 || line_index >= t->lines->size)
-	{
-		endofline = true;
-	}
-	else
-	{
-		if (gb != NULL)
-		{
-			int i;
-			for (i = 0; gb_get(gb, i) != '\0' && i < t->left_column_index; i++) {}
-			endofline = gb_get(gb, i) == '\0';
-		}
-
-		if (line->color_indices == NULL)
-		{
-			colorindex = NULL;
-		}
-		else
-		{
-			Node* next = NULL;
-
-			while (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index < t->left_column_index)
-			{
-				Node* next = colorindex->next;
-				if (next == NULL)
-				{
-					break;
-				}
-				else
-				{
-					colorindex = next;
-				}
-			}
-
-			if (colorindex->elt == NULL)
-			{
-				log_error("found NULL elt in colorindex linked list\n");
-			}
-
-			if (next != NULL)
-			{
-				colorindex = colorindex->prev;
-			}
-		}
-	}
-
-	attron(COLOR_PAIR(WHITE_TEXT));
-	for (int i = t->xpos; i <= t->xpos + t->width; i++)
-	{
-		if (endofline)
-		{
-			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
-		}
-		else if (gb_get(gb, t->left_column_index + i - t->xpos) == '\0')
+		int index = pt_get_line_index(t->pt, line_index);
+		if (pt_get(t->pt, pt->left_column_index + index) == '\n')
 		{
 			endofline = true;
-			mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+		}
+
+		attron(COLOR_PAIR(WHITE_TEXT));
+		for (int i = t->xpos; i <= t->xpos + t->width; i++)
+		{
+			if (endofline)
+			{
+				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+			}
+			else if (pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\n')
+			{
+				endofline = true;
+				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+			}
+			else
+			{
+				mvaddch(t->ypos + line_index - t->top_line_index, i, pt_get(t->pt, index + t->left_column_index + i - t->xpos));
+			}
+		}
+	}
+	else
+	{
+		Line* line = (Line*) get_elt(t->lines, line_index);
+		GapBuffer* gb;
+		if (line == NULL)
+		{
+			gb = NULL;
 		}
 		else
 		{
-			if (colorindex != NULL)
+			gb = line->gb;
+		}
+		Node* colorindex = NULL;
+		if (gb == NULL)
+		{
+			endofline = true;
+		}
+		else
+		{
+			if (line->color_indices != NULL)
 			{
-				if (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
+				colorindex = line->color_indices->first;
+				if (colorindex == NULL)
 				{
-					attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
-					colorindex = colorindex->next;
-				}
-				// we have to check again because its possible we did colorindex = colorindex->next in the previous line
-				if (colorindex != NULL)
-				{
-					if (colorindex->elt == NULL)
-					{
-						log_error("found NULL elt in colorindex linked list\n");
-						colorindex = colorindex->next;
-					}
+					log_error("found NULL colorindex\n");
+					return;
 				}
 			}
+		}
 
-			mvaddch(t->ypos + line_index - t->top_line_index, i, gb_get(gb, t->left_column_index + i - t->xpos));
+		if (line_index < 0 || line_index >= t->lines->size)
+		{
+			endofline = true;
+		}
+		else
+		{
+			if (gb != NULL)
+			{
+				int i;
+				for (i = 0; gb_get(gb, i) != '\0' && i < t->left_column_index; i++) {}
+				endofline = gb_get(gb, i) == '\0';
+			}
+
+			if (line->color_indices == NULL)
+			{
+				colorindex = NULL;
+			}
+			else
+			{
+				Node* next = NULL;
+
+				while (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index < t->left_column_index)
+				{
+					Node* next = colorindex->next;
+					if (next == NULL)
+					{
+						break;
+					}
+					else
+					{
+						colorindex = next;
+					}
+				}
+
+				if (colorindex->elt == NULL)
+				{
+					log_error("found NULL elt in colorindex linked list\n");
+				}
+
+				if (next != NULL)
+				{
+					colorindex = colorindex->prev;
+				}
+			}
+		}
+
+		attron(COLOR_PAIR(WHITE_TEXT));
+		for (int i = t->xpos; i <= t->xpos + t->width; i++)
+		{
+			if (endofline)
+			{
+				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+			}
+			else if (gb_get(gb, t->left_column_index + i - t->xpos) == '\0')
+			{
+				endofline = true;
+				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+			}
+			else
+			{
+				if (colorindex != NULL)
+				{
+					if (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
+					{
+						attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
+						colorindex = colorindex->next;
+					}
+					// we have to check again because its possible we did colorindex = colorindex->next in the previous line
+					if (colorindex != NULL)
+					{
+						if (colorindex->elt == NULL)
+						{
+							log_error("found NULL elt in colorindex linked list\n");
+							colorindex = colorindex->next;
+						}
+					}
+				}
+
+				mvaddch(t->ypos + line_index - t->top_line_index, i, gb_get(gb, t->left_column_index + i - t->xpos));
+			}
 		}
 	}
 	move(y, x);
@@ -295,32 +324,25 @@ int indent_line(Tab* t, int index)
 	}
 	if (index > 0)
 	{
-		Line* line = (Line*) get_elt(t->lines, index);
-		Line* line_above = (Line*) get_elt(t->lines, index - 1);
-		if (line == NULL || line_above == NULL)
+		int line_index = pt_get_line_index(t->pt, index);
+		int line_above_index = pt_get_line_index(t->pt, index - 1);
+		if (line == -1 || line_above == -1)
 		{
-			log_error("found NULL line(s) in indent_line\n");
-			return 0;
-		}
-		GapBuffer* gb = line->gb;
-		GapBuffer* gb_above = line_above->gb;
-		if (gb == NULL || gb_above == NULL)
-		{
-			log_error("found NULL text(s) in indent_line\n");
+			log_error("could not get line indicies in indent_line\n");
 			return 0;
 		}
 
 		int num_spaces = 0;
-		for (; gb_get(gb_above, num_spaces) == ' '; num_spaces++) {}
+		for (; pt_get(t->pt, line_above_index + num_spaces) == ' '; num_spaces++) {}
 
 		int braces = 0;
-		for (int i = num_spaces; gb_get(gb_above, i) != '\0'; i++)
+		for (int i = num_spaces; pt_get(t->pt, line_above_index + i) != '\0'; i++)
 		{
-			if (gb_get(gb_above, i) == '{')
+			if (pt_get(t->pt, line_above_index + i) == '{')
 			{
 				braces++;
 			}
-			if (gb_get(gb_above, i) == '}')
+			if (pt_get(t->pt, line_above_index i) == '}')
 			{
 				braces--;
 			}
@@ -332,10 +354,9 @@ int indent_line(Tab* t, int index)
 
 		if (num_spaces > 0)
 		{
-			gb_goto(gb, 0);
 			for (int j = 0; j < num_spaces; j++)
 			{
-				gb_put(gb, ' ');
+				pt_insert(t->pt, ' ', line_index);
 			}
 
 			return num_spaces;

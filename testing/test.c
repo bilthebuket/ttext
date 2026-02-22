@@ -116,4 +116,5 @@ int main(int argc, char* argv[])
 		printf("%c", pt_get(pt, i));
 	}
 	printf("\n");
+	pt_free(pt);
 }
