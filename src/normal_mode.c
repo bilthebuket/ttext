@@ -7,131 +7,95 @@
 #include "io_tools.h"
 #include "line.h"
 
-void normal_mode(int ch)
+Tab* normal_mode(Tab* t, int ch)
 {
-	Line* line = (Line*) get_elt(active_tab->lines, active_tab->y);
-	if (line == NULL)
-	{
-		log_error("reached NULL line in normal_mode\n");
-		return;
-	}
-	GapBuffer* gb = line->gb;
-	if (gb == NULL)
-	{
-		log_error("found NULL gb in normal_mode\n");
-		return;
-	}
+	int line_index = get_line_index(t->pt, t->y);
+
 	switch (ch)
 	{
 		case 'h':
 		if (active_tab->x > 0)
 		{
-			gb_goleft(gb);
-			active_tab->x--;
-			active_tab->saved_x_index = active_tab->x;
-			check_left_update(active_tab);
-			move_cursor_to_tab(active_tab);
+			t->x--;
+			t->saved_x_index = active_tab->x;
+			check_left_update(t);
+			move_cursor_to_tab(t);
 		}
 		break;
 
 		case 'j':
-		if (active_tab->y < active_tab->lines->size - 1)
+		if (get_line_inddex(t->pt, t->y + 1) != -1)
 		{
-			Line* line_below = (Line*) get_elt(active_tab->lines, active_tab->y + 1);
-			if (line_below == NULL)
-			{
-				log_error("found NULL line in active_tab while attempting to move cursor down\n");
-				return;
-			}
-			GapBuffer* gb_below = line_below->gb;
-			if (gb_below == NULL)
-			{
-				log_error("found NULL gb in active_tab while attempting to move cursor down\n");
-				return;
-			}
+			int line_below_index = get_line_index(t->pt, t->y + 1);
 
 			int i;
-			if (gb_below->num_chars - 2 <= active_tab->saved_x_index)
+			for (i = line_below_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++) {}
+			if (i - line_below_index - 1 <= t->saved_x_index)
 			{
-				i = gb_below->num_chars - 2;
+				i -= line_below_index + 1;
 			}
 			else
 			{
-				i = active_tab->saved_x_index;
+				i = t->saved_x_index;
 			}
-			if (i == -1)
+			if (i < 0)
 			{
-				active_tab->x = 0;
-				gb_goto(gb_below, 0);
+				t->x = 0;
 			}
 			else
 			{
-				active_tab->x = i;
-				gb_goto(gb_below, i);
+				t->x = i;
 			}
 
-			active_tab->y++;
+			t->y++;
 			
-			check_bottom_update(active_tab);
-			check_left_update(active_tab);
+			check_bottom_update(t);
+			check_left_update(t);
 
-			move_cursor_to_tab(active_tab);
+			move_cursor_to_tab(t);
 		}
 		break;
 
 		case 'k':
-		if (active_tab->y > 0)
+		if (t->y > 0)
 		{
-			Line* line_above = (Line*) get_elt(active_tab->lines, active_tab->y - 1);
-			if (line_above == NULL)
-			{
-				log_error("found NULL line in active_tab while attempting to move cursor up\n");
-				return;
-			}
-			GapBuffer* gb_above = line_above->gb;
-			if (gb_above == NULL)
-			{
-				log_error("found NULL gb in active_tab while attempting to move cursor up\n");
-				return;
-			}
+			int line_above_index = get_line_index(t->pt, t->y - 1);
 
 			int i;
-			if (gb_above->num_chars - 2 <= active_tab->saved_x_index)
+			for (i = line_above_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++ {}
+			if (i - line_above_index - 1 <= t->saved_x_index)
 			{
-				i = gb_above->num_chars - 2;
+				i -= line_above_index + 1;
 			}
 			else
 			{
-				i = active_tab->saved_x_index;
+				i = t->saved_x_index;
 			}
-			if (i == -1)
+			if (i < 0)
 			{
-				active_tab->x = 0;
-				gb_goto(gb_above, 0);
+				t->x = 0;
 			}
 			else
 			{
-				active_tab->x = i;
-				gb_goto(gb_above, i);
+				t->x = i;
 			}
 
-			active_tab->y--;
+			t->y--;
 
-			check_top_update(active_tab);
-			check_left_update(active_tab);
+			check_top_update(t);
+			check_left_update(t);
 
-			move_cursor_to_tab(active_tab);
+			move_cursor_to_tab(t);
 		}
 		break;
 
 		case 'l':
-		if (gb_get(gb, active_tab->x + 1) != '\0')
+		if (pt_get(t->pt, line_index + t->x + 1) != '\0')
 		{
-			gb_goright(gb);
-			active_tab->x++;
-			active_tab->saved_x_index = active_tab->x;
-			check_right_update(active_tab);
-			move_cursor_to_tab(active_tab);
+			t->x++;
+			t->saved_x_index = t->x;
+			check_right_update(t);
+			move_cursor_to_tab(t);
 		}
 		break;
 
@@ -142,94 +106,76 @@ void normal_mode(int ch)
 		break;
 
 		case 'i':
-		active_tab->tab_num_flags &= ~CHANGES_SAVED;
+		t->tab_num_flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
 		mode = &insert_mode;
 		break;
 
 		case 'a':
-		active_tab->tab_num_flags &= ~CHANGES_SAVED;
+		t->tab_num_flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
-		if (gb_get(gb, 0) != '\0')
+		if (pt_get(t->pt, line_index) != '\0')
 		{
-			gb_goright(gb);
-			active_tab->x++;
-			if (active_tab->left_column_index + active_tab->width < active_tab->x)
+			t->x++;
+			if (t->left_column_index + t->width < t->x)
 			{
-				active_tab->left_column_index = active_tab->x - active_tab->width;
-				print_tab(active_tab);
+				t->left_column_index = t->x - t->width;
+				print_tab(t);
 			}
-			move_cursor_to_tab(active_tab);
+			move_cursor_to_tab(t);
 		}
 		mode = &insert_mode;
 		break;
 
 		case '0':
-		gb_goto(gb, 0);
-		active_tab->x = 0;
-		active_tab->saved_x_index = 0;
-		check_left_update(active_tab);
-		move_cursor_to_tab(active_tab);
+		t->x = 0;
+		t->saved_x_index = 0;
+		check_left_update(t);
+		move_cursor_to_tab(t);
 		break;
 
 		case '$':
-		if (gb->num_chars > 1)
-		{
-			gb_goto(gb, gb->num_chars - 2);
-			active_tab->x = gb->num_chars - 2;
-			active_tab->saved_x_index = gb->num_chars - 2;
-			check_right_update(active_tab);
-			move_cursor_to_tab(active_tab);
-		}
+		int len;
+		for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
+		t->x = len - 1;
+		t->saved_x_index = len - 1;
+		check_right_update(t);
+		move_cursor_to_tab(t);
 		break;
 
 		case 'o':
-		GapBuffer* new_gb = gb_create(NULL, -1);
-		if (new_gb == NULL)
-		{
-			log_error("gb_create failed in normal_mode\n");
-			return;
-		}
-		Line* new_line = malloc(sizeof(Line));
-		if (new_line == NULL)
-		{
-			log_error("malloc failed in normal_mode\n");
-			gb_free(new_gb);
-			return;
-		}
+		int len;
+		for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
+		pt_insert(t->pt, '\n', line_index + len);
 
-		new_line->gb = new_gb;
-		new_line->color_indices = NULL;
-		active_tab->y++;
-		add(active_tab->lines, new_line, active_tab->y);
-		active_tab->x = indent_line(active_tab, active_tab->y);
-		print_tab(active_tab);
-		move_cursor_to_tab(active_tab);
+		t->y++;
+		t->x = indent_line(t, t->y);
+		print_tab(t);
+		move_cursor_to_tab(t);
 		mode = &insert_mode;
 		break;
 
 		case 'x':
-		if (gb_get(gb, active_tab->x) != '\0')
+		if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 		{
-			active_tab->tab_num_flags &= ~CHANGES_SAVED;
-			gb_rm(gb);
-			update_color_indices(line);
+			t->tab_num_flags &= ~CHANGES_SAVED;
+			pt_rm(t->pt, line_index + t->x);
+			update_color_indices(t->pt, line_index);
 
-			if (gb_get(gb, active_tab->x) == '\0' && active_tab->x != 0)
+			if ((pt_get(t->pt, t->x) == '\0'  || pt_get(t->pt, t->x) == '\n' ) && active_tab->x != 0)
 			{
-				gb_goleft(gb);
-				active_tab->x--;
-				active_tab->saved_x_index = active_tab->x;
-				check_left_update(active_tab);
-				move_cursor_to_tab(active_tab);
+				t->x--;
+				t->saved_x_index = t->x;
+				check_left_update(t);
+				move_cursor_to_tab(t);
 			}
 
-			print_tab(active_tab);
+			print_line(t, t->y);
 		}
 		break;
 
 		case '%':
-		char c = gb_get(gb, active_tab->x);
+		char c = pt_get(t->pt, line_index + t->x);
 		char looking_for;
 		int delta;
 		if (c == '(' || c == '[' || c == '{')
@@ -274,24 +220,16 @@ void normal_mode(int ch)
 		bool found = false;
 		int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
 				  // and we need to exclude it from the counter
-		for (int y_index = active_tab->y; y_index >= 0 && y_index < active_tab->lines->size; y_index += delta)
+		for (int y_index = active_tab->y; y_index >= 0 && get_line_index(t->pt, y_index) != -1; y_index += delta)
 		{
-			Line* line_we_are_on = (Line*) get_elt(active_tab->lines, y_index);
-			if (line_we_are_on == NULL)
-			{
-				log_error("found NULL line in normal_mode\n");
-				return;
-			}
-			GapBuffer* gb_we_are_on = line_we_are_on->gb;
-			if (gb_we_are_on == NULL)
-			{
-				continue;
-			}
+			int line_we_are_on = get_line_index(t->pt, y_index);
+			int len;
+			for (len = 0; pt_get(t->pt, line_we_are_on + len) != '\0' && pt_get(t->pt, line_we_are_on + len) != '\n'; len++) {}
 
 			int x_index;
-			if (y_index == active_tab->y)
+			if (y_index == t->y)
 			{
-				x_index = active_tab->x;
+				x_index = t->x;
 			}
 			else if (delta == 1)
 			{
@@ -299,31 +237,30 @@ void normal_mode(int ch)
 			}
 			else
 			{
-				x_index = gb_we_are_on->num_chars - 2;
+				x_index = len - 1;
 			}
-			for (; gb_get(gb_we_are_on, x_index) != '\0' && x_index >= 0; x_index += delta)
+			for (; pt_get(t->pt, line_we_are_on + x_index) != '\0' && x_index >= 0; x_index += delta)
 			{
-				if (gb_get(gb_we_are_on, x_index) == looking_for)
+				if (pt_get(t->pt, line_we_are_on + x_index) == looking_for)
 				{
 					if (counter == 0)
 					{
 						found = true;
-						gb_goto(gb_we_are_on, x_index);
-						active_tab->x = x_index;
-						active_tab->y = y_index;
+						t->x = x_index;
+						t->y = y_index;
 
 						if (delta == -1)
 						{
-							check_top_update(active_tab);
+							check_top_update(t);
 						}
 						else
 						{
-							check_bottom_update(active_tab);
+							check_bottom_update(t);
 						}
-						check_left_update(active_tab);
-						check_right_update(active_tab);
+						check_left_update(t);
+						check_right_update(t);
 
-						move_cursor_to_tab(active_tab);
+						move_cursor_to_tab(t);
 						break;
 					}
 					else
@@ -331,7 +268,7 @@ void normal_mode(int ch)
 						counter--;
 					}
 				}
-				else if (gb_get(gb_we_are_on, x_index) == c)
+				else if (pt_get(t->pt, line_we_are_on + x_index) == c)
 				{
 					counter++;
 				}
@@ -342,8 +279,10 @@ void normal_mode(int ch)
 			}
 		}
 
-		active_tab->saved_x_index = active_tab->x;
+		t->saved_x_index = active_tab->x;
 		
 		break;
 	}
+
+	return t;
 }

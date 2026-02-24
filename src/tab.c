@@ -42,7 +42,7 @@ Tab* make_tab(char* fname)
 
 	if (f == NULL)
 	{
-		char* buf = malloc(sizeof(char) * LINE_SIZE);
+		char* buf = malloc(sizeof(char));
 		if (buf == NULL)
 		{
 			log_error("malloc failed in make_tab\n");
@@ -51,17 +51,7 @@ Tab* make_tab(char* fname)
 		}
 		buf[0] = '\0';
 
-		Line* l = malloc(sizeof(Line));
-		if (l == NULL)
-		{
-			log_error("malloc failed in make_tab\n");
-			free(r);
-			free(buf);
-			return NULL;
-		}
-		l->gb = gb_create(NULL, -1);
-		l->color_indices = NULL;
-		add(r->lines, l, 0);
+		r->pt = pt_create(buf, 1);
 		return r;
 	}
 

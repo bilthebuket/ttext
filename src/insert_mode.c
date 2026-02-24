@@ -130,4 +130,6 @@ Tab* insert_mode(Tab* t, int ch)
 		print_tab(t);
 		break;
 	}
+
+	return t;
 }

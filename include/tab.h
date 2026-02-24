@@ -2,7 +2,7 @@
 #define TAB_H
 
 #include "LL.h"
-#include "piece_table,h"
+#include "piece_table.h"
 
 typedef struct Tab
 {
