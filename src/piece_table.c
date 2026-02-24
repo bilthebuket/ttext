@@ -359,8 +359,8 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 		return -1;
 	}
 	Piece finder;
-	finder.lines_contained = index + 1;
-	Piece* p = tree_get_elt(pt, &finder, &piece_compare_lines);
+	finder.lines_contained = line_index + 1;
+	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_compare_lines);
 	if (p == NULL)
 	{
 		return -1;
@@ -371,7 +371,7 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 		return p->chars_contained - p->len;
 	}
 	int n = p->lines_contained;
-	for (int i = p->start_index; i < len; i++)
+	for (int i = p->start_index; i < p->len; i++)
 	{
 		if ((*p->text)[i] == '\n')
 		{

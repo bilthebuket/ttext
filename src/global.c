@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include "global.h"
 
-void (*mode)(int);
+Tab* (*mode)(Tab*, int);
 LL* tabs;
 Tab* active_tab;
 int active_tab_index;

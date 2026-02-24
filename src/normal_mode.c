@@ -9,7 +9,7 @@
 
 Tab* normal_mode(Tab* t, int ch)
 {
-	int line_index = get_line_index(t->pt, t->y);
+	int line_index = pt_get_line_index(t->pt, t->y);
 
 	switch (ch)
 	{
@@ -24,9 +24,9 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 'j':
-		if (get_line_inddex(t->pt, t->y + 1) != -1)
+		if (pt_get_line_index(t->pt, t->y + 1) != -1)
 		{
-			int line_below_index = get_line_index(t->pt, t->y + 1);
+			int line_below_index = pt_get_line_index(t->pt, t->y + 1);
 
 			int i;
 			for (i = line_below_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++) {}
@@ -59,10 +59,10 @@ Tab* normal_mode(Tab* t, int ch)
 		case 'k':
 		if (t->y > 0)
 		{
-			int line_above_index = get_line_index(t->pt, t->y - 1);
+			int line_above_index = pt_get_line_index(t->pt, t->y - 1);
 
 			int i;
-			for (i = line_above_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++ {}
+			for (i = line_above_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++) {}
 			if (i - line_above_index - 1 <= t->saved_x_index)
 			{
 				i -= line_above_index + 1;
@@ -135,6 +135,7 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case '$':
+		{
 		int len;
 		for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
 		t->x = len - 1;
@@ -142,8 +143,10 @@ Tab* normal_mode(Tab* t, int ch)
 		check_right_update(t);
 		move_cursor_to_tab(t);
 		break;
+		}
 
 		case 'o':
+		{
 		int len;
 		for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
 		pt_insert(t->pt, '\n', line_index + len);
@@ -154,13 +157,14 @@ Tab* normal_mode(Tab* t, int ch)
 		move_cursor_to_tab(t);
 		mode = &insert_mode;
 		break;
+		}
 
 		case 'x':
 		if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 		{
 			t->tab_num_flags &= ~CHANGES_SAVED;
 			pt_rm(t->pt, line_index + t->x);
-			update_color_indices(t->pt, line_index);
+			pt_update_color_indices(t, line_index);
 
 			if ((pt_get(t->pt, t->x) == '\0'  || pt_get(t->pt, t->x) == '\n' ) && active_tab->x != 0)
 			{
@@ -220,9 +224,9 @@ Tab* normal_mode(Tab* t, int ch)
 		bool found = false;
 		int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
 				  // and we need to exclude it from the counter
-		for (int y_index = active_tab->y; y_index >= 0 && get_line_index(t->pt, y_index) != -1; y_index += delta)
+		for (int y_index = active_tab->y; y_index >= 0 && pt_get_line_index(t->pt, y_index) != -1; y_index += delta)
 		{
-			int line_we_are_on = get_line_index(t->pt, y_index);
+			int line_we_are_on = pt_get_line_index(t->pt, y_index);
 			int len;
 			for (len = 0; pt_get(t->pt, line_we_are_on + len) != '\0' && pt_get(t->pt, line_we_are_on + len) != '\n'; len++) {}
 

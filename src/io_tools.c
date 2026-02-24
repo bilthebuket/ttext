@@ -61,7 +61,7 @@ void print_line(Tab* t, int line_index)
 	if (t->pt != NULL)
 	{
 		int index = pt_get_line_index(t->pt, line_index);
-		if (pt_get(t->pt, pt->left_column_index + index) == '\n')
+		if (pt_get(t->pt, t->left_column_index + index) == '\n')
 		{
 			endofline = true;
 		}
@@ -326,7 +326,7 @@ int indent_line(Tab* t, int index)
 	{
 		int line_index = pt_get_line_index(t->pt, index);
 		int line_above_index = pt_get_line_index(t->pt, index - 1);
-		if (line == -1 || line_above == -1)
+		if (line_index == -1 || line_above_index == -1)
 		{
 			log_error("could not get line indicies in indent_line\n");
 			return 0;
@@ -342,7 +342,7 @@ int indent_line(Tab* t, int index)
 			{
 				braces++;
 			}
-			if (pt_get(t->pt, line_above_index i) == '}')
+			if (pt_get(t->pt, line_above_index + i) == '}')
 			{
 				braces--;
 			}

@@ -30,5 +30,6 @@ typedef struct Tab
 
 Tab* make_tab(char* fname);
 void free_tab(Tab* t);
+void pt_update_color_indices(Tab* t, int index);
 
 #endif

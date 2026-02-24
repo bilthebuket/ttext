@@ -40,13 +40,13 @@ Tab* terminal_mode(Tab* t, int ch)
 	if (line == NULL)
 	{
 		log_error("NULL line in terminal_mode\n");
-		return;
+		return t;
 	}
 	GapBuffer* gb = line->gb;
 	if (gb == NULL)
 	{
 		log_error("NULL gb in terminal_mode\n");
-		return;
+		return t;
 	}
 
 	Tab* r = t;
@@ -80,7 +80,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Please pass filename as argument");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				start_index = end_index + 1;
@@ -89,7 +89,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				if (fname == NULL)
 				{
 					log_error("malloc failed in terminal_mode\n");
-					return;
+					return t;
 				}
 				int i;
 				for (i = start_index; gb_get(gb, i) != '\0'; i++)
@@ -107,7 +107,7 @@ Tab* terminal_mode(Tab* t, int ch)
 					{
 						log_error("active_tab_index references NULL element in tabs linked list\n");
 					}
-					return;
+					return t;
 				}
 
 				r->tab_num_flags &= FLAG_BITS;
@@ -145,13 +145,13 @@ Tab* terminal_mode(Tab* t, int ch)
 							else
 							{
 								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-								return;
+								return t;
 							}
 						}
 						else
 						{
 							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-							return;
+							return t;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
@@ -196,13 +196,13 @@ Tab* terminal_mode(Tab* t, int ch)
 							else
 							{
 								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-								return;
+								return t;
 							}
 						}
 						else
 						{
 							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-							return;
+							return t;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
@@ -224,7 +224,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Please pass the index of the tab to switch to");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				start_index = end_index + 1;
@@ -235,7 +235,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("tab number invalid");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				for (int i = 0; i < tabs->size; i++)
@@ -255,13 +255,13 @@ Tab* terminal_mode(Tab* t, int ch)
 							else
 							{
 								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-								return;
+								return t;
 							}
 						}
 						else
 						{
 							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
-							return;
+							return t;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
@@ -294,7 +294,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				start_index = end_index + 1;
@@ -305,7 +305,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "top"))
@@ -339,7 +339,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "add"))
@@ -384,7 +384,7 @@ Tab* terminal_mode(Tab* t, int ch)
 						{
 							print_message("Resize would cause tab to go off screen");
 							make_input_line();
-							return;
+							return t;
 						}
 					}
 					else
@@ -399,7 +399,7 @@ Tab* terminal_mode(Tab* t, int ch)
 							{
 								print_message("Resize would cause tab to go off screen");
 								make_input_line();
-								return;
+								return t;
 							}
 						}
 						else
@@ -412,7 +412,7 @@ Tab* terminal_mode(Tab* t, int ch)
 							{
 								print_message("Resize would cause tab to go off screen");
 								make_input_line();
-								return;
+								return t;
 							}
 						}
 					}
@@ -426,7 +426,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				int* num_to_change = NULL;
@@ -441,7 +441,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
-					return;
+					return t;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "left"))
@@ -505,7 +505,7 @@ Tab* terminal_mode(Tab* t, int ch)
 			{
 				if (t->tab_num_flags & CHANGES_SAVED)
 				{
-					if (t== tabs->size - 1)
+					if (active_tab_index == tabs->size - 1)
 					{
 						if (tabs->size == 1)
 						{
@@ -566,7 +566,7 @@ Tab* terminal_mode(Tab* t, int ch)
 					if (tabs->size == 1)
 					{
 						terminate = true;
-						return;
+						return t;
 					}
 					else
 					{
@@ -623,7 +623,7 @@ Tab* terminal_mode(Tab* t, int ch)
 					if (fname == NULL)
 					{
 						log_error("malloc failed in terminal_mode\n");
-						return;
+						return t;
 					}
 					fname[0] = 'u';
 					fname[1] = 'n';
@@ -641,7 +641,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				if (f == NULL)
 				{
 					log_error("failed to open file to write to in terminal_mode\n");
-					return;
+					return t;
 				}
 				for (int i = 0; i < t->lines->size; i++)
 				{
