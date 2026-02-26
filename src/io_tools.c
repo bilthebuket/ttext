@@ -56,12 +56,12 @@ void print_line(Tab* t, int line_index)
 
 	int y, x;
 	getyx(stdscr, y, x);
-	bool endofline;
+	bool endofline = false;
 
 	if (t->pt != NULL)
 	{
 		int index = pt_get_line_index(t->pt, line_index);
-		if (pt_get(t->pt, t->left_column_index + index) == '\n')
+		if (index == -1 || pt_get(t->pt, t->left_column_index + index) == '\n' || pt_get(t->pt, t->left_column_index + index) == '\0')
 		{
 			endofline = true;
 		}
@@ -73,7 +73,7 @@ void print_line(Tab* t, int line_index)
 			{
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 			}
-			else if (pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\n')
+			else if (pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\n' || pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\0')
 			{
 				endofline = true;
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');

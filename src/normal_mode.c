@@ -90,7 +90,7 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 'l':
-		if (pt_get(t->pt, line_index + t->x + 1) != '\0')
+		if (pt_get(t->pt, line_index + t->x + 1) != '\0' && pt_get(t->pt, line_index + t->x + 1) != '\n')
 		{
 			t->x++;
 			t->saved_x_index = t->x;

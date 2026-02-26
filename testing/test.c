@@ -69,7 +69,7 @@ void test_tree(void)
 		arr[y] = false;
 		printf("adding next: %c\n", 'a' + y);
 		*p = y;
-		t = tree_add_elt(t, p, &compare, NULL);
+		//t = tree_add_elt(t, p, &compare, NULL);
 		print_tree(t, true, 0, 0);
 		fflush(stdout);
 	}
@@ -97,6 +97,7 @@ int main(int argc, char* argv[])
 {
 	if (argc != 2)
 	{
+		printf("./test <fname>\n");
 		return -1;
 	}
 	int len = 0;
@@ -106,15 +107,12 @@ int main(int argc, char* argv[])
 	{
 		buf[i] = argv[1][i];
 	}
-	PieceTable* pt = pt_create(buf, len);
-	pt_insert(pt, 'z', len);
-	pt_insert(pt, 'a', len + 1);
-	pt_insert(pt, 'z', len + 2);
-	pt_rm(pt, len + 2);
-	for (int i = 0; pt_get(pt, i) != '\0'; i++)
-	{
-		printf("%c", pt_get(pt, i));
-	}
-	printf("\n");
-	pt_free(pt);
+	Tab* t = make_tab(buf);
+	int index = pt_get_line_index(t->pt, 1);
+	pt_rm(t->pt, index + 2);
+	index = pt_get_line_index(t->pt, 0);
+	index = pt_get_line_index(t->pt, 1);
+	index = pt_get_line_index(t->pt, 2);
+	print_info(t->pt->pieces, &print_piece);
+	free_tab(t);
 }
