@@ -50,21 +50,57 @@ void free_piece(void* v)
 
 int piece_compare(Tree* t, void* elt)
 {
-	Piece* p = (Piece*) elt;
-	if (t == NULL || p == NULL || t->elt == NULL)
+	if (t == NULL)
 	{
 		return 0;
 	}
 
-	if (p->lines_inside == -1)
+	Piece* e = (Piece*) elt;
+	Piece* p = (Piece*) t->elt;
+	if (p == NULL || e == NULL)
 	{
-		p->len = ((Piece*) t->elt)->chars_contained;
-		p->lines_inside = -2;
+		return 0;
+	}
+
+	int left_length = 0;
+
+	if (t->left != NULL && t->left->elt != NULL)
+	{
+		left_length = ((Piece*) t->left->elt)->chars_contained;
+	}
+
+	if (e->chars_contained > left_length + p->len)
+	{
+		e->chars_contained -= left_length + p->len;
+		return 1;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+int finder_compare_characters(Tree* t, void* elt)
+{
+	if (t == NULL)
+	{
+		return 0;
+	}
+
+	Finder* f = (Finder*) elt;
+	Piece* p = (Piece*) t->elt;
+	if (p == NULL || f == NULL)
+	{
+		return 0;
+	}
+
+	if (f->global_char_index == -1)
+	{
+		f->global_char_index = p->chars_contained;
 	}
 
 	int left_length = 0;
 	int right_length = 0;
-	int right_char_length = 0;
 
 	if (t->left != NULL && t->left->elt != NULL)
 	{
@@ -73,60 +109,52 @@ int piece_compare(Tree* t, void* elt)
 	if (t->right != NULL && t->right->elt != NULL)
 	{
 		right_length = ((Piece*) t->right->elt)->chars_contained;
-		right_char_length = ((Piece*) t->right->elt)->chars_contained;
 	}
 
-	if (p->chars_contained <= left_length)
+	if (f->contained <= left_length)
 	{
-		if (p->chars_contained >= 0 && (t->left == NULL || t->left->elt == NULL))
+		if (f->contained >= 0 && (t->left == NULL || t->left->elt == NULL))
 		{
-			if (p->lines_inside == -2)
-			{
-				p->len -= ((Piece*) t->elt)->len + right_char_length;
-			}
+			f->global_char_index -= p->len + right_length;
 			return 0;
 		}
-		if (p->lines_inside == -2)
-		{
-			p->len -= ((Piece*) t->elt)->len + right_char_length;
-		}
+		f->global_char_index -= p->len + right_length;
 		return -1;
 	}
-	else if (p->chars_contained > left_length + ((Piece*) t->elt)->len)
+	else if (f->contained > left_length + p->len)
 	{
-		p->chars_contained -= left_length + ((Piece*) t->elt)->len;
+		f->contained -= left_length + p->len;
 		return 1;
 	}
 	else
 	{
-		if (p->lines_inside == -2)
-		{
-			p->len -= ((Piece*) t->elt)->len + right_char_length;
-		}
+		f->global_char_index -= p->len + right_length;
 		return 0;
 	}
 }
 
-// this is only used for pt_get_line_index
-// so we can use the chars_contained field to return what index in the document
-// the first character of a piece is
-int piece_compare_lines(Tree* t, void* elt)
+int finder_compare_lines(Tree* t, void* elt)
 {
-	Piece* p = (Piece*) elt;
-	if (t == NULL || p == NULL || t->elt == NULL)
+	if (t == NULL)
 	{
 		return 0;
 	}
 
-	if (p->chars_contained == -1)
+	Finder* f = (Finder*) elt;
+	Piece* p = (Piece*) t->elt;
+	if (p == NULL || f == NULL)
 	{
-		p->chars_contained = ((Piece*) t->elt)->chars_contained;
-		p->lines_inside = ((Piece*) t->elt)->lines_contained;
+		return 0;
+	}
+
+	if (f->global_char_index == -1 || f->global_line_index == -1)
+	{
+		f->global_char_index = p->chars_contained;
+		f->global_line_index = p->lines_contained;
 	}
 
 	int left_length = 0;
 	int right_length = 0;
-
 	int right_char_length = 0;
 
 	if (t->left != NULL && t->left->elt != NULL)
@@ -139,28 +167,27 @@ int piece_compare_lines(Tree* t, void* elt)
 		right_char_length = ((Piece*) t->right->elt)->chars_contained;
 	}
 
-	if (p->lines_contained <= left_length)
+	if (f->contained <= left_length)
 	{
-		// edge case for accessing line 0
-		if (p->lines_contained >= 0 && (t->left == NULL || t->left->elt == NULL))
+		if (f->contained >= 0 && (t->left == NULL || t->left->elt == NULL))
 		{
-			p->chars_contained -= ((Piece*) t->elt)->len + right_char_length;
-			p->lines_inside -= ((Piece*) t->elt)->lines_inside + right_length;
+			f->global_char_index -= p->len + right_char_length;
+			f->global_line_index -= p->lines_inside + right_length;
 			return 0;
 		}
-		p->chars_contained -= ((Piece*) t->elt)->len + right_char_length;
-		p->lines_inside -= ((Piece*) t->elt)->lines_inside + right_length;
+		f->global_char_index -= p->len + right_char_length;
+		f->global_line_index -= p->lines_inside + right_length;
 		return -1;
 	}
-	else if (p->lines_contained > left_length + ((Piece*) t->elt)->lines_inside)
+	else if (f->contained > left_length + p->lines_inside)
 	{
-		p->lines_contained -= left_length + ((Piece*) t->elt)->lines_inside;
+		f->contained -= left_length + p->lines_inside;
 		return 1;
 	}
 	else
 	{
-		p->chars_contained -= ((Piece*) t->elt)->len + right_char_length;
-		p->lines_inside -= ((Piece*) t->elt)->lines_inside + right_length;
+		f->global_char_index -= p->len + right_char_length;
+		f->global_line_index -= p->lines_inside + right_length;
 		return 0;
 	}
 }
@@ -235,10 +262,16 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		return;
 	}
-	Piece finder;
-	finder.chars_contained = index + 1;
+	Finder finder;
+	finder.contained = index + 1;
+	finder.global_char_index = -1;
 
-	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_compare);
+	Tree* t = tree_helper(pt->pieces, &finder, &finder_compare_characters);
+	if (t == NULL)
+	{
+		return;
+	}
+	Piece* p = (Piece*) t->elt;
 	if (p == NULL)
 	{
 		return;
@@ -259,7 +292,8 @@ void pt_insert(PieceTable* pt, char c, int index)
 		pt->append = new_buf;
 		pt->append_size += APPEND_SIZE;
 	}
-	if (*p->text == pt->append && p->start_index + p->len == pt->append_len && p->chars_contained == index)
+
+	if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
 	{
 		pt->append[pt->append_len] = c;
 		pt->append_len++;
@@ -270,28 +304,31 @@ void pt_insert(PieceTable* pt, char c, int index)
 			p->lines_contained++;
 			p->lines_inside++;
 		}
+		recursive_update_to_root(t, &update_info);
 	}
 	else
 	{
-		Piece* new_one = make_piece(p->text, p->start_index, index - p->chars_contained + p->len, index);
+		Piece* new_one = make_piece(p->text, p->start_index, index - finder.global_char_index, index);
 		if (new_one == NULL)
 		{
 			return;
 		}
-		Piece* new_two = make_piece(p->text, p->start_index + new_one->len, p->len - new_one->len, new_one->chars_contained + p->len - new_one->len + 1);
+		Piece* new_two = make_piece(p->text, p->start_index + new_one->len, p->len - new_one->len, index + p->len - new_one->len);
 		if (new_two == NULL)
 		{
 			free_piece(new_one);
 			return;
 		}
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_compare, &free_piece, &update_info);
+
+		finder.contained = index + 1;
+		pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
 		pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
 		pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
 
 		pt->append[pt->append_len] = c;
 		pt->append_len++;
 
-		Piece* new_piece = make_piece(&pt->append, pt->append_len, 1, index + 1);
+		Piece* new_piece = make_piece(&pt->append, pt->append_len - 1, 1, index + 1);
 		if (new_piece == NULL)
 		{
 			return;
@@ -307,10 +344,14 @@ void pt_rm(PieceTable* pt, int index)
 		return;
 	}
 
-	Piece finder;
-	finder.chars_contained = index + 1;
-	finder.lines_inside = -1;
-	Tree* t = tree_helper(pt->pieces, &finder, &piece_compare);
+	Finder finder;
+	finder.contained = index + 1;
+	finder.global_char_index = -1;
+	Tree* t = tree_helper(pt->pieces, &finder, &finder_compare_characters);
+	if (t == NULL)
+	{
+		return;
+	}
 	Piece* p = (Piece*) t->elt;
 	if (p == NULL)
 	{
@@ -327,7 +368,7 @@ void pt_rm(PieceTable* pt, int index)
 
 	// if we are removing a character on the edge of a piece we can just adjust the piece
 	// otherwise we must break it into two pieces
-	if (index == finder.len)
+	if (index == finder.global_char_index)
 	{
 		if ((*p->text)[p->start_index] == '\n')
 		{
@@ -339,7 +380,7 @@ void pt_rm(PieceTable* pt, int index)
 		p->start_index++;
 		recursive_update_to_root(t, &update_info);
 	}
-	else if (index - finder.len == p->len - 1)
+	else if (index - finder.global_char_index == p->len - 1)
 	{
 		if ((*p->text)[p->start_index + p->len - 1] == '\n')
 		{
@@ -352,7 +393,7 @@ void pt_rm(PieceTable* pt, int index)
 	}
 	else
 	{
-		Piece* new_one = make_piece(p->text, p->start_index, index - finder.len, index);
+		Piece* new_one = make_piece(p->text, p->start_index, index - finder.global_char_index, index);
 		if (new_one == NULL)
 		{
 			return;
@@ -364,8 +405,8 @@ void pt_rm(PieceTable* pt, int index)
 			return;
 		}
 
-		finder.chars_contained = index + 1;
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_compare, &free_piece, &update_info);
+		finder.contained = index + 1;
+		pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
 		pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
 		pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
 	}
@@ -378,15 +419,15 @@ char pt_get(PieceTable* pt, int index)
 		return '\0';
 	}
 
-	Piece finder;
-	finder.chars_contained = index + 1;
-	finder.lines_inside = -1;
-	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_compare);
+	Finder finder;
+	finder.contained = index + 1;
+	finder.global_char_index = -1;
+	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &finder_compare_characters);
 	if (p == NULL)
 	{
 		return '\0';
 	}
-	return (*p->text)[p->start_index + index - finder.len];
+	return (*p->text)[p->start_index + index - finder.global_char_index];
 }
 
 int pt_get_line_index(PieceTable* pt, int line_index)
@@ -399,17 +440,17 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 	{
 		return -1;
 	}
-	Piece finder;
-	finder.lines_contained = line_index;
-	finder.chars_contained = -1;
-	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_compare_lines);
+	Finder finder;
+	finder.contained = line_index;
+	finder.global_char_index = -1;
+	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &finder_compare_lines);
 	if (p == NULL)
 	{
 		return -1;
 	}
 
 	int n = 0;
-	int num_to_find = line_index - finder.lines_inside;
+	int num_to_find = line_index - finder.global_line_index;
 	int i;
 	for (i = p->start_index; i < p->start_index + p->len && n != num_to_find; i++)
 	{
@@ -418,7 +459,7 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 			n++;
 		}
 	}
-	return finder.chars_contained + i - p->start_index;
+	return finder.global_char_index + i - p->start_index;
 }
 
 void pt_free(PieceTable* pt)

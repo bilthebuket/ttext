@@ -59,7 +59,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 		}
 		return tree_add_elt(t->right, elt, cmp, update_relative_info);
 	}
-	else
+	else if (delta == -1)
 	{
 		if (t->left == NULL)
 		{
@@ -68,6 +68,10 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 			return tree_balance(t, cmp, update_relative_info);
 		}
 		return tree_add_elt(t->left, elt, cmp, update_relative_info);
+	}
+	else
+	{
+		return NULL;
 	}
 }
 
