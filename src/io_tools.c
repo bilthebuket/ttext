@@ -356,7 +356,7 @@ int indent_line(Tab* t, int index)
 		{
 			for (int j = 0; j < num_spaces; j++)
 			{
-				pt_insert(t->pt, ' ', line_index);
+				pt_insert(t->pt, ' ', line_index + j);
 			}
 
 			return num_spaces;

@@ -42,16 +42,7 @@ Tab* make_tab(char* fname)
 
 	if (f == NULL)
 	{
-		char* buf = malloc(sizeof(char));
-		if (buf == NULL)
-		{
-			log_error("malloc failed in make_tab\n");
-			free(r);
-			return NULL;
-		}
-		buf[0] = '\0';
-
-		r->pt = pt_create(buf, 1);
+		r->pt = pt_create(NULL, -1);
 		return r;
 	}
 
@@ -76,7 +67,14 @@ Tab* make_tab(char* fname)
 		return NULL;
 	}
 
-	r->pt = pt_create(buf, size);
+	if (buf[0] == '\0')
+	{
+		r->pt = pt_create(NULL, -1);
+	}
+	else
+	{
+		r->pt = pt_create(buf, size);
+	}
 
 	fclose(f);
 	return r;

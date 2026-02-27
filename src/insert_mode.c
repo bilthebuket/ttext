@@ -21,6 +21,8 @@ Tab* insert_mode(Tab* t, int ch)
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
+	print_info(t->pt->pieces, &print_piece);
+	fprintf(stderr, "%s\n", t->pt->append);
 
 	switch (ch)
 	{

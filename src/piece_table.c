@@ -237,20 +237,27 @@ PieceTable* pt_create(char* buf, int len)
 		}
 		r->append_size = APPEND_SIZE;
 		r->append_len = 0;
-		Piece* p = make_piece(&r->original, 0, len, len);
-		if (p == NULL)
+		if (buf == NULL)
 		{
-			free(r->append);
-			free(r);
-			return NULL;
+			r->pieces = NULL;
 		}
-		r->pieces = tree_create(p);
-		if (r->pieces == NULL)
+		else
 		{
-			free(p);
-			free(r->append);
-			free(r);
-			return NULL;
+			Piece* p = make_piece(&r->original, 0, len, len);
+			if (p == NULL)
+			{
+				free(r->append);
+				free(r);
+				return NULL;
+			}
+			r->pieces = tree_create(p);
+			if (r->pieces == NULL)
+			{
+				free(p);
+				free(r->append);
+				free(r);
+				return NULL;
+			}
 		}
 	}
 	return r;
@@ -262,8 +269,32 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		return;
 	}
+	if (pt->pieces == NULL)
+	{
+		if (pt->append_len + 1 > pt->append_size)
+		{
+			char* new_buf = malloc(sizeof(char) * (pt->append_size + APPEND_SIZE));
+			if (new_buf == NULL)
+			{
+				return;
+			}
+			for (int i = 0; i < pt->append_len; i++)
+			{
+				new_buf[i] = pt->append[i];
+			}
+			free(pt->append);
+			pt->append = new_buf;
+			pt->append_size += APPEND_SIZE;
+		}
+
+		pt->append[pt->append_len] = c;
+		Piece* new_piece = make_piece(&pt->append, pt->append_len, 1, 1);
+		pt->pieces = tree_create(new_piece);
+		pt->append_len++;
+	}
+
 	Finder finder;
-	finder.contained = index + 1;
+	finder.contained = index;
 	finder.global_char_index = -1;
 
 	Tree* t = tree_helper(pt->pieces, &finder, &finder_compare_characters);
@@ -322,8 +353,23 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 		finder.contained = index + 1;
 		pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
-		pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
-		pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
+
+		if (new_one->len > 0)
+		{
+			pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
+		}
+		else
+		{
+			free_piece(new_one);
+		}
+		if (new_two->len > 0)
+		{
+			pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
+		}
+		else
+		{
+			free_piece(new_two);
+		}
 
 		pt->append[pt->append_len] = c;
 		pt->append_len++;
@@ -370,26 +416,42 @@ void pt_rm(PieceTable* pt, int index)
 	// otherwise we must break it into two pieces
 	if (index == finder.global_char_index)
 	{
-		if ((*p->text)[p->start_index] == '\n')
+		if (p->len == 1)
 		{
-			p->lines_contained--;
-			p->lines_inside--;
+			finder.contained = index + 1;
+			pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
 		}
-		p->chars_contained--;
-		p->len--;
-		p->start_index++;
-		recursive_update_to_root(t, &update_info);
+		else
+		{
+			if ((*p->text)[p->start_index] == '\n')
+			{
+				p->lines_contained--;
+				p->lines_inside--;
+			}
+			p->chars_contained--;
+			p->len--;
+			p->start_index++;
+			recursive_update_to_root(t, &update_info);
+		}
 	}
 	else if (index - finder.global_char_index == p->len - 1)
 	{
-		if ((*p->text)[p->start_index + p->len - 1] == '\n')
+		if (p->len == 1)
 		{
-			p->lines_contained--;
-			p->lines_inside--;
+			finder.contained = index + 1;
+			pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
 		}
-		p->chars_contained--;
-		p->len--;
-		recursive_update_to_root(t, &update_info);
+		else
+		{
+			if ((*p->text)[p->start_index + p->len - 1] == '\n')
+			{
+				p->lines_contained--;
+				p->lines_inside--;
+			}
+			p->chars_contained--;
+			p->len--;
+			recursive_update_to_root(t, &update_info);
+		}
 	}
 	else
 	{
@@ -407,8 +469,23 @@ void pt_rm(PieceTable* pt, int index)
 
 		finder.contained = index + 1;
 		pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
-		pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
-		pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
+
+		if (new_one->len > 0)
+		{
+			pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &update_info);
+		}
+		else
+		{
+			free_piece(new_one);
+		}
+		if (new_two->len > 0)
+		{
+			pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &update_info);
+		}
+		else
+		{
+			free_piece(new_two);
+		}
 	}
 }
 
