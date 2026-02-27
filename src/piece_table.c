@@ -69,7 +69,7 @@ int piece_compare(Tree* t, void* elt)
 		left_length = ((Piece*) t->left->elt)->chars_contained;
 	}
 
-	if (e->chars_contained > left_length + p->len)
+	if (e->chars_contained - e->len >= left_length + p->len)
 	{
 		e->chars_contained -= left_length + p->len;
 		return 1;
@@ -351,7 +351,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 			return;
 		}
 
-		finder.contained = index + 1;
+		finder.contained = index;
 		pt->pieces = tree_rm(pt->pieces, &finder, &finder_compare_characters, &free_piece, &update_info);
 
 		if (new_one->len > 0)
@@ -436,6 +436,10 @@ void pt_rm(PieceTable* pt, int index)
 	}
 	else if (index - finder.global_char_index == p->len - 1)
 	{
+		if (p->start_index + p->len == pt->append_len && *p->text == pt->append)
+		{
+			pt->append_len--;
+		}
 		if (p->len == 1)
 		{
 			finder.contained = index + 1;

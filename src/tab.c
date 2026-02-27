@@ -23,7 +23,7 @@ Tab* make_tab(char* fname)
 	r->ypos = 0;
 	r->top_line_index = 0;
 	r->left_column_index = 0;
-	r->lines = make_list();
+	r->lines = NULL;
 	r->saved_x_index = 0;
 
 	FILE* f;
@@ -88,13 +88,16 @@ void free_tab(Tab* t)
 		{
 			free(t->fname);
 		}
-		void* elt;
-		while ((elt = rm(t->lines, 0)) != NULL)
+		if (t->lines != NULL)
 		{
-			Line* l = (Line*) elt;
-			free_line(l);
+			void* elt;
+			while ((elt = rm(t->lines, 0)) != NULL)
+			{
+				Line* l = (Line*) elt;
+				free_line(l);
+			}
+			free_list(t->lines);
 		}
-		free_list(t->lines);
 		pt_free(t->pt);
 		free(t);
 	}

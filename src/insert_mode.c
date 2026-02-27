@@ -21,8 +21,6 @@ Tab* insert_mode(Tab* t, int ch)
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
-	print_info(t->pt->pieces, &print_piece);
-	fprintf(stderr, "%s\n", t->pt->append);
 
 	switch (ch)
 	{
@@ -94,13 +92,10 @@ Tab* insert_mode(Tab* t, int ch)
 		}
 		else if (t->y > 0)
 		{
-			pt_rm(t->pt, line_index + t->x - 1);
-
-			for (int i = line_index - 1; pt_get(t->pt, i) != '\n'; i--)
-			{
-				t->x++;
-			}
 			t->y--;
+			int line_above_index = pt_get_line_index(t->pt, t->y);
+			for (t->x = 0; pt_get(t->pt, line_above_index + t->x) != '\n' && pt_get(t->pt, line_above_index + t->x) != '\0'; t->x++) {}
+			pt_rm(t->pt, line_index - 1);
 
 			check_left_update(t);
 			check_right_update(t);
@@ -114,7 +109,13 @@ Tab* insert_mode(Tab* t, int ch)
 
 		case ESCAPE_KEYCODE:
 		print_message("Normal Mode");
+		if (t->x > 0)
+		{
+			t->x--;
+		}
 		t->saved_x_index = t->x;
+		check_left_update(t);
+		move_cursor_to_tab(t);
 		mode = &normal_mode;
 		break;
 

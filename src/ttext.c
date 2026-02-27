@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
 	terminal->height = 5;
 	terminal->x = 0;
 	terminal->y = 0;
+	terminal->pt = NULL;
 	terminal->xpos = 0;
 	terminal->ypos = height - terminal->height - 2;
 	terminal->left_column_index = 0;
@@ -103,6 +104,10 @@ int main(int argc, char* argv[])
 	while (!terminate)
 	{
 		char c = getch();
+		if (c == '@')
+		{
+			//print_info(active_tab->pt->pieces, &print_piece);
+		}
 		sem_wait(&sem);
 		active_tab = (*mode)(active_tab, c);
 		refresh();

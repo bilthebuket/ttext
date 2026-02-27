@@ -55,6 +55,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 		{
 			t->right = tree_create(elt);
 			t->right->prev = t;
+			(*update_relative_info)(t->right);
 			return tree_balance(t, cmp, update_relative_info);
 		}
 		return tree_add_elt(t->right, elt, cmp, update_relative_info);
@@ -98,17 +99,14 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*free_node)(vo
 		(*free_node)(t->elt);
 		if (t->left == NULL && t->right == NULL)
 		{
-			Tree* store;
-			if (spot_to_fill != NULL)
-			{
-				*spot_to_fill = NULL;
-				store = t->prev;
-			}
-			else
+			if (spot_to_fill == NULL)
 			{
 				free(t);
 				return NULL;
 			}
+			Tree* store;
+			*spot_to_fill = NULL;
+			store = t->prev;
 			free(t);
 			return tree_balance(store, cmp, update_relative_info);
 		}
@@ -446,6 +444,10 @@ Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*))
 		t->left->prev = t->prev;
 		t->prev = t->left;
 		t->left = store;
+		if (store != NULL)
+		{
+			store->prev = t;
+		}
 		update_height(t, update_relative_info);
 		update_height(store2, update_relative_info);
 		return store2;
@@ -470,6 +472,10 @@ Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*))
 		t->right->prev = t->prev;
 		t->prev = t->right;
 		t->right = store;
+		if (store != NULL)
+		{
+			store->prev = t;
+		}
 		update_height(t, update_relative_info);
 		update_height(store2, update_relative_info);
 		return store2;
@@ -571,4 +577,18 @@ void recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
 
 	(*update_relative_info)(t);
 	recursive_update_to_root(t->prev, update_relative_info);
+}
+
+bool tree_find(Tree* t, Tree* to_find)
+{
+	if (t == NULL)
+	{
+		return false;
+	}
+
+	if (t == to_find)
+	{
+		return true;
+	}
+	return tree_find(t->left, to_find) || tree_find(t->right, to_find);
 }

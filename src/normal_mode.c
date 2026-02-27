@@ -14,10 +14,10 @@ Tab* normal_mode(Tab* t, int ch)
 	switch (ch)
 	{
 		case 'h':
-		if (active_tab->x > 0)
+		if (t->x > 0)
 		{
 			t->x--;
-			t->saved_x_index = active_tab->x;
+			t->saved_x_index = t->x;
 			check_left_update(t);
 			move_cursor_to_tab(t);
 		}
@@ -90,7 +90,7 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 'l':
-		if (pt_get(t->pt, line_index + t->x + 1) != '\0' && pt_get(t->pt, line_index + t->x + 1) != '\n')
+		if (pt_get(t->pt, line_index + t->x) != '\0' && pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x + 1) != '\0' && pt_get(t->pt, line_index + t->x + 1) != '\n')
 		{
 			t->x++;
 			t->saved_x_index = t->x;
@@ -114,7 +114,7 @@ Tab* normal_mode(Tab* t, int ch)
 		case 'a':
 		t->tab_num_flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
-		if (pt_get(t->pt, line_index) != '\0')
+		if (pt_get(t->pt, line_index + t->x) != '\0' && pt_get(t->pt, line_index + t->x) != '\n')
 		{
 			t->x++;
 			if (t->left_column_index + t->width < t->x)
@@ -166,7 +166,7 @@ Tab* normal_mode(Tab* t, int ch)
 			pt_rm(t->pt, line_index + t->x);
 			pt_update_color_indices(t, line_index);
 
-			if ((pt_get(t->pt, t->x) == '\0'  || pt_get(t->pt, t->x) == '\n' ) && active_tab->x != 0)
+			if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
 			{
 				t->x--;
 				t->saved_x_index = t->x;
@@ -224,7 +224,7 @@ Tab* normal_mode(Tab* t, int ch)
 		bool found = false;
 		int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
 				  // and we need to exclude it from the counter
-		for (int y_index = active_tab->y; y_index >= 0 && pt_get_line_index(t->pt, y_index) != -1; y_index += delta)
+		for (int y_index = t->y; y_index >= 0 && pt_get_line_index(t->pt, y_index) != -1; y_index += delta)
 		{
 			int line_we_are_on = pt_get_line_index(t->pt, y_index);
 			int len;
@@ -283,7 +283,7 @@ Tab* normal_mode(Tab* t, int ch)
 			}
 		}
 
-		t->saved_x_index = active_tab->x;
+		t->saved_x_index = t->x;
 		
 		break;
 	}

@@ -32,5 +32,6 @@ Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*));
 
 void print_tree(Tree* t, bool reset, int row, int col);
 void print_info(Tree* t, void (*print_elt)(void*));
+bool tree_find(Tree* t, Tree* to_find);
 
 #endif

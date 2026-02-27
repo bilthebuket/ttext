@@ -336,7 +336,7 @@ int indent_line(Tab* t, int index)
 		for (; pt_get(t->pt, line_above_index + num_spaces) == ' '; num_spaces++) {}
 
 		int braces = 0;
-		for (int i = num_spaces; pt_get(t->pt, line_above_index + i) != '\0'; i++)
+		for (int i = num_spaces; pt_get(t->pt, line_above_index + i) != '\n' && pt_get(t->pt, line_above_index + i) != '\0'; i++)
 		{
 			if (pt_get(t->pt, line_above_index + i) == '{')
 			{
