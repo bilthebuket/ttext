@@ -243,7 +243,7 @@ Tab* normal_mode(Tab* t, int ch)
 			{
 				x_index = len - 1;
 			}
-			for (; pt_get(t->pt, line_we_are_on + x_index) != '\0' && x_index >= 0; x_index += delta)
+			for (; pt_get(t->pt, line_we_are_on + x_index) != '\0' && x_index >= 0 && x_index < len; x_index += delta)
 			{
 				if (pt_get(t->pt, line_we_are_on + x_index) == looking_for)
 				{

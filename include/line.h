@@ -18,11 +18,11 @@ typedef struct GapBuffer
 	char* text;
 } GapBuffer;
 
-typedef struct ColorIndex
+typedef struct CI
 {
 	int index;
 	int color;
-} ColorIndex;
+} CI;
 
 typedef struct Line
 {

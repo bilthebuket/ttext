@@ -34,7 +34,7 @@ void update_color_indices(Line* line)
 	while (1)
 	{
 		i++;
-		ColorIndex* ci = malloc(sizeof(ColorIndex));
+		CI* ci = malloc(sizeof(CI));
 		if (ci == NULL)
 		{
 			log_error("malloc failed in update_color_indices\n");
@@ -76,7 +76,7 @@ void update_color_indices(Line* line)
 			}
 			else
 			{
-				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				CI* ci = malloc(sizeof(CI));
 				if (ci == NULL)
 				{
 					log_error("malloc failed in update_color_indices\n");
@@ -105,7 +105,7 @@ void update_color_indices(Line* line)
 			}
 			else
 			{
-				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				CI* ci = malloc(sizeof(CI));
 				if (ci == NULL)
 				{
 					log_error("malloc failed in update_color_indices\n");
@@ -125,7 +125,7 @@ void update_color_indices(Line* line)
 			}
 			else
 			{
-				ColorIndex* ci = malloc(sizeof(ColorIndex));
+				CI* ci = malloc(sizeof(CI));
 				if (ci == NULL)
 				{
 					log_error("malloc failed in update_color_indices\n");

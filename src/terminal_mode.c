@@ -717,7 +717,7 @@ void* listener_func(void*)
 			log_error("malloc failed in forkpty thread\n");
 			continue;
 		}
-		int bytes_read = read(master_fd, listener_buf, LINE_SIZE);
+		int bytes_read = read(master_fd, listener_buf, LINE_SIZE - 1);
 		listener_buf[bytes_read] = '\0';
 		if (bytes_read > 0)
 		{

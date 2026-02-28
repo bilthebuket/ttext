@@ -19,14 +19,14 @@ typedef struct Piece
  * to search by character, set contained to char_index + 1, use finder_compare_characters
 */
 
-typedef struct Finder
+typedef struct PieceFinder
 {
 	int contained;
 
 	// make sure to set global_char_index to -1 before handing it to tree_helper/tree_get
 	int global_char_index; // global char index of first character in piece
 	int global_line_index; // global line index of first character in piece
-} Finder;
+} PieceFinder;
 
 typedef struct PieceTable
 {
@@ -50,8 +50,8 @@ Piece* make_piece(char** text, int start_index, int len, int chars_contained);
 void free_piece(void* v);
 
 int piece_compare(Tree* t, void* elt);
-int finder_compare_lines(Tree* t, void* elt);
-int finder_compare_characters(Tree* t, void* elt);
+int piece_finder_compare_lines(Tree* t, void* elt);
+int piece_finder_compare_characters(Tree* t, void* elt);
 
 int piece_compare_lines(Tree* t, void* elt);
 void update_info(Tree* t);

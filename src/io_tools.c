@@ -135,7 +135,7 @@ void print_line(Tab* t, int line_index)
 			{
 				Node* next = NULL;
 
-				while (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index < t->left_column_index)
+				while (colorindex->elt != NULL && ((CI*) colorindex->elt)->index < t->left_column_index)
 				{
 					Node* next = colorindex->next;
 					if (next == NULL)
@@ -176,9 +176,9 @@ void print_line(Tab* t, int line_index)
 			{
 				if (colorindex != NULL)
 				{
-					if (colorindex->elt != NULL && ((ColorIndex*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
+					if (colorindex->elt != NULL && ((CI*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
 					{
-						attron(COLOR_PAIR(((ColorIndex*) colorindex->elt)->color));
+						attron(COLOR_PAIR(((CI*) colorindex->elt)->color));
 						colorindex = colorindex->next;
 					}
 					// we have to check again because its possible we did colorindex = colorindex->next in the previous line
