@@ -164,7 +164,6 @@ Tab* normal_mode(Tab* t, int ch)
 		{
 			t->tab_num_flags &= ~CHANGES_SAVED;
 			pt_rm(t->pt, line_index + t->x);
-			pt_update_color_indices(t, line_index);
 
 			if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
 			{

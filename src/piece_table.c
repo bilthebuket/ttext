@@ -511,6 +511,64 @@ char pt_get(PieceTable* pt, int index)
 	return (*p->text)[p->start_index + index - finder.global_char_index];
 }
 
+bool pt_iterator_init(PieceTable* pt, PieceIterator* pi, int index)
+{
+	if (pt == NULL || pi == NULL || index < 0)
+	{
+		return false;
+	}
+
+	PieceFinder f;
+	f.contained = index + 1;
+	f.global_char_index = -1;
+	pi->node = tree_helper(pt->pieces, &f, &piece_finder_compare_characters);
+	if (pi->node == NULL)
+	{
+		return false;
+	}
+	pi->index = index - f.global_char_index;
+	return true;
+}
+
+char pt_iterate(PieceIterator* pi)
+{
+	if (pi == NULL || pi->node == NULL)
+	{
+		return '\0';
+	}
+
+	Piece* p = (Piece*) pi->node->elt;
+	char c = (*p->text)[p->start_index + pi->index];
+	if (pi->index == p->len - 1)
+	{
+		pi->index = 0;
+		if (pi->node->right != NULL)
+		{
+			pi->node = pi->node->right;
+			while (pi->node->left != NULL)
+			{
+				pi->node = pi->node->left;
+			}
+		}
+		else
+		{
+			Tree* prev = pi->node->prev;
+			while (prev != NULL && prev->right == pi->node)
+			{
+				pi->node = prev;
+				prev = prev->prev;
+			}
+			pi->node = prev;
+		}
+	}
+	else
+	{
+		pi->index++;
+	}
+
+	return c;
+}
+
 int pt_get_line_index(PieceTable* pt, int line_index)
 {
 	if (pt == NULL)

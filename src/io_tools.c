@@ -58,29 +58,44 @@ void print_line(Tab* t, int line_index)
 	getyx(stdscr, y, x);
 	bool endofline = false;
 
-	if (t->pt != NULL)
+	// iterator is created inside print_line and not print_tab because there are pros and cons to both and this is easier
+	// implementing the iterator at the print_tab level would mean we have to iterate over all characters that are off screen to get to the next line
+	// implementing the iterator at the print_line level means we have to traverse the tree for every line
+	// the performance difference is O(n) vs O(mlogb), where n = # of chars off screen, m = # of lines on screen, and b = # of nodes in tree
+	// this way is better for having several smalls tabs open
+	PieceIterator pi;
+	pt_iterator_init(t->pt, &pi, pt_get_line_index(t->pt, line_index));
+
+	for (int i = 0; i < t->left_column_index; i++)
 	{
-		int index = pt_get_line_index(t->pt, line_index);
-		if (index == -1 || pt_get(t->pt, t->left_column_index + index) == '\n' || pt_get(t->pt, t->left_column_index + index) == '\0')
+		char c = pt_iterate(&pi);
+		if (c == '\n' || c == '\0')
 		{
 			endofline = true;
+			break;
 		}
+	}
 
+	if (t->pt != NULL)
+	{
 		attron(COLOR_PAIR(WHITE_TEXT));
 		for (int i = t->xpos; i <= t->xpos + t->width; i++)
 		{
 			if (endofline)
 			{
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
+				continue;
 			}
-			else if (pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\n' || pt_get(t->pt, index + t->left_column_index + i - t->xpos) == '\0')
+
+			char c = pt_iterate(&pi);
+			if (c  == '\n' || c  == '\0')
 			{
 				endofline = true;
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 			}
 			else
 			{
-				mvaddch(t->ypos + line_index - t->top_line_index, i, pt_get(t->pt, index + t->left_column_index + i - t->xpos));
+				mvaddch(t->ypos + line_index - t->top_line_index, i, c);
 			}
 		}
 	}

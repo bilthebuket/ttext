@@ -2,6 +2,20 @@
 #define PIECE_TABLE_H
 
 #include "tree.h"
+#include <stdbool.h>
+
+typedef struct ColorIndex
+{
+	int chars_contained;
+	int color;
+} ColorIndex;
+
+// works the same as PieceFinder
+typedef struct ColorIndexFinder
+{
+	int chars_contained;
+	int global_char_index;
+} ColorIndexFinder;
 
 typedef struct Piece
 {
@@ -12,6 +26,12 @@ typedef struct Piece
 	int lines_inside; // number of '\n's between start_index and len
 	int chars_contained; // same as lines_contained except for all characters
 } Piece;
+
+typedef struct PieceIterator
+{
+	Tree* node;
+	int index;
+} PieceIterator;
 
 /*
  * How to use:
@@ -33,6 +53,7 @@ typedef struct PieceTable
 	char* original;
 	char* append;
 	Tree* pieces;
+	Tree* color_indices;
 	int append_size;
 	int append_len;
 } PieceTable;
@@ -40,11 +61,15 @@ typedef struct PieceTable
 void pt_insert(PieceTable* pt, char c, int index);
 void pt_rm(PieceTable* pt, int index);
 char pt_get(PieceTable* pt, int index);
+bool pt_iterator_init(PieceTable* pt, PieceIterator* pi, int index);
+char pt_iterate(PieceIterator* pi);
 PieceTable* pt_create(char* buf, int len);
 void pt_free(PieceTable* pt);
 
 // gets the index of the first character in the line in the piece table of index line_index
 int pt_get_line_index(PieceTable* pt, int line_index);
+
+int pt_get_color(PieceTable* pt, int index);
 
 Piece* make_piece(char** text, int start_index, int len, int chars_contained);
 void free_piece(void* v);

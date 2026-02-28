@@ -62,7 +62,6 @@ Tab* insert_mode(Tab* t, int ch)
 		check_right_update(t);
 		move_cursor_to_tab(t);
 
-		pt_update_color_indices(t, line_index);
 		print_line(t, t->y);
 		break;
 
@@ -74,7 +73,6 @@ Tab* insert_mode(Tab* t, int ch)
 		t->x += TAB_SIZE;
 		check_right_update(t);
 		move_cursor_to_tab(t);
-		pt_update_color_indices(t, line_index);
 		print_line(t, line_index);
 		break;
 
@@ -87,7 +85,6 @@ Tab* insert_mode(Tab* t, int ch)
 			check_left_update(t);
 			move_cursor_to_tab(t);
 
-			pt_update_color_indices(t, line_index);
 			print_line(t, t->y);
 		}
 		else if (t->y > 0)
@@ -102,7 +99,6 @@ Tab* insert_mode(Tab* t, int ch)
 			check_top_update(t);
 			move_cursor_to_tab(t);
 
-			pt_update_color_indices(t, line_index);
 			print_tab(t);
 		}
 		break;
@@ -128,8 +124,6 @@ Tab* insert_mode(Tab* t, int ch)
 		check_bottom_update(t);
 		move_cursor_to_tab(t);
 
- 		pt_update_color_indices(t, line_index);
- 		pt_update_color_indices(t, line_index + t->x + 1);
 		print_tab(t);
 		break;
 	}
