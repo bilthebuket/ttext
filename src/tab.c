@@ -102,8 +102,3 @@ void free_tab(Tab* t)
 		free(t);
 	}
 }
-
-void pt_update_color_indices(Tab* t, int index)
-{
-	return;
-}

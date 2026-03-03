@@ -38,6 +38,8 @@
 #define OSC_ESC (1 << 1)
 #define SC_ESC (1 << 2)
 
+#define NUM_CHARS 256
+
 extern Tab* (*mode)(Tab*, int);
 
 // maintained in ascending order of z_index (last element in list is on top of screen)

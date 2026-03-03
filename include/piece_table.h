@@ -7,13 +7,14 @@
 typedef struct ColorIndex
 {
 	int chars_contained;
+	int len;
 	int color;
 } ColorIndex;
 
 // works the same as PieceFinder
 typedef struct ColorIndexFinder
 {
-	int chars_contained;
+	int contained;
 	int global_char_index;
 } ColorIndexFinder;
 
@@ -70,6 +71,12 @@ void pt_free(PieceTable* pt);
 int pt_get_line_index(PieceTable* pt, int line_index);
 
 int pt_get_color(PieceTable* pt, int index);
+void pt_update_color_indices(PieceTable* pt, int index);
+void color_index_update_info(Tree* t);
+ColorIndex* make_color_index(int color, int len, int chars_contained);
+
+int color_index_compare(Tree* t, void* elt);
+int color_index_finder_compare_characters(Tree* t, void* elt);
 
 Piece* make_piece(char** text, int start_index, int len, int chars_contained);
 void free_piece(void* v);
@@ -79,7 +86,7 @@ int piece_finder_compare_lines(Tree* t, void* elt);
 int piece_finder_compare_characters(Tree* t, void* elt);
 
 int piece_compare_lines(Tree* t, void* elt);
-void update_info(Tree* t);
+void piece_update_info(Tree* t);
 
 void print_piece(void* v);
 

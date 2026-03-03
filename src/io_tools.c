@@ -64,15 +64,20 @@ void print_line(Tab* t, int line_index)
 	// the performance difference is O(n) vs O(mlogb), where n = # of chars off screen, m = # of lines on screen, and b = # of nodes in tree
 	// this way is better for having several smalls tabs open
 	PieceIterator pi;
-	pt_iterator_init(t->pt, &pi, pt_get_line_index(t->pt, line_index));
-
-	for (int i = 0; i < t->left_column_index; i++)
+	if (!pt_iterator_init(t->pt, &pi, pt_get_line_index(t->pt, line_index)))
 	{
-		char c = pt_iterate(&pi);
-		if (c == '\n' || c == '\0')
+		endofline = true;
+	}
+	else
+	{
+		for (int i = 0; i < t->left_column_index; i++)
 		{
-			endofline = true;
-			break;
+			char c = pt_iterate(&pi);
+			if (c == '\n' || c == '\0')
+			{
+				endofline = true;
+				break;
+			}
 		}
 	}
 
