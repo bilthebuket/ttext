@@ -20,6 +20,13 @@ void print_piece(void* v)
 	}
 	fprintf(stderr, " | start index: %d | len: %d | chars contained: %d | lines inside: %d | lines contained: %d", p->start_index, p->len, p->chars_contained, p->lines_inside, p->lines_contained);
 }
+
+void print_color_index(void* v)
+{
+	ColorIndex* ci = (ColorIndex*) v;
+	fprintf(stderr, "color: %d | len: %d | contained: %d", ci->color, ci->len, ci->chars_contained);
+}
+
 Piece* make_piece(char** text, int start_index, int len, int chars_contained)
 {
 	Piece* r = malloc(sizeof(Piece));
@@ -259,6 +266,16 @@ PieceTable* pt_create(char* buf, int len)
 				return NULL;
 			}
 		}
+		ColorIndex* ci = make_color_index(CYAN_TEXT, len, len);
+		if (ci == NULL)
+		{
+			free(r->append);
+			tree_free(r->pieces, &free_piece);
+			free(r);
+			return NULL;
+		}
+		r->color_indices = tree_create(ci);
+		pt_update_color_indices(r, 0);
 	}
 	return r;
 }
@@ -672,6 +689,7 @@ void pt_free(PieceTable* pt)
 		free(pt->append);
 	}
 	tree_free(pt->pieces, &free_piece);
+	tree_free(pt->color_indices, &free);
 	free(pt);
 }
 
@@ -764,7 +782,7 @@ int pt_get_color(PieceTable* pt, int index)
 {
 	if (pt == NULL || pt->color_indices == NULL)
 	{
-		return -1;
+		return WHITE_TEXT;
 	}
 
 	ColorIndexFinder f;
@@ -773,7 +791,7 @@ int pt_get_color(PieceTable* pt, int index)
 	ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
 	if (ci == NULL)
 	{
-		return -1;
+		return WHITE_TEXT;
 	}
 	return ci->color;
 }
@@ -828,6 +846,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		chars_to_split_on[i] = false;
 	}
 	chars_to_split_on[' '] = true;
+	chars_to_split_on['\n'] = true;
 	chars_to_split_on['['] = true;
 	chars_to_split_on[']'] = true;
 	chars_to_split_on['{'] = true;
@@ -839,21 +858,40 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	int i;
 	char c;
-	for (i = 0; i < ci->len; i++)
+	if (ci->len > 1)
 	{
-		c = pt_iterate(&pi);
-		if (chars_to_split_on[(int) c])
+		for (i = 0; i < ci->len; i++)
 		{
-			split = true;
-			break;
+			c = pt_iterate(&pi);
+			if (chars_to_split_on[(int) c])
+			{
+				if ((c == ' ' || c == '\n') && (i == 0 || i == ci->len - 1))
+				{
+					continue;
+				}
+				split = true;
+				break;
+			}
 		}
 	}
 
 	if (split)
 	{
-		switch (c)
+		if (c == ' ' || c == '\n')
 		{
-			default:
+			ColorIndex* new = make_color_index(ci->color, ci->len - i, f.global_char_index + ci->len);
+			if (new == NULL)
+			{
+				return;
+			}
+			ci->len -= ci->len - i;
+			recursive_update_to_root(t, &color_index_update_info);		
+			pt->color_indices = tree_add_elt(pt->color_indices, new, &color_index_compare, &color_index_update_info);
+			pt_update_color_indices(pt, f.global_char_index);
+			pt_update_color_indices(pt, f.global_char_index + ci->len);
+		}
+		else
+		{
 			ColorIndex* new_one = make_color_index(ci->color, 1, f.global_char_index + i + 1);
 			if (new_one == NULL)
 			{
@@ -872,7 +910,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			pt->color_indices = tree_add_elt(pt->color_indices, new_one, &color_index_compare, &color_index_update_info);
 			if (new_two->len > 0)
 			{
-				pt->color_indices = tree_add_elt(pt->color_indices, new_one, &color_index_compare, &color_index_update_info);
+				pt->color_indices = tree_add_elt(pt->color_indices, new_two, &color_index_compare, &color_index_update_info);
 				pt_update_color_indices(pt, f.global_char_index);
 				pt_update_color_indices(pt, f.global_char_index + i);
 				pt_update_color_indices(pt, f.global_char_index + i + 1);
@@ -884,20 +922,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				pt_update_color_indices(pt, f.global_char_index + i);
 
 			}
-			break;
-
-			case ' ':
-			ColorIndex* new = make_color_index(ci->color, ci->len - i, f.global_char_index + ci->len);
-			if (new == NULL)
-			{
-				return;
-			}
-			ci->len -= ci->len - i;
-			recursive_update_to_root(t, &color_index_update_info);		
-			pt->color_indices = tree_add_elt(pt->color_indices, new, &color_index_compare, &color_index_update_info);
-			pt_update_color_indices(pt, f.global_char_index);
-			pt_update_color_indices(pt, f.global_char_index + new->len);
-			break;
 		}
 	}
 	else
@@ -910,7 +934,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		for (i = 0; i < ci->len; i++)
 		{
 			c = pt_iterate(&pi);
-			if (c != ' ')
+			if (c != ' ' && c != '\n')
 			{
 				break;
 			}
@@ -955,10 +979,29 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				}
 			}
 		}
+		else if (c == '/' && (pt_get(pt, f.global_char_index + i + 1) == '/' || pt_get(pt, f.global_char_index + i - 1) == '/'))
+		{
+			ci->color = GREEN_TEXT;
+			return;
+		}
+
+		if (!pt_iterator_init(pt, &pi, f.global_char_index))
+		{
+			return;
+		}
+
+		for (i = 0; i < ci->len; i++)
+		{
+			c = pt_iterate(&pi);
+			if (c != ' ' && c != '\n')
+			{
+				break;
+			}
+		}
+
 		bool red = false;
 		for (; i < ci->len; i++)
 		{
-			c = pt_iterate(&pi);
 			if (c == ' ' || c == '\n' || c == '\0' || (c >= '*' && c <= '>')) 
 			{
 				red = true;
@@ -968,6 +1011,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				red = false;
 				break;
 			}
+			c = pt_iterate(&pi);
 		}
 
 		if (red)
@@ -976,14 +1020,28 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			return;
 		}
 
+		if (!pt_iterator_init(pt, &pi, f.global_char_index))
+		{
+			return;
+		}
+
+		for (i = 0; i < ci->len; i++)
+		{
+			c = pt_iterate(&pi);
+			if (c != ' ' && c != '\n')
+			{
+				break;
+			}
+		}
+
 		for (; i < ci->len; i++)
 		{
 			c = pt_iterate(&pi);
 		}
-		c = pt_iterate(&pi);
 		if (c == ' ')
 		{
-			while (c != ' ')
+			c = pt_iterate(&pi);
+			while (c != ' ' && c != '\0')
 			{
 				c = pt_iterate(&pi);
 			}

@@ -89,5 +89,6 @@ int piece_compare_lines(Tree* t, void* elt);
 void piece_update_info(Tree* t);
 
 void print_piece(void* v);
+void print_color_index(void* v);
 
 #endif

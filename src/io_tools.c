@@ -81,9 +81,10 @@ void print_line(Tab* t, int line_index)
 		}
 	}
 
+	int char_index = pt_get_line_index(t->pt, line_index);
+
 	if (t->pt != NULL)
 	{
-		attron(COLOR_PAIR(WHITE_TEXT));
 		for (int i = t->xpos; i <= t->xpos + t->width; i++)
 		{
 			if (endofline)
@@ -93,13 +94,15 @@ void print_line(Tab* t, int line_index)
 			}
 
 			char c = pt_iterate(&pi);
-			if (c  == '\n' || c  == '\0')
+			if (c == '\n' || c == '\0')
 			{
 				endofline = true;
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 			}
 			else
 			{
+				//TODO: make iterator for colors like the one for pieces
+				attron(COLOR_PAIR(pt_get_color(t->pt, char_index + t->left_column_index + i - t->xpos)));
 				mvaddch(t->ypos + line_index - t->top_line_index, i, c);
 			}
 		}
