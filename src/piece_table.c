@@ -1,7 +1,66 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include "piece_table.h"
 #include "global.h"
 #include "tree.h"
+
+// TODO: use bitflags intead of bool array
+static int prime_numbers[NUM_PRIME_NUMBERS];
+static bool chars_to_split_on[NUM_CHARS];
+static bool control_word_check[MAX_HASH_VALUE];
+
+static int hash_function(const char* s, int len)
+{
+	uint64_t val = 0;
+	for (int i = 0; i < len; i++)
+	{
+		val += ((int) s[i]) * prime_numbers[i % NUM_PRIME_NUMBERS];
+	}
+	return (int) (val % MAX_HASH_VALUE);
+}
+
+void piece_table_init_arrays(void)
+{
+	for (int i = 0; i < NUM_CHARS; i++)
+	{
+		chars_to_split_on[i] = false;
+	}
+	chars_to_split_on[' '] = true;
+	chars_to_split_on['\n'] = true;
+	chars_to_split_on['['] = true;
+	chars_to_split_on[']'] = true;
+	chars_to_split_on['{'] = true;
+	chars_to_split_on['}'] = true;
+	chars_to_split_on['('] = true;
+	chars_to_split_on[')'] = true;
+	chars_to_split_on[';'] = true;
+	chars_to_split_on[','] = true;
+	prime_numbers[0] = 67;
+	prime_numbers[1] = 283;
+	prime_numbers[2] = 31;
+	prime_numbers[3] = 593;
+	prime_numbers[4] = 379;
+	prime_numbers[5] = 389;
+	prime_numbers[6] = 821;
+	prime_numbers[7] = 113;
+	for (int i = 0; i < MAX_HASH_VALUE; i++)
+	{
+		control_word_check[i] = false;
+	}
+	control_word_check[hash_function("break", 5)] = true;
+	control_word_check[hash_function("case", 4)] = true;
+	control_word_check[hash_function("continue", 8)] = true;
+	control_word_check[hash_function("default", 7)] = true;
+	control_word_check[hash_function("do", 2)] = true;
+	control_word_check[hash_function("else", 4)] = true;
+	control_word_check[hash_function("for", 3)] = true;
+	control_word_check[hash_function("goto", 4)] = true;
+	control_word_check[hash_function("if", 2)] = true;
+	control_word_check[hash_function("return", 6)] = true;
+	control_word_check[hash_function("switch", 6)] = true;
+	control_word_check[hash_function("typedef", 7)] = true;
+	control_word_check[hash_function("while", 5)] = true;
+}
 
 void print_piece(void* v)
 {
@@ -235,6 +294,40 @@ PieceTable* pt_create(char* buf, int len)
 	PieceTable* r = malloc(sizeof(PieceTable));
 	if (r != NULL)
 	{
+		int new_len = len;
+		for (int i = 0; i < len; i++)
+		{
+			if (buf[i] == '\t')
+			{
+				new_len += TAB_SIZE - 1;
+			}
+		}
+		char* new_buf = malloc(sizeof(char) * new_len);
+		if (new_buf == NULL)
+		{
+			free(r);
+			return NULL;
+		}
+		int offset = 0;
+		for (int i = 0; i < len; i++)
+		{
+			if (buf[i] == '\t')
+			{
+				for (int j = 0; j < TAB_SIZE; j++)
+				{
+					new_buf[i + offset + j] = ' ';
+				}
+				offset += TAB_SIZE - 1;
+			}
+			else
+			{
+				new_buf[i + offset] = buf[i];
+			}
+		}
+		free(buf);
+		buf = new_buf;
+		len = new_len;
+
 		r->original = buf;
 		r->append = malloc(sizeof(char) * APPEND_SIZE);
 		if (r->append == NULL)
@@ -426,6 +519,18 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 	recursive_update_to_root(t, &color_index_update_info);
 	pt_update_color_indices(pt, index);
+	pt_update_color_indices(pt, index + 1);
+	pt_update_color_indices(pt, index - 1);
+	for (int i = 2; true; i++)
+	{
+		int c1 = pt_get_color(pt, index + i);
+		pt_update_color_indices(pt, index + i);
+		int c2 = pt_get_color(pt, index + i);
+		if (c1 == c2)
+		{
+			break;
+		}
+	}
 }
 
 void pt_rm(PieceTable* pt, int index)
@@ -545,7 +650,7 @@ void pt_rm(PieceTable* pt, int index)
 	{
 		if (pt->pieces != NULL && pt->pieces->elt != NULL)
 		{
-			// this has to be one morethan pt->pieces because we are going to subtract one later
+			// this has to be one more than pt->pieces because we are going to subtract one later
 			ColorIndex* ci = make_color_index(CYAN_TEXT, ((Piece*) pt->pieces->elt)->chars_contained + 1, ((Piece*) pt->pieces->elt)->chars_contained + 1);
 			if (ci != NULL)
 			{
@@ -564,6 +669,18 @@ void pt_rm(PieceTable* pt, int index)
 
 	recursive_update_to_root(t, &color_index_update_info);
 	pt_update_color_indices(pt, index);
+	pt_update_color_indices(pt, index + 1);
+	pt_update_color_indices(pt, index - 1);
+	for (int i = 2; true; i++)
+	{
+		int c1 = pt_get_color(pt, index + i);
+		pt_update_color_indices(pt, index + i);
+		int c2 = pt_get_color(pt, index + i);
+		if (c1 == c2)
+		{
+			break;
+		}
+	}
 }
 
 char pt_get(PieceTable* pt, int index)
@@ -836,24 +953,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		return;
 	}
 
-	// TODO: use bitflags intead of bool array
-
-	bool chars_to_split_on[NUM_CHARS];
-	// skip the first character because if a split character is at index one that means we
-	// dont need to split/already split
-	for (int i = 1; i < NUM_CHARS; i++)
-	{
-		chars_to_split_on[i] = false;
-	}
-	chars_to_split_on[' '] = true;
-	chars_to_split_on['\n'] = true;
-	chars_to_split_on['['] = true;
-	chars_to_split_on[']'] = true;
-	chars_to_split_on['{'] = true;
-	chars_to_split_on['}'] = true;
-	chars_to_split_on['('] = true;
-	chars_to_split_on[')'] = true;
-
 	bool split = false;
 
 	int i;
@@ -940,16 +1039,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 		}
 
-		if (c == '#')
-		{
-			ci->color = MAGENTA_TEXT;
-			return;
-		}
-		if (chars_to_split_on[(int) c] || pt_get(pt, f.global_char_index + ci->len) == '(')
-		{
-			ci->color = YELLOW_TEXT;
-			return;
-		}
 		if (pt_get_color(pt, f.global_char_index - 1) == GREEN_TEXT)
 		{
 			ColorIndexFinder f2;
@@ -999,6 +1088,47 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 		}
 
+		if (c == '#')
+		{
+			ci->color = MAGENTA_TEXT;
+			return;
+		}
+		int len = ci->len - i;
+		if (len > 0)
+		{
+			char buf[len];
+			for (i = 0; i < len && c != ' ' && c != '\n' && c != '\0'; i++)
+			{
+				buf[i] = c;
+				c = pt_iterate(&pi);
+			}
+			if (control_word_check[hash_function(&buf[0], i)])
+			{
+				ci->color = MAGENTA_TEXT;
+				return;
+			}
+		}
+
+		if (!pt_iterator_init(pt, &pi, f.global_char_index))
+		{
+			return;
+		}
+
+		for (i = 0; i < ci->len; i++)
+		{
+			c = pt_iterate(&pi);
+			if (c != ' ' && c != '\n')
+			{
+				break;
+			}
+		}
+
+		if (chars_to_split_on[(int) c] || pt_get(pt, f.global_char_index + ci->len) == '(')
+		{
+			ci->color = YELLOW_TEXT;
+			return;
+		}
+
 		bool red = false;
 		for (; i < ci->len; i++)
 		{
@@ -1041,49 +1171,14 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		if (c == ' ')
 		{
 			c = pt_iterate(&pi);
-			while (c != ' ' && c != '\0')
+			while (c == '*')
 			{
 				c = pt_iterate(&pi);
 			}
-			c = pt_iterate(&pi);
-			if (c == '=')
+			if (c == '(' || c == ')' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
 			{
-				c = pt_iterate(&pi);
-				if (c != '=')
-				{
-					ci->color = BLUE_TEXT;
-					return;
-				}
-			}
-			else if (c == '*' || c== '/' || c == '+' || c == '-' || c == '^' || c == '!' || c == '|' || c == '&' || c == '!')
-			{
-				c = pt_iterate(&pi);
-				if (c == '=')
-				{
-					c = pt_iterate(&pi);
-					if (c != '=')
-					{
-						ci->color = BLUE_TEXT;
-						return;
-					}
-				}
-			}
-			else if (c == '>' || c == '<')
-			{
-				c = pt_iterate(&pi);
-				if (c == '>' || c == '<')
-				{
-					c = pt_iterate(&pi);
-					if (c == '=')
-					{
-						c = pt_iterate(&pi);
-						if (c != '=')
-						{
-							ci->color = BLUE_TEXT;
-							return;
-						}
-					}
-				}
+				ci->color = BLUE_TEXT;
+				return;
 			}
 		}
 		else

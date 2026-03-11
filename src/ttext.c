@@ -11,6 +11,7 @@
 #include "normal_mode.h"
 #include "terminal_mode.h"
 #include "line.h"
+#include "piece_table.h"
 
 int main(int argc, char* argv[])
 {
@@ -21,6 +22,8 @@ int main(int argc, char* argv[])
 	noecho();
 	cbreak();
 	getmaxyx(stdscr, height, width);
+
+	piece_table_init_arrays();
 
 	init_pair(WHITE_TEXT, COLOR_WHITE, COLOR_BLACK);
 	init_pair(BLUE_TEXT, COLOR_BLUE, COLOR_BLACK);

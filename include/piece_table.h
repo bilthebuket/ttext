@@ -4,6 +4,9 @@
 #include "tree.h"
 #include <stdbool.h>
 
+#define NUM_PRIME_NUMBERS 8
+#define MAX_HASH_VALUE 2000
+
 typedef struct ColorIndex
 {
 	int chars_contained;
@@ -58,6 +61,8 @@ typedef struct PieceTable
 	int append_size;
 	int append_len;
 } PieceTable;
+
+void piece_table_init_arrays(void);
 
 void pt_insert(PieceTable* pt, char c, int index);
 void pt_rm(PieceTable* pt, int index);
