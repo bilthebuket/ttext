@@ -493,7 +493,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 	}
 
 	ColorIndexFinder f;
-	f.contained = index;
+	f.contained = index + 1;
 	f.global_char_index = -1;
 	t = tree_helper(pt->color_indices, &f, &color_index_finder_compare_characters);
 	if (t == NULL)
@@ -517,19 +517,38 @@ void pt_insert(PieceTable* pt, char c, int index)
 	((ColorIndex*) t->elt)->len++;
 	((ColorIndex*) t->elt)->chars_contained++;
 
+	int len = ((ColorIndex*) t->elt)->len;
+
 	recursive_update_to_root(t, &color_index_update_info);
 	pt_update_color_indices(pt, index);
-	pt_update_color_indices(pt, index + 1);
-	pt_update_color_indices(pt, index - 1);
-	for (int i = 2; true; i++)
+	if (f.global_char_index > 1)
 	{
-		int c1 = pt_get_color(pt, index + i);
-		pt_update_color_indices(pt, index + i);
-		int c2 = pt_get_color(pt, index + i);
+		pt_update_color_indices(pt, f.global_char_index - 1);
+	}
+	while (true)
+	{
+		f.contained = f.global_char_index + len + 1;
+		f.global_char_index = -1;
+		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		if (ci == NULL)
+		{
+			break;
+		}
+		int c1 = ci->color;
+		pt_update_color_indices(pt, f.global_char_index);
+		f.contained = f.global_char_index + 1;
+		f.global_char_index = -1;
+		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		if (ci == NULL)
+		{
+			break;
+		}
+		int c2 = ci->color;
 		if (c1 == c2)
 		{
 			break;
 		}
+		len = ci->len;
 	}
 }
 
@@ -643,7 +662,7 @@ void pt_rm(PieceTable* pt, int index)
 	}
 
 	ColorIndexFinder f;
-	f.contained = index;
+	f.contained = index + 1;
 	f.global_char_index = -1;
 	t = tree_helper(pt->color_indices, &f, &color_index_finder_compare_characters);
 	if (t == NULL)
@@ -667,25 +686,44 @@ void pt_rm(PieceTable* pt, int index)
 	((ColorIndex*) t->elt)->len--;
 	((ColorIndex*) t->elt)->chars_contained--;
 
+	int len = ((ColorIndex*) t->elt)->len;
+
 	recursive_update_to_root(t, &color_index_update_info);
 	pt_update_color_indices(pt, index);
-	pt_update_color_indices(pt, index + 1);
-	pt_update_color_indices(pt, index - 1);
-	for (int i = 2; true; i++)
+	if (f.global_char_index > 1)
 	{
-		int c1 = pt_get_color(pt, index + i);
-		pt_update_color_indices(pt, index + i);
-		int c2 = pt_get_color(pt, index + i);
+		pt_update_color_indices(pt, f.global_char_index - 1);
+	}
+	while (true)
+	{
+		f.contained = f.global_char_index + len + 1;
+		f.global_char_index = -1;
+		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		if (ci == NULL)
+		{
+			break;
+		}
+		int c1 = ci->color;
+		pt_update_color_indices(pt, f.global_char_index);
+		f.contained = f.global_char_index + 1;
+		f.global_char_index = -1;
+		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		if (ci == NULL)
+		{
+			break;
+		}
+		int c2 = ci->color;
 		if (c1 == c2)
 		{
 			break;
 		}
+		len = ci->len;
 	}
 }
 
 char pt_get(PieceTable* pt, int index)
 {
-	if (pt == NULL)
+	if (pt == NULL || index < 0)
 	{
 		return '\0';
 	}
@@ -897,7 +935,7 @@ int color_index_finder_compare_characters(Tree* t, void* elt)
 
 int pt_get_color(PieceTable* pt, int index)
 {
-	if (pt == NULL || pt->color_indices == NULL)
+	if (pt == NULL || pt->color_indices == NULL || index < 0)
 	{
 		return WHITE_TEXT;
 	}
@@ -1042,7 +1080,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		if (pt_get_color(pt, f.global_char_index - 1) == GREEN_TEXT)
 		{
 			ColorIndexFinder f2;
-			f2.contained = f.global_char_index - 1;
+			f2.contained = f.global_char_index;
 			f2.global_char_index = -1;
 			ColorIndex* ci_prev = (ColorIndex*) tree_get(pt->color_indices, &f2, &color_index_finder_compare_characters);
 			if (ci_prev != NULL)
@@ -1050,10 +1088,16 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				PieceIterator pi2;
 				if (pt_iterator_init(pt, &pi2, f.global_char_index - ci_prev->len))
 				{
+					char c = pt_iterate(&pi2);
+					while (c == '\n')
+					{
+						c = pt_iterate(&pi2);
+					}
+
 					bool found = false;
 					for (int i = 0; i < ci_prev->len; i++)
 					{
-						char c = pt_iterate(&pi2);
+						c = pt_iterate(&pi2);
 						if (c == '\n')
 						{
 							found = true;

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tree.h"
-#include "piece.h"
 
 #define SIZE 190
 
