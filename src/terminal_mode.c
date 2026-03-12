@@ -3,11 +3,75 @@
 #include <string.h>
 #include <unistd.h>
 #include <ncurses.h>
+#include <pthread.h>
+#include <pty.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include "terminal_mode.h"
 #include "normal_mode.h"
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"
+
+static Tab* terminal;
+static char* listener_buf = NULL;
+static int slave_pid;
+static int master_fd;
+static pthread_t listener;
+
+void print_terminal(void)
+{
+	print_tab(terminal);
+}
+
+void move_cursor_to_terminal(void)
+{
+	move_cursor_to_tab(terminal);
+}
+
+void init_terminal(void)
+{
+	terminal = malloc(sizeof(Tab));
+	terminal->fname = NULL;
+	terminal->lines = make_list();
+	Line* l = malloc(sizeof(Line));
+	l->gb = gb_create(NULL, -1);
+	add(terminal->lines, l, 0);
+
+	terminal->width = width;
+	terminal->height = 5;
+	terminal->x = 0;
+	terminal->y = 0;
+	terminal->pt = NULL;
+	terminal->xpos = 0;
+	terminal->ypos = height - terminal->height - 2;
+	terminal->left_column_index = 0;
+	terminal->top_line_index = 0;
+
+	slave_pid = forkpty(&master_fd, NULL, NULL, NULL);
+	if (slave_pid == 0)
+	{
+		execlp("bash", "bash", NULL);
+	}
+
+	pthread_create(&listener, NULL, &listener_func, NULL);
+}
+
+void free_terminal(void)
+{
+	sem_wait(&sem);
+	pthread_cancel(listener);
+	pthread_join(listener, NULL);
+	sem_post(&sem);
+	if (listener_buf != NULL)
+	{
+		free(listener_buf);
+	}
+	kill(slave_pid, SIGKILL);
+	waitpid(slave_pid, NULL, 0);
+	close(master_fd);
+	free_tab(terminal);
+}
 
 static void make_input_line(void)
 {
@@ -25,7 +89,6 @@ static void make_input_line(void)
 		return;
 	}
 	l->gb = gb;
-	l->color_indices = NULL;
 	add(terminal->lines, l, terminal->lines->size);
 	gb_goto(gb, 0);
 	terminal->x = 0;
@@ -103,7 +166,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					log_error("make_tab failed in terminal_mode\n");
 					r = (Tab*) get_elt(tabs, active_tab_index);
-					if (active_tab == NULL)
+					if (r == NULL)
 					{
 						log_error("active_tab_index references NULL element in tabs linked list\n");
 					}
@@ -801,7 +864,6 @@ void* listener_func(void*)
 						continue;
 					}
 					l->gb = gb_create(line, -1);
-					l->color_indices = NULL;
 					add(terminal->lines, l, terminal->lines->size - 1);
 					terminal->y++;
 				}
@@ -884,7 +946,6 @@ void* listener_func(void*)
 			}
 
 			l->gb = gb_create(line, -1);
-			l->color_indices = NULL;
 			add(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;
 

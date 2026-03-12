@@ -33,32 +33,7 @@ int main(int argc, char* argv[])
 	init_pair(GREEN_TEXT, COLOR_GREEN, COLOR_BLACK);
 	init_pair(CYAN_TEXT, COLOR_CYAN, COLOR_BLACK);
 
-	terminal = malloc(sizeof(Tab));
-	terminal->fname = NULL;
-	terminal->lines = make_list();
-	Line* l = malloc(sizeof(Line));
-	l->gb = gb_create(NULL, -1);
-	l->color_indices = NULL;
-	add(terminal->lines, l, 0);
-
-	terminal->width = width;
-	terminal->height = 5;
-	terminal->x = 0;
-	terminal->y = 0;
-	terminal->pt = NULL;
-	terminal->xpos = 0;
-	terminal->ypos = height - terminal->height - 2;
-	terminal->left_column_index = 0;
-	terminal->top_line_index = 0;
-
-	slave_pid = forkpty(&master_fd, NULL, NULL, NULL);
-	if (slave_pid == 0)
-	{
-		execlp("bash", "bash", NULL);
-	}
-
-	pthread_t listener;
-	pthread_create(&listener, NULL, &listener_func, NULL);
+	init_terminal();
 
 	tabs = make_list();
 	for (int i = 1; i < argc; i++)
@@ -84,6 +59,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	Tab* active_tab;
+
 	if (argc == 1)
 	{
 		active_tab = make_tab(NULL);
@@ -107,10 +84,6 @@ int main(int argc, char* argv[])
 	while (!terminate)
 	{
 		char c = getch();
-		if (c == '@')
-		{
-			//print_info(active_tab->pt->pieces, &print_piece);
-		}
 		sem_wait(&sem);
 		active_tab = (*mode)(active_tab, c);
 		refresh();
@@ -122,18 +95,9 @@ int main(int argc, char* argv[])
 		fclose(error_log);
 	}
 
-	sem_wait(&sem);
-	pthread_cancel(listener);
-	pthread_join(listener, NULL);
-	if (listener_buf != NULL)
-	{
-		free(listener_buf);
-	}
-	sem_post(&sem);
+	free_terminal();
 	endwin();
 	sem_destroy(&sem);
-	close(master_fd);
-	free_tab(terminal);
 	while (tabs->size > 0)
 	{
 		Tab* t = rm(tabs, 0);

@@ -10,6 +10,10 @@
 Tab* normal_mode(Tab* t, int ch)
 {
 	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return t;
+	}
 
 	switch (ch)
 	{
@@ -100,8 +104,8 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 't':
-		print_tab(terminal);
-		move_cursor_to_tab(terminal);
+		print_terminal();
+		move_cursor_to_terminal();
 		mode = &terminal_mode;
 		break;
 

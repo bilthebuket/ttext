@@ -40,29 +40,19 @@
 
 #define NUM_CHARS 128
 
-
 extern Tab* (*mode)(Tab*, int);
 
 // maintained in ascending order of z_index (last element in list is on top of screen)
 extern LL* tabs;
-extern Tab* active_tab;
 extern int active_tab_index;
-extern Tab* terminal;
 
+// height and width of the screen
 extern int height;
 extern int width;
 
-extern int slave_pid;
-extern int master_fd;
-
 extern sem_t sem;
-extern char* listener_buf;
 
 extern bool terminate;
-
-extern const char* const data_types[NUM_DATA_TYPES];
-extern const char* const control_words[NUM_CONTROL_WORDS];
-extern const char* const literals[NUM_LITERALS];
 
 extern FILE* error_log;
 

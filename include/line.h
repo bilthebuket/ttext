@@ -18,16 +18,9 @@ typedef struct GapBuffer
 	char* text;
 } GapBuffer;
 
-typedef struct CI
-{
-	int index;
-	int color;
-} CI;
-
 typedef struct Line
 {
 	GapBuffer* gb;
-	LL* color_indices;
 } Line;
 
 int gb_goto(GapBuffer* gb, int index);
@@ -45,7 +38,6 @@ void gb_free(GapBuffer* gb);
 int gb_strcmp(GapBuffer* gb, int start_index, int end_index, const char* const str);
 int gb_atoi(GapBuffer* gb, int start_index, int end_index);
 
-void update_color_indices(Line* line);
 void free_line(Line* line);
 
 #endif

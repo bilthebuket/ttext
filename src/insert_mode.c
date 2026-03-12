@@ -21,6 +21,10 @@ Tab* insert_mode(Tab* t, int ch)
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return t;
+	}
 
 	switch (ch)
 	{
@@ -58,7 +62,7 @@ Tab* insert_mode(Tab* t, int ch)
 			}
 		}
 
-		active_tab->x++;
+		t->x++;
 		check_right_update(t);
 		move_cursor_to_tab(t);
 

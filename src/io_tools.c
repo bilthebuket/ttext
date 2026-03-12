@@ -4,6 +4,7 @@
 #include "io_tools.h"
 #include "global.h"
 #include "line.h"
+#include "terminal_mode.h"
 
 void print_tab(Tab* t)
 {
@@ -41,7 +42,7 @@ void print_screen(void)
 	{
 		print_tab((Tab*) get_elt(tabs, i));
 	}
-	print_tab(terminal);
+	print_terminal();
 
 	move(y,x);
 }
@@ -81,10 +82,13 @@ void print_line(Tab* t, int line_index)
 		}
 	}
 
-	int char_index = pt_get_line_index(t->pt, line_index);
-
 	if (t->pt != NULL)
 	{
+		int char_index = pt_get_line_index(t->pt, line_index);
+		if (char_index < 0)
+		{
+			return;
+		}
 		for (int i = t->xpos; i <= t->xpos + t->width; i++)
 		{
 			if (endofline)
@@ -119,22 +123,9 @@ void print_line(Tab* t, int line_index)
 		{
 			gb = line->gb;
 		}
-		Node* colorindex = NULL;
 		if (gb == NULL)
 		{
 			endofline = true;
-		}
-		else
-		{
-			if (line->color_indices != NULL)
-			{
-				colorindex = line->color_indices->first;
-				if (colorindex == NULL)
-				{
-					log_error("found NULL colorindex\n");
-					return;
-				}
-			}
 		}
 
 		if (line_index < 0 || line_index >= t->lines->size)
@@ -148,38 +139,6 @@ void print_line(Tab* t, int line_index)
 				int i;
 				for (i = 0; gb_get(gb, i) != '\0' && i < t->left_column_index; i++) {}
 				endofline = gb_get(gb, i) == '\0';
-			}
-
-			if (line->color_indices == NULL)
-			{
-				colorindex = NULL;
-			}
-			else
-			{
-				Node* next = NULL;
-
-				while (colorindex->elt != NULL && ((CI*) colorindex->elt)->index < t->left_column_index)
-				{
-					Node* next = colorindex->next;
-					if (next == NULL)
-					{
-						break;
-					}
-					else
-					{
-						colorindex = next;
-					}
-				}
-
-				if (colorindex->elt == NULL)
-				{
-					log_error("found NULL elt in colorindex linked list\n");
-				}
-
-				if (next != NULL)
-				{
-					colorindex = colorindex->prev;
-				}
 			}
 		}
 
@@ -197,24 +156,6 @@ void print_line(Tab* t, int line_index)
 			}
 			else
 			{
-				if (colorindex != NULL)
-				{
-					if (colorindex->elt != NULL && ((CI*) colorindex->elt)->index == t->left_column_index + i - t->xpos)
-					{
-						attron(COLOR_PAIR(((CI*) colorindex->elt)->color));
-						colorindex = colorindex->next;
-					}
-					// we have to check again because its possible we did colorindex = colorindex->next in the previous line
-					if (colorindex != NULL)
-					{
-						if (colorindex->elt == NULL)
-						{
-							log_error("found NULL elt in colorindex linked list\n");
-							colorindex = colorindex->next;
-						}
-					}
-				}
-
 				mvaddch(t->ypos + line_index - t->top_line_index, i, gb_get(gb, t->left_column_index + i - t->xpos));
 			}
 		}
