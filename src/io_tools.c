@@ -286,7 +286,7 @@ int indent_line(Tab* t, int index)
 		log_error("found NULL tab in indent_line\n");
 		return 0;
 	}
-	if (index > 0)
+	if (index >= 0)
 	{
 		int line_index = pt_get_line_index(t->pt, index);
 		int line_above_index = pt_get_line_index(t->pt, index - 1);
