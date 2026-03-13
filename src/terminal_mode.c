@@ -33,10 +33,10 @@ void init_terminal(void)
 {
 	terminal = malloc(sizeof(Tab));
 	terminal->fname = NULL;
-	terminal->lines = make_list();
+	terminal->lines = ll_create();
 	Line* l = malloc(sizeof(Line));
 	l->gb = gb_create(NULL, -1);
-	add(terminal->lines, l, 0);
+	ll_insert(terminal->lines, l, 0);
 
 	terminal->width = width;
 	terminal->height = 5;
@@ -70,7 +70,7 @@ void free_terminal(void)
 	kill(slave_pid, SIGKILL);
 	waitpid(slave_pid, NULL, 0);
 	close(master_fd);
-	free_tab(terminal);
+	tab_free(terminal);
 }
 
 static void make_input_line(void)
@@ -89,7 +89,7 @@ static void make_input_line(void)
 		return;
 	}
 	l->gb = gb;
-	add(terminal->lines, l, terminal->lines->size);
+	ll_insert(terminal->lines, l, terminal->lines->size);
 	gb_goto(gb, 0);
 	terminal->x = 0;
 	terminal->y++;
@@ -99,7 +99,7 @@ static void make_input_line(void)
 
 Tab* terminal_mode(Tab* t, int ch)
 {
-	Line* line = (Line*) get_elt(terminal->lines, terminal->y);
+	Line* line = (Line*) ll_get_elt(terminal->lines, terminal->y);
 	if (line == NULL)
 	{
 		log_error("NULL line in terminal_mode\n");
@@ -116,7 +116,7 @@ Tab* terminal_mode(Tab* t, int ch)
 	switch (ch)
 	{
 		default:
-		gb_put(gb, ch);
+		gb_insert(gb, ch);
 		terminal->x++;
 		check_right_update(terminal);
 		move_cursor_to_tab(terminal);
@@ -161,11 +161,11 @@ Tab* terminal_mode(Tab* t, int ch)
 				}
 				fname[i - start_index] = '\0';
 
-				r = make_tab(fname);
+				r = tab_create(fname);
 				if (r == NULL)
 				{
-					log_error("make_tab failed in terminal_mode\n");
-					r = (Tab*) get_elt(tabs, active_tab_index);
+					log_error("tab_create failed in terminal_mode\n");
+					r = (Tab*) ll_get_elt(tabs, active_tab_index);
 					if (r == NULL)
 					{
 						log_error("active_tab_index references NULL element in tabs linked list\n");
@@ -175,7 +175,7 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				r->tab_num_flags &= FLAG_BITS;
 				r->tab_num_flags |= tabs->size;
-				add(tabs, r, tabs->size);
+				ll_insert(tabs, r, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
@@ -193,27 +193,27 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				for (int i = 0; i < tabs->size; i++)
 				{
-					Tab* t = (Tab*) get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(tabs, i);
 					if (t == NULL)
 					{
 						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = get_node(tabs, i);
+						Node* n = ll_get_node(tabs, i);
 						if (n != NULL)
 						{
-							n->elt = make_tab(NULL);
+							n->elt = tab_create(NULL);
 							if (n->elt != NULL)
 							{
 								r = (Tab*) n->elt;
 							}
 							else
 							{
-								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 								return t;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 							return t;
 						}
 					}
@@ -225,8 +225,8 @@ Tab* terminal_mode(Tab* t, int ch)
 					}
 				}
 
-				rm(tabs, active_tab_index);
-				add(tabs, r, tabs->size);
+				ll_rm(tabs, active_tab_index);
+				ll_insert(tabs, r, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
@@ -244,27 +244,27 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				for (int i = 0; i < tabs->size; i++)
 				{
-					Tab* t = (Tab*) get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(tabs, i);
 					if (t == NULL)
 					{
 						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = get_node(tabs, i);
+						Node* n = ll_get_node(tabs, i);
 						if (n != NULL)
 						{
-							n->elt = make_tab(NULL);
+							n->elt = tab_create(NULL);
 							if (n->elt != NULL)
 							{
 								r = (Tab*) n->elt;
 							}
 							else
 							{
-								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 								return t;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 							return t;
 						}
 					}
@@ -276,8 +276,8 @@ Tab* terminal_mode(Tab* t, int ch)
 					}
 				}
 
-				rm(tabs, active_tab_index);
-				add(tabs, r, tabs->size);
+				ll_rm(tabs, active_tab_index);
+				ll_insert(tabs, r, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
@@ -303,27 +303,27 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				for (int i = 0; i < tabs->size; i++)
 				{
-					Tab* t = (Tab*) get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(tabs, i);
 					if (t == NULL)
 					{
 						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = get_node(tabs, i);
+						Node* n = ll_get_node(tabs, i);
 						if (n != NULL)
 						{
-							n->elt = make_tab(NULL);
+							n->elt = tab_create(NULL);
 							if (n->elt != NULL)
 							{
 								r = (Tab*) n->elt;
 							}
 							else
 							{
-								log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 								return t;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, make_tab failing (terminal_mode)\n");
+							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
 							return t;
 						}
 					}
@@ -335,8 +335,8 @@ Tab* terminal_mode(Tab* t, int ch)
 					}
 				}
 
-				rm(tabs, active_tab_index);
-				add(tabs, r, tabs->size);
+				ll_rm(tabs, active_tab_index);
+				ll_insert(tabs, r, tabs->size);
 				active_tab_index = tabs->size - 1;
 				print_screen();
 			}
@@ -355,7 +355,7 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				if (only_one_arg)
 				{
-					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
 					return t;
 				}
@@ -366,7 +366,7 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				if (gb_get(gb, end_index) == '\0')
 				{
-					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
 					return t;
 				}
@@ -400,12 +400,12 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				if (gb_get(gb, end_index) == '\0')
 				{
-					print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
+					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
 					return t;
 				}
 
-				if (!gb_strcmp(gb, start_index, end_index, "add"))
+				if (!gb_strcmp(gb, start_index, end_index, "ll_insert"))
 				{
 					if (num_to_change2 == NULL)
 					{
@@ -433,6 +433,13 @@ Tab* terminal_mode(Tab* t, int ch)
 				start_index = end_index + 1;;
 				end_index = gb->num_chars - 1;
 				amount = gb_atoi(gb, start_index, end_index);
+
+				if (amount < 0)
+				{
+					print_message("An error has occured (potential fix: enter a non negative value)");
+					make_input_line();
+					return t;
+				}
 
 				if (num_to_change1 != NULL)
 				{
@@ -536,6 +543,13 @@ Tab* terminal_mode(Tab* t, int ch)
 				end_index = gb->num_chars - 1;
 				amount = gb_atoi(gb, start_index, end_index);
 
+				if (amount < 0)
+				{
+					print_message("An error has occured (potential fix: enter a non negative value)");
+					make_input_line();
+					return t;
+				}
+
 				if (num_to_change != NULL)
 				{
 					if (sign == -1)
@@ -579,14 +593,14 @@ Tab* terminal_mode(Tab* t, int ch)
 							int tab_num = t->tab_num_flags & TAB_NUM_BITS;
 							for (int i = 0; i < tabs->size; i++)
 							{
-								Tab* t = get_elt(tabs, i);
+								Tab* t = ll_get_elt(tabs, i);
 								if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 								{
 									t->tab_num_flags--;
 								}
 							}
-							r = (Tab*) get_elt(tabs, active_tab_index - 1);
-							free_tab((Tab*) rm(tabs, active_tab_index));
+							r = (Tab*) ll_get_elt(tabs, active_tab_index - 1);
+							tab_free((Tab*) ll_rm(tabs, active_tab_index));
 							active_tab_index--;
 							print_screen();
 						}
@@ -596,28 +610,28 @@ Tab* terminal_mode(Tab* t, int ch)
 						int tab_num = t->tab_num_flags & TAB_NUM_BITS;
 						for (int i = 0; i < tabs->size; i++)
 						{
-							Tab* t = get_elt(tabs, i);
+							Tab* t = ll_get_elt(tabs, i);
 							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 							{
 								t->tab_num_flags--;
 							}
 						}
-						r = (Tab*) get_elt(tabs, active_tab_index + 1);
-						free_tab((Tab*) rm(tabs, active_tab_index));
+						r = (Tab*) ll_get_elt(tabs, active_tab_index + 1);
+						tab_free((Tab*) ll_rm(tabs, active_tab_index));
 						print_screen();
 					}
 
 					if (r == NULL)
 					{
 						log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
-						r = make_tab(NULL);
+						r = tab_create(NULL);
 						if (r == NULL)
 						{
-							log_error("make_tab failed in terminal_mode\n");
+							log_error("tab_create failed in terminal_mode\n");
 						}
 						else
 						{
-							add(tabs, r, active_tab_index);
+							ll_insert(tabs, r, active_tab_index);
 						}
 					}
 				}
@@ -636,14 +650,14 @@ Tab* terminal_mode(Tab* t, int ch)
 						int tab_num = t->tab_num_flags & TAB_NUM_BITS;
 						for (int i = 0; i < tabs->size; i++)
 						{
-							Tab* t = get_elt(tabs, i);
+							Tab* t = ll_get_elt(tabs, i);
 							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 							{
 								t->tab_num_flags--;
 							}
 						}
-						r = (Tab*) get_elt(tabs, active_tab_index - 1);
-						free_tab((Tab*) rm(tabs, active_tab_index));
+						r = (Tab*) ll_get_elt(tabs, active_tab_index - 1);
+						tab_free((Tab*) ll_rm(tabs, active_tab_index));
 						active_tab_index--;
 						print_screen();
 					}
@@ -653,28 +667,28 @@ Tab* terminal_mode(Tab* t, int ch)
 					int tab_num = t->tab_num_flags & TAB_NUM_BITS;
 					for (int i = 0; i < tabs->size; i++)
 					{
-						Tab* t = get_elt(tabs, i);
+						Tab* t = ll_get_elt(tabs, i);
 						if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 						{
 							t->tab_num_flags--;
 						}
 					}
-					r = (Tab*) get_elt(tabs, active_tab_index + 1);
-					free_tab((Tab*) rm(tabs, active_tab_index));
+					r = (Tab*) ll_get_elt(tabs, active_tab_index + 1);
+					tab_free((Tab*) ll_rm(tabs, active_tab_index));
 					print_screen();
 				}
 
 				if (r == NULL)
 				{
 					log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
-					r = make_tab(NULL);
+					r = tab_create(NULL);
 					if (r == NULL)
 					{
-						log_error("make_tab failed in terminal_mode\n");
+						log_error("tab_create failed in terminal_mode\n");
 					}
 					else
 					{
-						add(tabs, r, active_tab_index);
+						ll_insert(tabs, r, active_tab_index);
 					}
 				}
 			}
@@ -708,7 +722,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				}
 				for (int i = 0; i < t->lines->size; i++)
 				{
-					Line* l = (Line*) get_elt(t->lines, i);
+					Line* l = (Line*) ll_get_elt(t->lines, i);
 					if (l != NULL)
 					{
 						GapBuffer* gb = l->gb;
@@ -735,7 +749,7 @@ Tab* terminal_mode(Tab* t, int ch)
 		else
 		{
 			gb_goto(gb, gb->num_chars - 1);
-			gb_put(gb, '\n');
+			gb_insert(gb, '\n');
 			write(master_fd, gb->text, gb->num_chars - 1);
 			gb_goto(gb, 0);
 			while (gb->num_chars > 1)
@@ -864,7 +878,7 @@ void* listener_func(void*)
 						continue;
 					}
 					l->gb = gb_create(line, -1);
-					add(terminal->lines, l, terminal->lines->size - 1);
+					ll_insert(terminal->lines, l, terminal->lines->size - 1);
 					terminal->y++;
 				}
 			}
@@ -946,7 +960,7 @@ void* listener_func(void*)
 			}
 
 			l->gb = gb_create(line, -1);
-			add(terminal->lines, l, terminal->lines->size - 1);
+			ll_insert(terminal->lines, l, terminal->lines->size - 1);
 			terminal->y++;
 
 			free(listener_buf);

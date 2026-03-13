@@ -9,6 +9,11 @@
 
 Tab* normal_mode(Tab* t, int ch)
 {
+	if (t == NULL || t->pt == NULL)
+	{
+		return t;
+	}
+
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
@@ -28,7 +33,7 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 'j':
-		if (pt_get_line_index(t->pt, t->y + 1) != -1)
+		if (pt_get_line_index(t->pt, t->y + 1) >= 0)
 		{
 			int line_below_index = pt_get_line_index(t->pt, t->y + 1);
 
@@ -61,7 +66,7 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 
 		case 'k':
-		if (t->y > 0)
+		if (t->y > 0 && pt_get_line_index(t->pt, t->y - 1) >= 0)
 		{
 			int line_above_index = pt_get_line_index(t->pt, t->y - 1);
 
@@ -138,6 +143,7 @@ Tab* normal_mode(Tab* t, int ch)
 		move_cursor_to_tab(t);
 		break;
 
+		// braces here because i want to use len twice in two different cases independently
 		case '$':
 		{
 		int len;

@@ -2,7 +2,7 @@
 #include "global.h"
 
 Tab* (*mode)(Tab*, int) = NULL;
-LL* tabs = NULL;
+LinkedList* tabs = NULL;
 int active_tab_index;
 
 int height;

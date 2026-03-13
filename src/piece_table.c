@@ -19,7 +19,7 @@ static int hash_function(const char* s, int len)
 	return (int) (val % MAX_HASH_VALUE);
 }
 
-void piece_table_init_arrays(void)
+void pt_init_arrays(void)
 {
 	for (int i = 0; i < NUM_CHARS; i++)
 	{
@@ -86,7 +86,7 @@ void print_color_index(void* v)
 	fprintf(stderr, "color: %d | len: %d | contained: %d", ci->color, ci->len, ci->chars_contained);
 }
 
-Piece* make_piece(char** text, int start_index, int len, int chars_contained)
+Piece* piece_create(char** text, int start_index, int len, int chars_contained)
 {
 	Piece* r = malloc(sizeof(Piece));
 	if (r != NULL)
@@ -109,7 +109,7 @@ Piece* make_piece(char** text, int start_index, int len, int chars_contained)
 	return r;
 }
 
-void free_piece(void* v)
+void piece_free(void* v)
 {
 	free(v);
 }
@@ -294,39 +294,42 @@ PieceTable* pt_create(char* buf, int len)
 	PieceTable* r = malloc(sizeof(PieceTable));
 	if (r != NULL)
 	{
-		int new_len = len;
-		for (int i = 0; i < len; i++)
+		if (buf != NULL)
 		{
-			if (buf[i] == '\t')
+			int new_len = len;
+			for (int i = 0; i < len; i++)
 			{
-				new_len += TAB_SIZE - 1;
-			}
-		}
-		char* new_buf = malloc(sizeof(char) * new_len);
-		if (new_buf == NULL)
-		{
-			free(r);
-			return NULL;
-		}
-		int offset = 0;
-		for (int i = 0; i < len; i++)
-		{
-			if (buf[i] == '\t')
-			{
-				for (int j = 0; j < TAB_SIZE; j++)
+				if (buf[i] == '\t')
 				{
-					new_buf[i + offset + j] = ' ';
+					new_len += TAB_SIZE - 1;
 				}
-				offset += TAB_SIZE - 1;
 			}
-			else
+			char* new_buf = malloc(sizeof(char) * new_len);
+			if (new_buf == NULL)
 			{
-				new_buf[i + offset] = buf[i];
+				free(r);
+				return NULL;
 			}
+			int offset = 0;
+			for (int i = 0; i < len; i++)
+			{
+				if (buf[i] == '\t')
+				{
+					for (int j = 0; j < TAB_SIZE; j++)
+					{
+						new_buf[i + offset + j] = ' ';
+					}
+					offset += TAB_SIZE - 1;
+				}
+				else
+				{
+					new_buf[i + offset] = buf[i];
+				}
+			}
+			free(buf);
+			buf = new_buf;
+			len = new_len;
 		}
-		free(buf);
-		buf = new_buf;
-		len = new_len;
 
 		r->original = buf;
 		r->append = malloc(sizeof(char) * APPEND_SIZE);
@@ -343,7 +346,7 @@ PieceTable* pt_create(char* buf, int len)
 		}
 		else
 		{
-			Piece* p = make_piece(&r->original, 0, len, len);
+			Piece* p = piece_create(&r->original, 0, len, len);
 			if (p == NULL)
 			{
 				free(r->append);
@@ -359,11 +362,11 @@ PieceTable* pt_create(char* buf, int len)
 				return NULL;
 			}
 		}
-		ColorIndex* ci = make_color_index(CYAN_TEXT, len, len);
+		ColorIndex* ci = ci_create(CYAN_TEXT, len, len);
 		if (ci == NULL)
 		{
 			free(r->append);
-			tree_free(r->pieces, &free_piece);
+			tree_free(r->pieces, &piece_free);
 			free(r);
 			return NULL;
 		}
@@ -398,110 +401,112 @@ void pt_insert(PieceTable* pt, char c, int index)
 		}
 
 		pt->append[pt->append_len] = c;
-		Piece* new_piece = make_piece(&pt->append, pt->append_len, 1, 1);
+		Piece* new_piece = piece_create(&pt->append, pt->append_len, 1, 1);
 		pt->pieces = tree_create(new_piece);
 		pt->append_len++;
 	}
-
-	PieceFinder finder;
-	finder.contained = index;
-	finder.global_char_index = -1;
-
-	Tree* t = tree_helper(pt->pieces, &finder, &piece_finder_compare_characters);
-	if (t == NULL)
-	{
-		return;
-	}
-	Piece* p = (Piece*) t->elt;
-	if (p == NULL)
-	{
-		return;
-	}
-
-	if (pt->append_len + 1 > pt->append_size)
-	{
-		char* new_buf = malloc(sizeof(char) * (pt->append_size + APPEND_SIZE));
-		if (new_buf == NULL)
-		{
-			return;
-		}
-		for (int i = 0; i < pt->append_len; i++)
-		{
-			new_buf[i] = pt->append[i];
-		}
-		free(pt->append);
-		pt->append = new_buf;
-		pt->append_size += APPEND_SIZE;
-	}
-
-	if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
-	{
-		pt->append[pt->append_len] = c;
-		pt->append_len++;
-		p->len++;
-		p->chars_contained++;
-		if (c == '\n')
-		{
-			p->lines_contained++;
-			p->lines_inside++;
-		}
-		recursive_update_to_root(t, &piece_update_info);
-	}
 	else
 	{
-		Piece* new_one = make_piece(p->text, p->start_index, index - finder.global_char_index, index);
-		if (new_one == NULL)
-		{
-			return;
-		}
-		Piece* new_two = make_piece(p->text, p->start_index + new_one->len, p->len - new_one->len, index + p->len - new_one->len);
-		if (new_two == NULL)
-		{
-			free_piece(new_one);
-			return;
-		}
-
+		PieceFinder finder;
 		finder.contained = index;
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &free_piece, &piece_update_info);
+		finder.global_char_index = -1;
 
-		if (new_one->len > 0)
-		{
-			pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
-		}
-		else
-		{
-			free_piece(new_one);
-		}
-		if (new_two->len > 0)
-		{
-			pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
-		}
-		else
-		{
-			free_piece(new_two);
-		}
-
-		pt->append[pt->append_len] = c;
-		pt->append_len++;
-
-		Piece* new_piece = make_piece(&pt->append, pt->append_len - 1, 1, index + 1);
-		if (new_piece == NULL)
+		Tree* t = tree_helper(pt->pieces, &finder, &piece_finder_compare_characters);
+		if (t == NULL)
 		{
 			return;
 		}
-		pt->pieces = tree_add_elt(pt->pieces, new_piece, &piece_compare, &piece_update_info);
+		Piece* p = (Piece*) t->elt;
+		if (p == NULL)
+		{
+			return;
+		}
+
+		if (pt->append_len + 1 > pt->append_size)
+		{
+			char* new_buf = malloc(sizeof(char) * (pt->append_size + APPEND_SIZE));
+			if (new_buf == NULL)
+			{
+				return;
+			}
+			for (int i = 0; i < pt->append_len; i++)
+			{
+				new_buf[i] = pt->append[i];
+			}
+			free(pt->append);
+			pt->append = new_buf;
+			pt->append_size += APPEND_SIZE;
+		}
+
+		if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
+		{
+			pt->append[pt->append_len] = c;
+			pt->append_len++;
+			p->len++;
+			p->chars_contained++;
+			if (c == '\n')
+			{
+				p->lines_contained++;
+				p->lines_inside++;
+			}
+			tree_recursive_update_to_root(t, &piece_update_info);
+		}
+		else
+		{
+			Piece* new_one = piece_create(p->text, p->start_index, index - finder.global_char_index, index);
+			if (new_one == NULL)
+			{
+				return;
+			}
+			Piece* new_two = piece_create(p->text, p->start_index + new_one->len, p->len - new_one->len, index + p->len - new_one->len);
+			if (new_two == NULL)
+			{
+				piece_free(new_one);
+				return;
+			}
+
+			finder.contained = index;
+			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+
+			if (new_one->len > 0)
+			{
+				pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
+			}
+			else
+			{
+				piece_free(new_one);
+			}
+			if (new_two->len > 0)
+			{
+				pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
+			}
+			else
+			{
+				piece_free(new_two);
+			}
+
+			pt->append[pt->append_len] = c;
+			pt->append_len++;
+
+			Piece* new_piece = piece_create(&pt->append, pt->append_len - 1, 1, index + 1);
+			if (new_piece == NULL)
+			{
+				return;
+			}
+			pt->pieces = tree_add_elt(pt->pieces, new_piece, &piece_compare, &piece_update_info);
+		}
 	}
 
 	ColorIndexFinder f;
 	f.contained = index + 1;
 	f.global_char_index = -1;
-	t = tree_helper(pt->color_indices, &f, &color_index_finder_compare_characters);
+	Tree* t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (t == NULL)
 	{
 		if (pt->pieces != NULL && pt->pieces->elt != NULL)
 		{
 			// this has to be one less than pt->pieces because we are going to add one later
-			ColorIndex* ci = make_color_index(CYAN_TEXT, ((Piece*) pt->pieces->elt)->chars_contained - 1, ((Piece*) pt->pieces->elt)->chars_contained - 1);
+			ColorIndex* ci = ci_create(CYAN_TEXT, ((Piece*) pt->pieces->elt)->chars_contained - 1, ((Piece*) pt->pieces->elt)->chars_contained - 1);
 			if (ci != NULL)
 			{
 				pt->color_indices = tree_create(ci);
@@ -519,7 +524,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 	int len = ((ColorIndex*) t->elt)->len;
 
-	recursive_update_to_root(t, &color_index_update_info);
+	tree_recursive_update_to_root(t, &ci_update_info);
 	pt_update_color_indices(pt, index);
 	if (f.global_char_index > 1)
 	{
@@ -529,7 +534,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		f.contained = f.global_char_index + len + 1;
 		f.global_char_index = -1;
-		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &ci_finder_compare_characters);
 		if (ci == NULL)
 		{
 			break;
@@ -538,7 +543,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 		pt_update_color_indices(pt, f.global_char_index);
 		f.contained = f.global_char_index + 1;
 		f.global_char_index = -1;
-		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &ci_finder_compare_characters);
 		if (ci == NULL)
 		{
 			break;
@@ -588,7 +593,7 @@ void pt_rm(PieceTable* pt, int index)
 		if (p->len == 1)
 		{
 			finder.contained = index + 1;
-			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &free_piece, &piece_update_info);
+			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
 		}
 		else
 		{
@@ -600,7 +605,7 @@ void pt_rm(PieceTable* pt, int index)
 			p->chars_contained--;
 			p->len--;
 			p->start_index++;
-			recursive_update_to_root(t, &piece_update_info);
+			tree_recursive_update_to_root(t, &piece_update_info);
 		}
 	}
 	else if (index - finder.global_char_index == p->len - 1)
@@ -612,7 +617,7 @@ void pt_rm(PieceTable* pt, int index)
 		if (p->len == 1)
 		{
 			finder.contained = index + 1;
-			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &free_piece, &piece_update_info);
+			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
 		}
 		else
 		{
@@ -623,25 +628,25 @@ void pt_rm(PieceTable* pt, int index)
 			}
 			p->chars_contained--;
 			p->len--;
-			recursive_update_to_root(t, &piece_update_info);
+			tree_recursive_update_to_root(t, &piece_update_info);
 		}
 	}
 	else
 	{
-		Piece* new_one = make_piece(p->text, p->start_index, index - finder.global_char_index, index);
+		Piece* new_one = piece_create(p->text, p->start_index, index - finder.global_char_index, index);
 		if (new_one == NULL)
 		{
 			return;
 		}
-		Piece* new_two = make_piece(p->text, p->start_index + new_one->len + 1, p->len - new_one->len - 1, index + p->len - new_one->len - 1);
+		Piece* new_two = piece_create(p->text, p->start_index + new_one->len + 1, p->len - new_one->len - 1, index + p->len - new_one->len - 1);
 		if (new_two == NULL)
 		{
-			free_piece(new_one);
+			piece_free(new_one);
 			return;
 		}
 
 		finder.contained = index + 1;
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &free_piece, &piece_update_info);
+		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
 
 		if (new_one->len > 0)
 		{
@@ -649,7 +654,7 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		else
 		{
-			free_piece(new_one);
+			piece_free(new_one);
 		}
 		if (new_two->len > 0)
 		{
@@ -657,20 +662,20 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		else
 		{
-			free_piece(new_two);
+			piece_free(new_two);
 		}
 	}
 
 	ColorIndexFinder f;
 	f.contained = index + 1;
 	f.global_char_index = -1;
-	t = tree_helper(pt->color_indices, &f, &color_index_finder_compare_characters);
+	t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (t == NULL)
 	{
 		if (pt->pieces != NULL && pt->pieces->elt != NULL)
 		{
 			// this has to be one more than pt->pieces because we are going to subtract one later
-			ColorIndex* ci = make_color_index(CYAN_TEXT, ((Piece*) pt->pieces->elt)->chars_contained + 1, ((Piece*) pt->pieces->elt)->chars_contained + 1);
+			ColorIndex* ci = ci_create(CYAN_TEXT, ((Piece*) pt->pieces->elt)->chars_contained + 1, ((Piece*) pt->pieces->elt)->chars_contained + 1);
 			if (ci != NULL)
 			{
 				pt->color_indices = tree_create(ci);
@@ -688,7 +693,7 @@ void pt_rm(PieceTable* pt, int index)
 
 	int len = ((ColorIndex*) t->elt)->len;
 
-	recursive_update_to_root(t, &color_index_update_info);
+	tree_recursive_update_to_root(t, &ci_update_info);
 	pt_update_color_indices(pt, index);
 	if (f.global_char_index > 1)
 	{
@@ -698,7 +703,7 @@ void pt_rm(PieceTable* pt, int index)
 	{
 		f.contained = f.global_char_index + len + 1;
 		f.global_char_index = -1;
-		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &ci_finder_compare_characters);
 		if (ci == NULL)
 		{
 			break;
@@ -707,7 +712,7 @@ void pt_rm(PieceTable* pt, int index)
 		pt_update_color_indices(pt, f.global_char_index);
 		f.contained = f.global_char_index + 1;
 		f.global_char_index = -1;
-		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+		ci = (ColorIndex*) tree_get(pt->color_indices, &f, &ci_finder_compare_characters);
 		if (ci == NULL)
 		{
 			break;
@@ -732,7 +737,7 @@ char pt_get(PieceTable* pt, int index)
 	finder.contained = index + 1;
 	finder.global_char_index = -1;
 	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
-	if (p == NULL)
+	if (p == NULL || *p->text == NULL)
 	{
 		return '\0';
 	}
@@ -799,13 +804,13 @@ char pt_iterate(PieceIterator* pi)
 
 int pt_get_line_index(PieceTable* pt, int line_index)
 {
-	if (pt == NULL)
+	if (pt == NULL || line_index < 0)
 	{
 		return -1;
 	}
 	if (pt->pieces == NULL)
 	{
-		return -1;
+		return 0;
 	}
 	PieceFinder finder;
 	finder.contained = line_index;
@@ -843,12 +848,12 @@ void pt_free(PieceTable* pt)
 	{
 		free(pt->append);
 	}
-	tree_free(pt->pieces, &free_piece);
+	tree_free(pt->pieces, &piece_free);
 	tree_free(pt->color_indices, &free);
 	free(pt);
 }
 
-int color_index_compare(Tree* t, void* elt)
+int ci_compare(Tree* t, void* elt)
 {
 	if (t == NULL)
 	{
@@ -880,7 +885,7 @@ int color_index_compare(Tree* t, void* elt)
 	}
 }
 
-int color_index_finder_compare_characters(Tree* t, void* elt)
+int ci_finder_compare_characters(Tree* t, void* elt)
 {
 	if (t == NULL)
 	{
@@ -943,7 +948,7 @@ int pt_get_color(PieceTable* pt, int index)
 	ColorIndexFinder f;
 	f.contained = index + 1;
 	f.global_char_index = -1;
-	ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &color_index_finder_compare_characters);
+	ColorIndex* ci = (ColorIndex*) tree_get(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (ci == NULL)
 	{
 		return WHITE_TEXT;
@@ -951,7 +956,7 @@ int pt_get_color(PieceTable* pt, int index)
 	return ci->color;
 }
 
-ColorIndex* make_color_index(int color, int len, int chars_contained)
+ColorIndex* ci_create(int color, int len, int chars_contained)
 {
 	ColorIndex* r = malloc(sizeof(ColorIndex));
 	if (r != NULL)
@@ -974,7 +979,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 	f.contained = index + 1;
 	f.global_char_index = -1;
 
-	Tree* t = tree_helper(pt->color_indices, &f, &color_index_finder_compare_characters);
+	Tree* t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (t == NULL)
 	{
 		return;
@@ -1016,25 +1021,25 @@ void pt_update_color_indices(PieceTable* pt, int index)
 	{
 		if (c == ' ' || c == '\n')
 		{
-			ColorIndex* new = make_color_index(ci->color, ci->len - i, f.global_char_index + ci->len);
+			ColorIndex* new = ci_create(ci->color, ci->len - i, f.global_char_index + ci->len);
 			if (new == NULL)
 			{
 				return;
 			}
 			ci->len -= ci->len - i;
-			recursive_update_to_root(t, &color_index_update_info);		
-			pt->color_indices = tree_add_elt(pt->color_indices, new, &color_index_compare, &color_index_update_info);
+			tree_recursive_update_to_root(t, &ci_update_info);		
+			pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
 			pt_update_color_indices(pt, f.global_char_index);
 			pt_update_color_indices(pt, f.global_char_index + ci->len);
 		}
 		else
 		{
-			ColorIndex* new_one = make_color_index(ci->color, 1, f.global_char_index + i + 1);
+			ColorIndex* new_one = ci_create(ci->color, 1, f.global_char_index + i + 1);
 			if (new_one == NULL)
 			{
 				return;
 			}
-			ColorIndex* new_two = make_color_index(ci->color, ci->len - i - 1, f.global_char_index + ci->len);
+			ColorIndex* new_two = ci_create(ci->color, ci->len - i - 1, f.global_char_index + ci->len);
 			if (new_two == NULL)
 			{
 				free(new_one);
@@ -1042,12 +1047,12 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 
 			ci->len -= ci->len - i;
-			recursive_update_to_root(t, &color_index_update_info);
+			tree_recursive_update_to_root(t, &ci_update_info);
 
-			pt->color_indices = tree_add_elt(pt->color_indices, new_one, &color_index_compare, &color_index_update_info);
+			pt->color_indices = tree_add_elt(pt->color_indices, new_one, &ci_compare, &ci_update_info);
 			if (new_two->len > 0)
 			{
-				pt->color_indices = tree_add_elt(pt->color_indices, new_two, &color_index_compare, &color_index_update_info);
+				pt->color_indices = tree_add_elt(pt->color_indices, new_two, &ci_compare, &ci_update_info);
 				pt_update_color_indices(pt, f.global_char_index);
 				pt_update_color_indices(pt, f.global_char_index + i);
 				pt_update_color_indices(pt, f.global_char_index + i + 1);
@@ -1082,7 +1087,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			ColorIndexFinder f2;
 			f2.contained = f.global_char_index;
 			f2.global_char_index = -1;
-			ColorIndex* ci_prev = (ColorIndex*) tree_get(pt->color_indices, &f2, &color_index_finder_compare_characters);
+			ColorIndex* ci_prev = (ColorIndex*) tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
 			if (ci_prev != NULL)
 			{
 				PieceIterator pi2;
@@ -1232,7 +1237,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 	}
 }
 
-void color_index_update_info(Tree* t)
+void ci_update_info(Tree* t)
 {
 	if (t == NULL)
 	{

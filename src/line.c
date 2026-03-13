@@ -4,7 +4,7 @@
 #include "line.h"
 #include "global.h"
 
-void free_line(Line* line)
+void line_free(Line* line)
 {
 	if (line == NULL)
 	{
@@ -126,7 +126,7 @@ int gb_goright(GapBuffer* gb)
 	return gb_goto(gb, gb->gap_index + 1);
 }
 
-int gb_put(GapBuffer* gb, char c)
+int gb_insert(GapBuffer* gb, char c)
 {
 	if (gb == NULL)
 	{
@@ -198,11 +198,11 @@ int gb_get(GapBuffer* gb, int index)
 {
 	if (gb == NULL)
 	{
-		return -1;
+		return '\0';
 	}
 	if (index < 0 || index >= gb->num_chars)
 	{
-		return -1;
+		return '\0';
 	}
 	if (index > gb->gap_index)
 	{
@@ -254,6 +254,10 @@ int gb_strcmp(GapBuffer* gb, int start_index, int end_index, const char* const s
 
 int gb_atoi(GapBuffer* gb, int start_index, int end_index)
 {
+	if (gb == NULL || start_index < 0 || end_index < 0 || end_index < start_index || end_index > gb->text_size)
+	{
+		return -1;
+	}
 	int index = gb->gap_index;
 	gb_goto(gb, end_index);
 	char c = gb->text[end_index];

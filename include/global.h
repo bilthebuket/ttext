@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "LL.h"
+#include "linked_list.h"
 #include "tab.h"
 #include "semaphore.h"
 
@@ -43,7 +43,7 @@
 extern Tab* (*mode)(Tab*, int);
 
 // maintained in ascending order of z_index (last element in list is on top of screen)
-extern LL* tabs;
+extern LinkedList* tabs;
 extern int active_tab_index;
 
 // height and width of the screen

@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include "LL.h"
+#include "linked_list.h"
 #include "global.h"
 #include "io_tools.h"
 #include "normal_mode.h"
@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	cbreak();
 	getmaxyx(stdscr, height, width);
 
-	piece_table_init_arrays();
+	pt_init_arrays();
 
 	init_pair(WHITE_TEXT, COLOR_WHITE, COLOR_BLACK);
 	init_pair(BLUE_TEXT, COLOR_BLUE, COLOR_BLACK);
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
 	init_terminal();
 
-	tabs = make_list();
+	tabs = ll_create();
 	for (int i = 1; i < argc; i++)
 	{
 		char* fname = malloc(sizeof(char) * FNAME_SIZE);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 		}
 		fname[j] = '\0';
 
-		Tab* t = make_tab(fname);
+		Tab* t = tab_create(fname);
 		if (!t)
 		{
 			print_message("There is at least one file with at least one line that is too long");
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		{
 			t->tab_num_flags &= FLAG_BITS;
 			t->tab_num_flags |= tabs->size;
-			add(tabs, t, tabs->size);
+			ll_insert(tabs, t, tabs->size);
 		}
 	}
 
@@ -63,13 +63,13 @@ int main(int argc, char* argv[])
 
 	if (argc == 1)
 	{
-		active_tab = make_tab(NULL);
-		add(tabs, active_tab, 0);
+		active_tab = tab_create(NULL);
+		ll_insert(tabs, active_tab, 0);
 		active_tab_index = 0;
 	}
 	else
 	{
-		active_tab = (Tab*) get_elt(tabs, argc - 2);
+		active_tab = (Tab*) ll_get_elt(tabs, argc - 2);
 		active_tab_index = argc - 2;
 	}
 	mode = &normal_mode;
@@ -100,8 +100,8 @@ int main(int argc, char* argv[])
 	sem_destroy(&sem);
 	while (tabs->size > 0)
 	{
-		Tab* t = rm(tabs, 0);
-		free_tab(t);
+		Tab* t = ll_rm(tabs, 0);
+		tab_free(t);
 	}
-	free_list(tabs);
+	ll_free(tabs);
 }

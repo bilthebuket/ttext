@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <ncurses.h>
-#include "LL.h"
+#include "linked_list.h"
 #include "insert_mode.h"
 #include "normal_mode.h"
 #include "tab.h"
@@ -34,13 +34,17 @@ Tab* insert_mode(Tab* t, int ch)
 		{
 			bool indent = true;
 			int j;
-			for (j = 0; pt_get(t->pt, j + line_index) != '}'; j++)
+			for (j = 0; pt_get(t->pt, j + line_index) != '}' && pt_get(t->pt, j + line_index) != '\0'; j++)
 			{
 				if (pt_get(t->pt, j + line_index) != ' ')
 				{
 					indent = false;
 					break;
 				}
+			}
+			if (pt_get(t->pt, j + line_index) == '\0')
+			{
+				indent = false;
 			}
 			if (indent)
 			{
@@ -93,17 +97,20 @@ Tab* insert_mode(Tab* t, int ch)
 		}
 		else if (t->y > 0)
 		{
-			t->y--;
-			int line_above_index = pt_get_line_index(t->pt, t->y);
-			for (t->x = 0; pt_get(t->pt, line_above_index + t->x) != '\n' && pt_get(t->pt, line_above_index + t->x) != '\0'; t->x++) {}
-			pt_rm(t->pt, line_index - 1);
+			int line_above_index = pt_get_line_index(t->pt, t->y - 1);
+			if (line_above_index >= 0)
+			{
+				t->y--;
+				for (t->x = 0; pt_get(t->pt, line_above_index + t->x) != '\n' && pt_get(t->pt, line_above_index + t->x) != '\0'; t->x++) {}
+				pt_rm(t->pt, line_index - 1);
 
-			check_left_update(t);
-			check_right_update(t);
-			check_top_update(t);
-			move_cursor_to_tab(t);
+				check_left_update(t);
+				check_right_update(t);
+				check_top_update(t);
+				move_cursor_to_tab(t);
 
-			print_tab(t);
+				print_tab(t);
+			}
 		}
 		break;
 

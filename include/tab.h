@@ -1,12 +1,12 @@
 #ifndef TAB_H
 #define TAB_H
 
-#include "LL.h"
+#include "linked_list.h"
 #include "piece_table.h"
 
 typedef struct Tab
 {
-	LL* lines;
+	LinkedList* lines;
 	PieceTable* pt;
 	char* fname;
 
@@ -28,7 +28,7 @@ typedef struct Tab
 	int tab_num_flags;
 } Tab;
 
-Tab* make_tab(char* fname);
-void free_tab(Tab* t);
+Tab* tab_create(char* fname);
+void tab_free(Tab* t);
 
 #endif

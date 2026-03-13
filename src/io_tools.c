@@ -40,7 +40,7 @@ void print_screen(void)
 	}
 	for (int i = 0; i < tabs->size; i++)
 	{
-		print_tab((Tab*) get_elt(tabs, i));
+		print_tab((Tab*) ll_get_elt(tabs, i));
 	}
 	print_terminal();
 
@@ -85,7 +85,7 @@ void print_line(Tab* t, int line_index)
 	if (t->pt != NULL)
 	{
 		int char_index = pt_get_line_index(t->pt, line_index);
-		if (char_index < 0)
+		if (!endofline && char_index < 0)
 		{
 			return;
 		}
@@ -113,7 +113,7 @@ void print_line(Tab* t, int line_index)
 	}
 	else
 	{
-		Line* line = (Line*) get_elt(t->lines, line_index);
+		Line* line = (Line*) ll_get_elt(t->lines, line_index);
 		GapBuffer* gb;
 		if (line == NULL)
 		{
@@ -273,7 +273,7 @@ void convert_tabs_to_spaces(GapBuffer* gb)
 			gb_rm(gb);
 			for (int j = 0; j < TAB_SIZE; j++)
 			{
-				gb_put(gb, ' ');
+				gb_insert(gb, ' ');
 			}
 		}
 	}
@@ -290,7 +290,7 @@ int indent_line(Tab* t, int index)
 	{
 		int line_index = pt_get_line_index(t->pt, index);
 		int line_above_index = pt_get_line_index(t->pt, index - 1);
-		if (line_index == -1 || line_above_index == -1)
+		if (line_index < 0 || line_above_index < 0)
 		{
 			log_error("could not get line indicies in indent_line\n");
 			return 0;

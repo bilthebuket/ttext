@@ -5,7 +5,7 @@
 #include "line.h"
 #include "io_tools.h"
 
-Tab* make_tab(char* fname)
+Tab* tab_create(char* fname)
 {
 	Tab* r = malloc(sizeof(Tab));
 	if (r == NULL)
@@ -80,7 +80,7 @@ Tab* make_tab(char* fname)
 	return r;
 }
 
-void free_tab(Tab* t)
+void tab_free(Tab* t)
 {
 	if (t != NULL)
 	{
@@ -91,12 +91,12 @@ void free_tab(Tab* t)
 		if (t->lines != NULL)
 		{
 			void* elt;
-			while ((elt = rm(t->lines, 0)) != NULL)
+			while ((elt = ll_rm(t->lines, 0)) != NULL)
 			{
 				Line* l = (Line*) elt;
-				free_line(l);
+				line_free(l);
 			}
-			free_list(t->lines);
+			ll_free(t->lines);
 		}
 		pt_free(t->pt);
 		free(t);

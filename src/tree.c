@@ -316,7 +316,7 @@ Tree* tree_balance(Tree* t, int (*cmp)(Tree*, void*), void (*update_relative_inf
 
 	if (left_height - right_height <= 1 && left_height - right_height >= -1)
 	{
-		update_height(t, update_relative_info);
+		tree_update_height(t, update_relative_info);
 		if (t->prev == NULL)
 		{
 			return t;
@@ -447,8 +447,8 @@ Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*))
 		{
 			store->prev = t;
 		}
-		update_height(t, update_relative_info);
-		update_height(store2, update_relative_info);
+		tree_update_height(t, update_relative_info);
+		tree_update_height(store2, update_relative_info);
 		return store2;
 	}
 	else
@@ -475,13 +475,13 @@ Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*))
 		{
 			store->prev = t;
 		}
-		update_height(t, update_relative_info);
-		update_height(store2, update_relative_info);
+		tree_update_height(t, update_relative_info);
+		tree_update_height(store2, update_relative_info);
 		return store2;
 	}
 }
 
-void update_height(Tree* t, void (*update_relative_info)(Tree*))
+void tree_update_height(Tree* t, void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
@@ -570,7 +570,7 @@ void print_tree(Tree* t, bool reset, int row, int col)
 	}
 }
 
-void recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
+void tree_recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
@@ -578,7 +578,7 @@ void recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
 	}
 
 	(*update_relative_info)(t);
-	recursive_update_to_root(t->prev, update_relative_info);
+	tree_recursive_update_to_root(t->prev, update_relative_info);
 }
 
 bool tree_find(Tree* t, Tree* to_find)

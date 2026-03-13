@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
-#include "LL.h"
+#include "linked_list.h"
 
-static Node* helper(LL* lst, int index)
+static Node* helper(LinkedList* lst, int index)
 {
 	if (lst == NULL)
 	{
@@ -45,7 +45,7 @@ static Node* helper(LL* lst, int index)
 	return r;
 }
 
-Node* get_node(LL* lst, int index)
+Node* ll_get_node(LinkedList* lst, int index)
 {
 	if (lst->size == 0)
 	{
@@ -54,13 +54,13 @@ Node* get_node(LL* lst, int index)
 	return helper(lst, index);
 }
 
-void* get_elt(LL* lst, int index)
+void* ll_get_elt(LinkedList* lst, int index)
 {
 	if (lst->size == 0)
 	{
 		return NULL;
 	}
-	Node* n = get_node(lst, index);
+	Node* n = ll_get_node(lst, index);
 	if (n == NULL)
 	{
 		return NULL;
@@ -68,7 +68,7 @@ void* get_elt(LL* lst, int index)
 	return n->elt;
 }
 
-void add(LL* lst, void* elt, int index)
+void ll_insert(LinkedList* lst, void* elt, int index)
 {
 	if (lst == NULL)
 	{
@@ -130,7 +130,7 @@ void add(LL* lst, void* elt, int index)
 	lst->size++;
 }
 
-void* rm(LL* lst, int index)
+void* ll_rm(LinkedList* lst, int index)
 {
 	if (lst == NULL)
 	{
@@ -169,9 +169,9 @@ void* rm(LL* lst, int index)
 	return r;
 }
 
-LL* make_list(void)
+LinkedList* ll_create(void)
 {
-	LL* r = malloc(sizeof(LL));
+	LinkedList* r = malloc(sizeof(LinkedList));
 	if (r == NULL)
 	{
 		return NULL;
@@ -180,7 +180,7 @@ LL* make_list(void)
 	return r;
 }
 
-void free_list(LL* lst)
+void ll_free(LinkedList* lst)
 {
 	if (lst == NULL)
 	{
