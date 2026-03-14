@@ -720,20 +720,18 @@ Tab* terminal_mode(Tab* t, int ch)
 					log_error("failed to open file to write to in terminal_mode\n");
 					return t;
 				}
-				for (int i = 0; i < t->lines->size; i++)
+				PieceIterator pi;
+				if (!pt_iterator_init(t->pt, &pi, 0))
 				{
-					Line* l = (Line*) ll_get_elt(t->lines, i);
-					if (l != NULL)
-					{
-						GapBuffer* gb = l->gb;
-						if (gb != NULL)
-						{
-							int store = gb->gap_index;
-							gb_goto(gb, gb->num_chars - 1);
-							fprintf(f, "%s\n", gb->text);
-							gb_goto(gb, store);
-						}
-					}
+					fclose(f);
+					return t;
+				}
+
+				char c = pt_iterate(&pi);
+				while (c != '\0')
+				{
+					fprintf(f, "%c", c);
+					c = pt_iterate(&pi);
 				}
 				fclose(f);
 				t->tab_num_flags |= CHANGES_SAVED;
