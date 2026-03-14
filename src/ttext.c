@@ -33,12 +33,31 @@ int main(int argc, char* argv[])
 	init_pair(GREEN_TEXT, COLOR_GREEN, COLOR_BLACK);
 	init_pair(CYAN_TEXT, COLOR_CYAN, COLOR_BLACK);
 
-	init_terminal();
+	if (!init_terminal())
+	{
+		endwin();
+		sem_destroy(&sem);
+		fprintf(stderr, "Could not initalize terminal\n");
+		return 1;
+	}
 
 	tabs = ll_create();
+	if (tabs == NULL)
+	{
+		endwin();
+		sem_destroy(&sem);
+		free_terminal();
+		fprintf(stderr, "ll_create() failed when creating list of tabs\n");
+		return 1;
+	}
 	for (int i = 1; i < argc; i++)
 	{
 		char* fname = malloc(sizeof(char) * FNAME_SIZE);
+		if (fname == NULL)
+		{
+			print_message("malloc failed when trying to create tab");
+			continue;
+		}
 		int j;
 		for (j = 0; argv[i][j] != '\0'; j++)
 		{

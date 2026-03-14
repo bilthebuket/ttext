@@ -29,13 +29,34 @@ void move_cursor_to_terminal(void)
 	move_cursor_to_tab(terminal);
 }
 
-void init_terminal(void)
+bool init_terminal(void)
 {
 	terminal = malloc(sizeof(Tab));
+	if (terminal == NULL)
+	{
+		return false;
+	}
 	terminal->fname = NULL;
 	terminal->lines = ll_create();
+	if (terminal->lines == NULL)
+	{
+		free(terminal);
+		return false;
+	}
 	Line* l = malloc(sizeof(Line));
+	if (l == NULL)
+	{
+		ll_free(terminal->lines);
+		free(terminal);
+		return false;
+	}
 	l->gb = gb_create(NULL, -1);
+	if (l->gb == NULL)
+	{
+		ll_free(terminal->lines);
+		free(terminal);
+		line_free(l);
+	}
 	ll_insert(terminal->lines, l, 0);
 
 	terminal->width = width;
@@ -53,8 +74,22 @@ void init_terminal(void)
 	{
 		execlp("bash", "bash", NULL);
 	}
+	else if (slave_pid == -1)
+	{
+		tab_free(terminal);
+		return false;
+	}
 
-	pthread_create(&listener, NULL, &listener_func, NULL);
+	if (pthread_create(&listener, NULL, &listener_func, NULL))
+	{
+		kill(slave_pid, SIGKILL);
+		waitpid(slave_pid, NULL, 0);
+		close(master_fd);
+		tab_free(terminal);
+		return false;
+	}
+
+	return true;
 }
 
 void free_terminal(void)
@@ -711,6 +746,7 @@ Tab* terminal_mode(Tab* t, int ch)
 					fname[6] = 't';
 					fname[7] = 'x';
 					fname[8] = 't';
+					fname[9] = '\0';
 					t->fname = fname;
 				}
 

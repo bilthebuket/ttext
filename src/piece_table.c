@@ -362,16 +362,24 @@ PieceTable* pt_create(char* buf, int len)
 				return NULL;
 			}
 		}
-		ColorIndex* ci = ci_create(CYAN_TEXT, len, len);
-		if (ci == NULL)
+		if (len > 0)
 		{
-			free(r->append);
-			tree_free(r->pieces, &piece_free);
-			free(r);
-			return NULL;
+			ColorIndex* ci;
+			ci = ci_create(CYAN_TEXT, len, len);
+			if (ci == NULL)
+			{
+				free(r->append);
+				tree_free(r->pieces, &piece_free);
+				free(r);
+				return NULL;
+			}
+			r->color_indices = tree_create(ci);
+			pt_update_color_indices(r, 0);
 		}
-		r->color_indices = tree_create(ci);
-		pt_update_color_indices(r, 0);
+		else
+		{
+			r->color_indices = NULL;
+		}
 	}
 	return r;
 }
@@ -497,8 +505,23 @@ void pt_insert(PieceTable* pt, char c, int index)
 		}
 	}
 
+	// we need to add the character we just added to a color index
+	// if we pick the ci to the right of the character and its a char to split on,
+	// it will get split off and be a single character, which will fragment the ci's
+	// and lead to them not getting highlighted properly
+	// also, if we just inserted a character at the end of the document, then we need to get the colorindex
+	// one to the left of the character we just inserted, because if we try to get the ci at the character we just inserted,
+	// tree_get will return NULL (there is not ci at the index of the character we just inserted)
 	ColorIndexFinder f;
-	f.contained = index + 1;
+	if (chars_to_split_on[(int) pt_get(pt, index + 1)] || pt_get(pt, index + 1) == '\0')
+	{
+		f.contained = index;
+	}
+	else
+	{
+		f.contained = index + 1;
+	}
+
 	f.global_char_index = -1;
 	Tree* t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (t == NULL)
@@ -688,13 +711,28 @@ void pt_rm(PieceTable* pt, int index)
 		return;
 	}
 
-	((ColorIndex*) t->elt)->len--;
-	((ColorIndex*) t->elt)->chars_contained--;
-
 	int len = ((ColorIndex*) t->elt)->len;
+	if (len == 1)
+	{
+		f.contained = index + 1;
+		f.global_char_index = -1;
+		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
+		len = 0;
+	}
+	else
+	{
+		int index_to_update = index;
+		if (f.global_char_index + len - 1 == index_to_update)
+		{
+			index_to_update--;
+		}
+		((ColorIndex*) t->elt)->len--;
+		((ColorIndex*) t->elt)->chars_contained--;
+		len--;
+		tree_recursive_update_to_root(t, &ci_update_info);
+		pt_update_color_indices(pt, index_to_update);
+	}
 
-	tree_recursive_update_to_root(t, &ci_update_info);
-	pt_update_color_indices(pt, index);
 	if (f.global_char_index > 1)
 	{
 		pt_update_color_indices(pt, f.global_char_index - 1);

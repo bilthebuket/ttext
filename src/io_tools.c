@@ -332,7 +332,7 @@ int indent_line(Tab* t, int index)
 
 void log_error(const char* str)
 {
-	if (error_log != NULL)
+	if (error_log != NULL && error_log != NULL)
 	{
 		fprintf(error_log, str);
 		fflush(error_log);
