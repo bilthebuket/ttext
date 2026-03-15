@@ -15,39 +15,28 @@
 
 int main(int argc, char* argv[])
 {
-	sem_init(&sem, 0, 1);
-
-	initscr();
-	start_color();
-	noecho();
-	cbreak();
-	getmaxyx(stdscr, height, width);
-
+	EditorState es;
+	es.terminate = false;
+	sem_init(&es.sem, 0, 1);
+	screen_create();
 	pt_init_arrays();
 
-	init_pair(WHITE_TEXT, COLOR_WHITE, COLOR_BLACK);
-	init_pair(BLUE_TEXT, COLOR_BLUE, COLOR_BLACK);
-	init_pair(RED_TEXT, COLOR_RED, COLOR_BLACK);
-	init_pair(MAGENTA_TEXT, COLOR_MAGENTA, COLOR_BLACK);
-	init_pair(YELLOW_TEXT, COLOR_YELLOW, COLOR_BLACK);
-	init_pair(GREEN_TEXT, COLOR_GREEN, COLOR_BLACK);
-	init_pair(CYAN_TEXT, COLOR_CYAN, COLOR_BLACK);
 
-	if (!init_terminal())
+	if (!terminal_create(&es))
 	{
 		endwin();
-		sem_destroy(&sem);
+		sem_destroy(&es.sem);
 		fprintf(stderr, "Could not initalize terminal\n");
 		return 1;
 	}
 
-	tabs = ll_create();
-	if (tabs == NULL)
+	es.tabs = ll_create();
+	if (es.tabs == NULL)
 	{
-		endwin();
-		sem_destroy(&sem);
-		free_terminal();
-		fprintf(stderr, "ll_create() failed when creating list of tabs\n");
+		screen_free();
+		sem_destroy(&es.sem);
+		terminal_free(&es);
+		fprintf(stderr, "ll_create() failed when creating list of es.tabs\n");
 		return 1;
 	}
 	for (int i = 1; i < argc; i++)
@@ -59,7 +48,7 @@ int main(int argc, char* argv[])
 			continue;
 		}
 		int j;
-		for (j = 0; argv[i][j] != '\0'; j++)
+		for (j = 0; j < FNAME_SIZE && argv[i][j] != '\0'; j++)
 		{
 			fname[j] = argv[i][j];
 		}
@@ -73,40 +62,38 @@ int main(int argc, char* argv[])
 		else
 		{
 			t->tab_num_flags &= FLAG_BITS;
-			t->tab_num_flags |= tabs->size;
-			ll_insert(tabs, t, tabs->size);
+			t->tab_num_flags |= es.tabs->size;
+			ll_insert(es.tabs, t, es.tabs->size);
 		}
 	}
 
-	Tab* active_tab;
-
 	if (argc == 1)
 	{
-		active_tab = tab_create(NULL);
-		ll_insert(tabs, active_tab, 0);
-		active_tab_index = 0;
+		es.active_tab = tab_create(NULL);
+		ll_insert(es.tabs, es.active_tab, 0);
+		es.active_tab_index = 0;
 	}
 	else
 	{
-		active_tab = (Tab*) ll_get_elt(tabs, argc - 2);
-		active_tab_index = argc - 2;
+		es.active_tab = (Tab*) ll_get_elt(es.tabs, argc - 2);
+		es.active_tab_index = argc - 2;
 	}
-	mode = &normal_mode;
+	es.mode = &normal_mode;
 
-	sem_wait(&sem);
-	print_screen();
+	sem_wait(&es.sem);
+	print_screen(&es);
 	refresh();
-	sem_post(&sem);
+	sem_post(&es.sem);
 
 	error_log = fopen("errors.log", "a");
 
-	while (!terminate)
+	while (!es.terminate)
 	{
 		char c = getch();
-		sem_wait(&sem);
-		active_tab = (*mode)(active_tab, c);
+		sem_wait(&es.sem);
+		(*es.mode)(&es, c);
 		refresh();
-		sem_post(&sem);
+		sem_post(&es.sem);
 	}
 
 	if (error_log != NULL)
@@ -114,13 +101,13 @@ int main(int argc, char* argv[])
 		fclose(error_log);
 	}
 
-	free_terminal();
-	endwin();
-	sem_destroy(&sem);
-	while (tabs->size > 0)
+	terminal_free(&es);
+	screen_free();
+	sem_destroy(&es.sem);
+	while (es.tabs->size > 0)
 	{
-		Tab* t = ll_rm(tabs, 0);
+		Tab* t = ll_rm(es.tabs, 0);
 		tab_free(t);
 	}
-	ll_free(tabs);
+	ll_free(es.tabs);
 }

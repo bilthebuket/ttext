@@ -7,17 +7,18 @@
 #include "io_tools.h"
 #include "line.h"
 
-Tab* normal_mode(Tab* t, int ch)
+void normal_mode(EditorState* es, int ch)
 {
+	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL)
 	{
-		return t;
+		return;
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		return t;
+		return;
 	}
 
 	switch (ch)
@@ -111,13 +112,13 @@ Tab* normal_mode(Tab* t, int ch)
 		case 't':
 		print_terminal();
 		move_cursor_to_terminal();
-		mode = &terminal_mode;
+		es->mode = &terminal_mode;
 		break;
 
 		case 'i':
 		t->tab_num_flags &= ~CHANGES_SAVED;
 		print_message("Insert Mode");
-		mode = &insert_mode;
+		es->mode = &insert_mode;
 		break;
 
 		case 'a':
@@ -133,7 +134,7 @@ Tab* normal_mode(Tab* t, int ch)
 			}
 			move_cursor_to_tab(t);
 		}
-		mode = &insert_mode;
+		es->mode = &insert_mode;
 		break;
 
 		case '0':
@@ -165,7 +166,7 @@ Tab* normal_mode(Tab* t, int ch)
 		t->x = indent_line(t, t->y);
 		print_tab(t);
 		move_cursor_to_tab(t);
-		mode = &insert_mode;
+		es->mode = &insert_mode;
 		break;
 		}
 
@@ -297,5 +298,5 @@ Tab* normal_mode(Tab* t, int ch)
 		break;
 	}
 
-	return t;
+	return;
 }

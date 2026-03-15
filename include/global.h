@@ -40,19 +40,20 @@
 
 #define NUM_CHARS 128
 
-extern Tab* (*mode)(Tab*, int);
+#define TERMINAL_HEIGHT 5
+#define MESSAGE_LINE_HEIGHT 1
 
-// maintained in ascending order of z_index (last element in list is on top of screen)
-extern LinkedList* tabs;
-extern int active_tab_index;
+typedef struct EditorState
+{
+	void (*mode)(struct EditorState*, int);
 
-// height and width of the screen
-extern int height;
-extern int width;
-
-extern sem_t sem;
-
-extern bool terminate;
+	// maintained in ascending order of z_index (last element in list is on top of screen)
+	LinkedList* tabs;
+	Tab* active_tab;
+	sem_t sem;
+	int active_tab_index;
+	bool terminate;
+} EditorState;
 
 extern FILE* error_log;
 

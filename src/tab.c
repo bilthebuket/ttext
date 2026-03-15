@@ -13,12 +13,11 @@ Tab* tab_create(char* fname)
 		log_error("malloc failed in make_tab\n");
 		return NULL;
 	}
+	set_tab_to_fill_screen(r);
 	r->fname = fname;
 	r->tab_num_flags = CHANGES_SAVED;
 	r->x = 0;
 	r->y = 0;
-	r->height = height - 2;
-	r->width = width;
 	r->xpos = 0;
 	r->ypos = 0;
 	r->top_line_index = 0;

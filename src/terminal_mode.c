@@ -29,7 +29,7 @@ void move_cursor_to_terminal(void)
 	move_cursor_to_tab(terminal);
 }
 
-bool init_terminal(void)
+bool terminal_create(EditorState* es)
 {
 	terminal = malloc(sizeof(Tab));
 	if (terminal == NULL)
@@ -59,13 +59,13 @@ bool init_terminal(void)
 	}
 	ll_insert(terminal->lines, l, 0);
 
-	terminal->width = width;
-	terminal->height = 5;
+	set_tab_to_fill_screen(terminal);
 	terminal->x = 0;
 	terminal->y = 0;
 	terminal->pt = NULL;
 	terminal->xpos = 0;
-	terminal->ypos = height - terminal->height - 2;
+	terminal->ypos = terminal->height - TERMINAL_HEIGHT - MESSAGE_LINE_HEIGHT;
+	terminal->height = TERMINAL_HEIGHT;
 	terminal->left_column_index = 0;
 	terminal->top_line_index = 0;
 
@@ -80,7 +80,7 @@ bool init_terminal(void)
 		return false;
 	}
 
-	if (pthread_create(&listener, NULL, &listener_func, NULL))
+	if (pthread_create(&listener, NULL, &listener_func, es))
 	{
 		kill(slave_pid, SIGKILL);
 		waitpid(slave_pid, NULL, 0);
@@ -92,12 +92,12 @@ bool init_terminal(void)
 	return true;
 }
 
-void free_terminal(void)
+void terminal_free(EditorState* es)
 {
-	sem_wait(&sem);
+	sem_wait(&es->sem);
 	pthread_cancel(listener);
 	pthread_join(listener, NULL);
-	sem_post(&sem);
+	sem_post(&es->sem);
 	if (listener_buf != NULL)
 	{
 		free(listener_buf);
@@ -132,22 +132,22 @@ static void make_input_line(void)
 	move_cursor_to_tab(terminal);
 }
 
-Tab* terminal_mode(Tab* t, int ch)
+void terminal_mode(EditorState* es, int ch)
 {
+	Tab* t = es->active_tab;
 	Line* line = (Line*) ll_get_elt(terminal->lines, terminal->y);
 	if (line == NULL)
 	{
 		log_error("NULL line in terminal_mode\n");
-		return t;
+		return;
 	}
 	GapBuffer* gb = line->gb;
 	if (gb == NULL)
 	{
 		log_error("NULL gb in terminal_mode\n");
-		return t;
+		return;
 	}
 
-	Tab* r = t;
 	switch (ch)
 	{
 		default:
@@ -178,7 +178,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Please pass filename as argument");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				start_index = end_index + 1;
@@ -187,7 +187,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				if (fname == NULL)
 				{
 					log_error("malloc failed in terminal_mode\n");
-					return t;
+					return;
 				}
 				int i;
 				for (i = start_index; gb_get(gb, i) != '\0'; i++)
@@ -196,28 +196,24 @@ Tab* terminal_mode(Tab* t, int ch)
 				}
 				fname[i - start_index] = '\0';
 
-				r = tab_create(fname);
-				if (r == NULL)
+				Tab* new_tab = tab_create(fname);
+				if (new_tab == NULL)
 				{
 					log_error("tab_create failed in terminal_mode\n");
-					r = (Tab*) ll_get_elt(tabs, active_tab_index);
-					if (r == NULL)
-					{
-						log_error("active_tab_index references NULL element in tabs linked list\n");
-					}
-					return t;
+					return;
 				}
 
-				r->tab_num_flags &= FLAG_BITS;
-				r->tab_num_flags |= tabs->size;
-				ll_insert(tabs, r, tabs->size);
-				active_tab_index = tabs->size - 1;
-				print_screen();
+				new_tab->tab_num_flags &= FLAG_BITS;
+				new_tab->tab_num_flags |= es->tabs->size;
+				ll_insert(es->tabs, new_tab, es->tabs->size);
+				es->active_tab_index = es->tabs->size - 1;
+				es->active_tab = new_tab;
+				print_screen(es);
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tabn"))
 			{
 				int tab_num = t->tab_num_flags & TAB_NUM_BITS;
-				if (tab_num == tabs->size - 1)
+				if (tab_num == es->tabs->size - 1)
 				{
 					tab_num = 0;
 				}
@@ -226,95 +222,87 @@ Tab* terminal_mode(Tab* t, int ch)
 					tab_num++;
 				}
 
-				for (int i = 0; i < tabs->size; i++)
+				for (int i = 0; i < es->tabs->size; i++)
 				{
-					Tab* t = (Tab*) ll_get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(es->tabs, i);
 					if (t == NULL)
 					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = ll_get_node(tabs, i);
+						log_error("found NULL tab in es->tabs in terminal_mode\n");
+						Node* n = ll_get_node(es->tabs, i);
 						if (n != NULL)
 						{
 							n->elt = tab_create(NULL);
-							if (n->elt != NULL)
+							if (n->elt == NULL)
 							{
-								r = (Tab*) n->elt;
-							}
-							else
-							{
-								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-								return t;
+								log_error("tab_create failing (terminal_mode)\n");
+								return;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-							return t;
+							log_error("found NULL node is es->tabs (terminal_mode)\n");
+							return;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						r = t;
-						active_tab_index = i;
+						es->active_tab = t;
+						es->active_tab_index = i;
 						break;
 					}
 				}
 
-				ll_rm(tabs, active_tab_index);
-				ll_insert(tabs, r, tabs->size);
-				active_tab_index = tabs->size - 1;
-				print_screen();
+				ll_rm(es->tabs, es->active_tab_index);
+				ll_insert(es->tabs, es->active_tab, es->tabs->size);
+				es->active_tab_index = es->tabs->size - 1;
+				print_screen(es);
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tabp"))
 			{
 				int tab_num = t->tab_num_flags & TAB_NUM_BITS;
 				if (tab_num == 0)
 				{
-					tab_num = tabs->size - 1;
+					tab_num = es->tabs->size - 1;
 				}
 				else
 				{
 					tab_num--;
 				}
 
-				for (int i = 0; i < tabs->size; i++)
+				for (int i = 0; i < es->tabs->size; i++)
 				{
-					Tab* t = (Tab*) ll_get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(es->tabs, i);
 					if (t == NULL)
 					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = ll_get_node(tabs, i);
+						log_error("found NULL tab in es->tabs in terminal_mode\n");
+						Node* n = ll_get_node(es->tabs, i);
 						if (n != NULL)
 						{
 							n->elt = tab_create(NULL);
-							if (n->elt != NULL)
+							if (n->elt == NULL)
 							{
-								r = (Tab*) n->elt;
-							}
-							else
-							{
-								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-								return t;
+								log_error("tab_create failing (terminal_mode)\n");
+								return;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-							return t;
+							log_error("found NULL node is es->tabs (terminal_mode)\n");
+							return;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						r = t;
-						active_tab_index = i;
+						es->active_tab = t;
+						es->active_tab_index = i;
 						break;
 					}
 				}
 
-				ll_rm(tabs, active_tab_index);
-				ll_insert(tabs, r, tabs->size);
-				active_tab_index = tabs->size - 1;
-				print_screen();
+				ll_rm(es->tabs, es->active_tab_index);
+				ll_insert(es->tabs, es->active_tab, es->tabs->size);
+				es->active_tab_index = es->tabs->size - 1;
+				print_screen(es);
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "tab"))
 			{
@@ -322,58 +310,54 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Please pass the index of the tab to switch to");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				start_index = end_index + 1;
 				end_index = gb->num_chars - 1;
 				int tab_num = gb_atoi(gb, start_index, end_index);
 
-				if (tab_num < 0 || tab_num >= tabs->size)
+				if (tab_num < 0 || tab_num >= es->tabs->size)
 				{
 					print_message("tab number invalid");
 					make_input_line();
-					return t;
+					return;
 				}
 
-				for (int i = 0; i < tabs->size; i++)
+				for (int i = 0; i < es->tabs->size; i++)
 				{
-					Tab* t = (Tab*) ll_get_elt(tabs, i);
+					Tab* t = (Tab*) ll_get_elt(es->tabs, i);
 					if (t == NULL)
 					{
-						log_error("found NULL tab in tabs in terminal_mode\n");
-						Node* n = ll_get_node(tabs, i);
+						log_error("found NULL tab in es->tabs in terminal_mode\n");
+						Node* n = ll_get_node(es->tabs, i);
 						if (n != NULL)
 						{
 							n->elt = tab_create(NULL);
-							if (n->elt != NULL)
+							if (n->elt == NULL)
 							{
-								r = (Tab*) n->elt;
-							}
-							else
-							{
-								log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-								return t;
+								log_error("tab_create failing (terminal_mode)\n");
+								return;
 							}
 						}
 						else
 						{
-							log_error("active_tab_index references NULL element in tabs linked list, tab_create failing (terminal_mode)\n");
-							return t;
+							log_error("found NULL node is es->tabs (terminal_mode)\n");
+							return;
 						}
 					}
 					else if ((t->tab_num_flags & TAB_NUM_BITS) == tab_num)
 					{
-						r = t;
-						active_tab_index = i;
+						es->active_tab = t;
+						es->active_tab_index = i;
 						break;
 					}
 				}
 
-				ll_rm(tabs, active_tab_index);
-				ll_insert(tabs, r, tabs->size);
-				active_tab_index = tabs->size - 1;
-				print_screen();
+				ll_rm(es->tabs, es->active_tab_index);
+				ll_insert(es->tabs, es->active_tab, es->tabs->size);
+				es->active_tab_index = es->tabs->size - 1;
+				print_screen(es);
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "rs"))
 			{
@@ -381,18 +365,18 @@ Tab* terminal_mode(Tab* t, int ch)
 
 				int* num_to_change1 = NULL;
 				int sign1;
+				int store1;
 
 				int* num_to_change2 = NULL;
 				int sign2;
+				int store2;
 
-				// for making sure the new dimensions still fit on the screen
-				int upper_bound;
 
 				if (only_one_arg)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				start_index = end_index + 1;
@@ -403,30 +387,32 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "top"))
 				{
 					num_to_change1 = &t->ypos;
 					num_to_change2 = &t->height;
-					upper_bound = height - 2;
+					store1 = t->ypos;
+					store2 = t->height;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "bottom"))
 				{
 					num_to_change1 = &t->height;
-					upper_bound = height - 2;
+					store1 = t->height;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "left"))
 				{
 					num_to_change1 = &t->xpos;
 					num_to_change2 = &t->width;
-					upper_bound = width - 1;
+					store1 = t->xpos;
+					store2 = t->width;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "right"))
 				{
 					num_to_change1 = &t->width;
-					upper_bound = width - 1;
+					store1 = t->width;
 				}
 
 				start_index = end_index + 1;
@@ -437,7 +423,7 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "ll_insert"))
@@ -473,57 +459,38 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("An error has occured (potential fix: enter a non negative value)");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				if (num_to_change1 != NULL)
 				{
 					if (num_to_change2 != NULL)
 					{
-						if (*num_to_change1 + sign1 * amount + *num_to_change2 + sign2 * amount <= upper_bound && *num_to_change1 + sign1 * amount >= 0 && *num_to_change2 + sign2 * amount >= 0)
+						*num_to_change1 = *num_to_change1 + sign1 * amount;
+						*num_to_change2 = *num_to_change2 + sign2 * amount;
+						if (!is_tab_on_screen(t))
 						{
-							*num_to_change1 = *num_to_change1 + sign1 * amount;
-							*num_to_change2 = *num_to_change2 + sign2 * amount;
-						}
-						else
-						{
+							*num_to_change1 = store1;
+							*num_to_change2 = store2;
 							print_message("Resize would cause tab to go off screen");
 							make_input_line();
-							return t;
+							return;
 						}
 					}
 					else
 					{
-						if (upper_bound == width - 1)
+						*num_to_change1 = *num_to_change1 + sign1 * amount;
+						if (!is_tab_on_screen(t))
 						{
-							if (t->width + sign1 * amount + t->xpos <= upper_bound && t->width + sign1 * amount >= 0)
-							{
-								t->width = t->width + sign1 * amount;
-							}
-							else
-							{
-								print_message("Resize would cause tab to go off screen");
-								make_input_line();
-								return t;
-							}
-						}
-						else
-						{
-							if (t->height + sign1 * amount + t->ypos <= upper_bound && t->height + sign1 * amount >= 0)
-							{
-								t->height = t->height + sign1 * amount;
-							}
-							else
-							{
-								print_message("Resize would cause tab to go off screen");
-								make_input_line();
-								return t;
-							}
+							*num_to_change1 = store1;
+							print_message("Resize would cause tab to go off screen");
+							make_input_line();
+							return;
 						}
 					}
 				}
 
-				print_screen();
+				print_screen(es);
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "mv"))
 			{
@@ -531,13 +498,13 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				int* num_to_change = NULL;
-				int bound = -1;
 				int sign;
 				int amount;
+				int store;
 
 				start_index = end_index + 1;
 				end_index++;
@@ -546,32 +513,32 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("Ussage: :mv <left/right/up/down> <amount>");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				if (!gb_strcmp(gb, start_index, end_index, "left"))
 				{
 					num_to_change = &t->xpos;
 					sign = -1;
-					bound = 0;
+					store = t->xpos;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "right"))
 				{
 					num_to_change = &t->xpos;
 					sign = 1;
-					bound = width - t->width;
+					store = t->xpos;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "up"))
 				{
 					num_to_change = &t->ypos;
 					sign = -1;
-					bound = 0;
+					store = t->ypos;
 				}
 				else if (!gb_strcmp(gb, start_index, end_index, "down"))
 				{
 					num_to_change = &t->ypos;
 					sign = 1;
-					bound = height - t->height - 2;
+					store = t->ypos;
 				}
 
 				start_index = end_index + 1;
@@ -582,34 +549,20 @@ Tab* terminal_mode(Tab* t, int ch)
 				{
 					print_message("An error has occured (potential fix: enter a non negative value)");
 					make_input_line();
-					return t;
+					return;
 				}
 
 				if (num_to_change != NULL)
 				{
-					if (sign == -1)
+					*num_to_change = *num_to_change + amount * sign;
+					if (is_tab_on_screen(t))
 					{
-						if (*num_to_change + amount * sign >= bound)
-						{
-							*num_to_change = *num_to_change + amount * sign;
-							print_screen();
-						}
-						else
-						{
-							print_message("Move would cause tab to go off screen");
-						}
+						print_screen(es);
 					}
 					else
 					{
-						if (*num_to_change + amount * sign <= bound)
-						{
-							*num_to_change = *num_to_change + amount * sign;
-							print_screen();
-						}
-						else
-						{
-							print_message("Move would cause tab to go off screen");
-						}
+						*num_to_change = store;
+						print_message("Move would cause tab to go off screen");
 					}
 				}
 			}
@@ -617,113 +570,113 @@ Tab* terminal_mode(Tab* t, int ch)
 			{
 				if (t->tab_num_flags & CHANGES_SAVED)
 				{
-					if (active_tab_index == tabs->size - 1)
+					if (es->active_tab_index == es->tabs->size - 1)
 					{
-						if (tabs->size == 1)
+						if (es->tabs->size == 1)
 						{
-							terminate = true;
+							es->terminate = true;
 						}
 						else
 						{
 							int tab_num = t->tab_num_flags & TAB_NUM_BITS;
-							for (int i = 0; i < tabs->size; i++)
+							for (int i = 0; i < es->tabs->size; i++)
 							{
-								Tab* t = ll_get_elt(tabs, i);
+								Tab* t = ll_get_elt(es->tabs, i);
 								if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 								{
 									t->tab_num_flags--;
 								}
 							}
-							r = (Tab*) ll_get_elt(tabs, active_tab_index - 1);
-							tab_free((Tab*) ll_rm(tabs, active_tab_index));
-							active_tab_index--;
-							print_screen();
+							es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index - 1);
+							tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
+							es->active_tab_index--;
+							print_screen(es);
 						}
 					}
 					else
 					{
 						int tab_num = t->tab_num_flags & TAB_NUM_BITS;
-						for (int i = 0; i < tabs->size; i++)
+						for (int i = 0; i < es->tabs->size; i++)
 						{
-							Tab* t = ll_get_elt(tabs, i);
+							Tab* t = ll_get_elt(es->tabs, i);
 							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 							{
 								t->tab_num_flags--;
 							}
 						}
-						r = (Tab*) ll_get_elt(tabs, active_tab_index + 1);
-						tab_free((Tab*) ll_rm(tabs, active_tab_index));
-						print_screen();
+						es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index + 1);
+						tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
+						print_screen(es);
 					}
 
-					if (r == NULL)
+					if (es->active_tab == NULL)
 					{
-						log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
-						r = tab_create(NULL);
-						if (r == NULL)
+						log_error("es->active_tab_index referencing NULL element in es->tabs linked list in terminal_mode\n");
+						es->active_tab = tab_create(NULL);
+						if (es->active_tab == NULL)
 						{
 							log_error("tab_create failed in terminal_mode\n");
 						}
 						else
 						{
-							ll_insert(tabs, r, active_tab_index);
+							ll_insert(es->tabs, es->active_tab, es->active_tab_index);
 						}
 					}
 				}
 			}
 			else if (!gb_strcmp(gb, start_index, end_index, "q!"))
 			{
-				if (active_tab_index == tabs->size - 1)
+				if (es->active_tab_index == es->tabs->size - 1)
 				{
-					if (tabs->size == 1)
+					if (es->tabs->size == 1)
 					{
-						terminate = true;
-						return t;
+						es->terminate = true;
+						return;
 					}
 					else
 					{
 						int tab_num = t->tab_num_flags & TAB_NUM_BITS;
-						for (int i = 0; i < tabs->size; i++)
+						for (int i = 0; i < es->tabs->size; i++)
 						{
-							Tab* t = ll_get_elt(tabs, i);
+							Tab* t = ll_get_elt(es->tabs, i);
 							if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 							{
 								t->tab_num_flags--;
 							}
 						}
-						r = (Tab*) ll_get_elt(tabs, active_tab_index - 1);
-						tab_free((Tab*) ll_rm(tabs, active_tab_index));
-						active_tab_index--;
-						print_screen();
+						es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index - 1);
+						tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
+						es->active_tab_index--;
+						print_screen(es);
 					}
 				}
 				else
 				{
 					int tab_num = t->tab_num_flags & TAB_NUM_BITS;
-					for (int i = 0; i < tabs->size; i++)
+					for (int i = 0; i < es->tabs->size; i++)
 					{
-						Tab* t = ll_get_elt(tabs, i);
+						Tab* t = ll_get_elt(es->tabs, i);
 						if (t != NULL && (t->tab_num_flags & TAB_NUM_BITS) > tab_num)
 						{
 							t->tab_num_flags--;
 						}
 					}
-					r = (Tab*) ll_get_elt(tabs, active_tab_index + 1);
-					tab_free((Tab*) ll_rm(tabs, active_tab_index));
-					print_screen();
+					es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index + 1);
+					tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
+					print_screen(es);
 				}
 
-				if (r == NULL)
+				if (es->active_tab == NULL)
 				{
-					log_error("active_tab_index referencing NULL element in tabs linked list in terminal_mode\n");
-					r = tab_create(NULL);
-					if (r == NULL)
+					log_error("es->active_tab_index referencing NULL element in es->tabs linked list in terminal_mode\n");
+					es->active_tab = tab_create(NULL);
+					if (es->active_tab == NULL)
 					{
 						log_error("tab_create failed in terminal_mode\n");
 					}
 					else
 					{
-						ll_insert(tabs, r, active_tab_index);
+						ll_insert(es->tabs, es->active_tab, es->active_tab_index);
 					}
 				}
 			}
@@ -735,7 +688,7 @@ Tab* terminal_mode(Tab* t, int ch)
 					if (fname == NULL)
 					{
 						log_error("malloc failed in terminal_mode\n");
-						return t;
+						return;
 					}
 					fname[0] = 'u';
 					fname[1] = 'n';
@@ -754,13 +707,13 @@ Tab* terminal_mode(Tab* t, int ch)
 				if (f == NULL)
 				{
 					log_error("failed to open file to write to in terminal_mode\n");
-					return t;
+					return;
 				}
 				PieceIterator pi;
 				if (!pt_iterator_init(t->pt, &pi, 0))
 				{
 					fclose(f);
-					return t;
+					return;
 				}
 
 				char c = pt_iterate(&pi);
@@ -809,18 +762,17 @@ Tab* terminal_mode(Tab* t, int ch)
 		break;
 
 		case ESCAPE_KEYCODE:
-		print_screen();
+		print_screen(es);
 		move_cursor_to_tab(t);
-		mode = &normal_mode;
+		es->mode = &normal_mode;
 		break;
 	}
-
-	return r;
 }
 
-void* listener_func(void*)
+void* listener_func(void* v)
 {
-	while (!terminate)
+	EditorState* es = (EditorState*) v;
+	while (!es->terminate)
 	{
 		listener_buf = malloc(sizeof(char) * LINE_SIZE);
 		if (listener_buf == NULL)
@@ -832,7 +784,7 @@ void* listener_func(void*)
 		listener_buf[bytes_read] = '\0';
 		if (bytes_read > 0)
 		{
-			sem_wait(&sem);
+			sem_wait(&es->sem);
 			int index = 0;
 			int i = 0;
 			for (; i < bytes_read; i++)
@@ -1001,20 +953,20 @@ void* listener_func(void*)
 			listener_buf = NULL;
 
 			check_bottom_update(terminal);
-			if (mode == &terminal_mode)
+			if (es->mode == &terminal_mode)
 			{
 				move_cursor_to_tab(terminal);
 			}
 			print_tab(terminal);
 			refresh();
-			sem_post(&sem);
+			sem_post(&es->sem);
 		}
 		else
 		{
-			sem_wait(&sem);
+			sem_wait(&es->sem);
 			free(listener_buf);
 			listener_buf = NULL;
-			sem_post(&sem);
+			sem_post(&es->sem);
 		}
 	}
 

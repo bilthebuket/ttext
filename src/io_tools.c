@@ -6,6 +6,42 @@
 #include "line.h"
 #include "terminal_mode.h"
 
+static int height;
+static int width;
+
+bool is_tab_on_screen(Tab* t)
+{
+	return t->xpos >= 0 && t->xpos + t->width < width && t->ypos >= 0 && t->ypos + t->height < height - MESSAGE_LINE_HEIGHT;
+}
+
+void set_tab_to_fill_screen(Tab* t)
+{
+	t->height = height - MESSAGE_LINE_HEIGHT;
+	t->width = width;
+}
+
+void screen_create(void)
+{
+	initscr();
+	start_color();
+	noecho();
+	cbreak();
+	getmaxyx(stdscr, height, width);
+
+	init_pair(WHITE_TEXT, COLOR_WHITE, COLOR_BLACK);
+	init_pair(BLUE_TEXT, COLOR_BLUE, COLOR_BLACK);
+	init_pair(RED_TEXT, COLOR_RED, COLOR_BLACK);
+	init_pair(MAGENTA_TEXT, COLOR_MAGENTA, COLOR_BLACK);
+	init_pair(YELLOW_TEXT, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(GREEN_TEXT, COLOR_GREEN, COLOR_BLACK);
+	init_pair(CYAN_TEXT, COLOR_CYAN, COLOR_BLACK);
+}
+
+void screen_free(void)
+{
+	endwin();
+}
+
 void print_tab(Tab* t)
 {
 	if (t == NULL)
@@ -22,12 +58,12 @@ void print_tab(Tab* t)
 	move(y, x);
 }
 
-void print_screen(void)
+void print_screen(EditorState* es)
 {
 	int y, x;
 	getyx(stdscr, y, x);
 
-	if (tabs == NULL)
+	if (es->tabs == NULL)
 	{
 		return;
 	}
@@ -38,9 +74,9 @@ void print_screen(void)
 			mvaddch(j, i, ' ');
 		}
 	}
-	for (int i = 0; i < tabs->size; i++)
+	for (int i = 0; i < es->tabs->size; i++)
 	{
-		print_tab((Tab*) ll_get_elt(tabs, i));
+		print_tab((Tab*) ll_get_elt(es->tabs, i));
 	}
 	print_terminal();
 
@@ -174,9 +210,9 @@ void print_message(const char* const str)
 	getyx(stdscr, y, x);
 	for (int i = 0; i < width; i++)
 	{
-		mvaddch(height - 1, i, ' ');
+		mvaddch(height - MESSAGE_LINE_HEIGHT, i, ' ');
 	}
-	mvaddstr(height - 1, 0, str);
+	mvaddstr(height - MESSAGE_LINE_HEIGHT, 0, str);
 	move(y, x);
 }
 
@@ -186,7 +222,7 @@ void clear_message_line(void)
 	getyx(stdscr, y, x);
 	for (int i = 0; i < width; i++)
 	{
-		mvaddch(height - 1, i, ' ');
+		mvaddch(height - MESSAGE_LINE_HEIGHT, i, ' ');
 	}
 	move(y, x);
 }

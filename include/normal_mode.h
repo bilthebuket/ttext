@@ -1,8 +1,8 @@
 #ifndef NORMAL_MODE_H
 #define NORMAL_MODE_H
 
-#include "tab.h"
+#include "global.h"
 
-Tab* normal_mode(Tab* t, int ch);
+void normal_mode(EditorState* es, int ch);
 
 #endif

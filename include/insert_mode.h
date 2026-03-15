@@ -1,8 +1,8 @@
 #ifndef INSERT_MODE_H
 #define INSERT_MODE_H
 
-#include "tab.h"
+#include "global.h"
 
-Tab* insert_mode(Tab* t, int ch);
+void insert_mode(EditorState* es, int ch);
 
 #endif

@@ -9,21 +9,22 @@
 #include "line.h"
 #include "piece_table.h"
 
-Tab* insert_mode(Tab* t, int ch)
+void insert_mode(EditorState* es, int ch)
 {
+	Tab* t = es->active_tab;
 	if (t == NULL)
 	{
-		return NULL;
+		return;
 	}
 	if (t->pt == NULL)
 	{
-		return t;
+		return;
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		return t;
+		return;
 	}
 
 	switch (ch)
@@ -123,7 +124,7 @@ Tab* insert_mode(Tab* t, int ch)
 		t->saved_x_index = t->x;
 		check_left_update(t);
 		move_cursor_to_tab(t);
-		mode = &normal_mode;
+		es->mode = &normal_mode;
 		break;
 
 		case ENTER_KEYCODE1:
@@ -139,5 +140,5 @@ Tab* insert_mode(Tab* t, int ch)
 		break;
 	}
 
-	return t;
+	return;
 }

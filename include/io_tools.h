@@ -1,14 +1,22 @@
 #ifndef IO_TOOLS_H
 #define IO_TOOLS_H
 
+#include <stdbool.h>
 #include "tab.h"
 #include "line.h"
+#include "global.h"
 
 void print_tab(Tab* t);
 void print_line(Tab* t, int line_index);
 void print_message(const char* const str);
 void clear_message_line(void);
-void print_screen(void);
+void print_screen(EditorState* es);
+void set_tab_to_fill_screen(Tab* t);
+
+void screen_create(void);
+void screen_free(void);
+
+bool is_tab_on_screen(Tab* t);
 
 void move_cursor_to_tab(Tab* t);
 
