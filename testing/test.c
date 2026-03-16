@@ -2,35 +2,29 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <math.h>
 #include "line.h"
 #include "global.h"
 #include "tree.h"
 #include "piece_table.h"
+#include <criterion/criterion.h>
 
-int power(int x, int y)
-{
-	int r = x;
-	for (int i = 0; i < y; i++)
-	{
-		r *= r;
-	}
-	return r;
-}
+Tree* t = NULL;
+int arr[] = {1, 20, 9, 5, 12, 25, 67, 13, 10, 32};
+#define ARR_LENGTH 10
 
-int compare(void* one, void* two)
+int cmp(Tree*, void*);
+
+int cmp(Tree* t, void* v)
 {
-	int* x = (int*) one;
-	int* y = (int*) two;
-	if (x == NULL || y == NULL)
-	{
-		printf("NULL pointer in compare function\n");
-		exit(1);
-	}
-	if (*y > *x)
+	int node = *((int*) t->elt);
+	int to_add = *((int*) v);
+
+	if (to_add > node)
 	{
 		return 1;
 	}
-	else if (*y < *x)
+	else if (to_add < node)
 	{
 		return -1;
 	}
@@ -40,79 +34,68 @@ int compare(void* one, void* two)
 	}
 }
 
-void free_thing(void* v)
+void setup_tree(void)
 {
-	free(v);
+	for (int i = 0; i < ARR_LENGTH; i++)
+	{
+		int* ptr = malloc(sizeof(int));
+		*ptr = arr[i];
+		t = tree_add_elt(t, ptr, &cmp, NULL);
+	}
 }
 
-void test_tree(void)
+void teardown_tree(void)
 {
-	bool arr[21];
-	for (int i = 0; i < 20; i++)
-	{
-		arr[i] = true;
-	}
-	srand(time(NULL));
-	arr[20] = false;
-
-	int* x = malloc(sizeof(int));
-	*x = 20;
-	Tree* t = tree_create(x);
-	for (int i = 0; i < 20; i++)
-	{
-		int* p = malloc(sizeof(int));
-		int y = rand() % 21;
-		while (!arr[y])
-		{
-			y = rand() % 21;
-		}
-		arr[y] = false;
-		printf("adding next: %c\n", 'a' + y);
-		*p = y;
-		//t = tree_add_elt(t, p, &compare, NULL);
-		print_tree(t, true, 0, 0);
-		fflush(stdout);
-	}
-
-	/*
-	for (int i = 0; i <= 20; i++)
-	{
-		int y = rand() % 21;
-		while (arr[y])
-		{
-			y = rand() % 21;
-		}
-		arr[y] = true;
-		printf("removing next: %c\n", 'a' + y);
-		t = tree_rm(t, &y, &compare, &free_thing, NULL);
-
-		print_tree(t, true, 0, 0);
-		fflush(stdout);
-	}
-	*/
-	tree_free(t, free_thing);
+	tree_free(t, &free);
 }
 
-int main(int argc, char* argv[])
+Test(tree, test_get, .init = setup_tree, .fini = teardown_tree)
 {
-	if (argc != 2)
+	for (int i = 0; i < ARR_LENGTH; i++)
 	{
-		printf("./test <fname>\n");
-		return -1;
+		int* ptr = (int*) tree_get(t, &arr[i], &cmp);
+		cr_expect_eq(*ptr, arr[i]);
 	}
-	int len = 0;
-	for (; argv[1][len] != '\0'; len++) {}
-	char* buf = malloc(sizeof(char) * len);
-	for (int i = 0; i < len; i++)
+}
+
+Test(tree, test_balancing, .init = setup_tree, .fini = teardown_tree)
+{
+	for (int i = 0; i < ARR_LENGTH; i++)
 	{
-		buf[i] = argv[1][i];
+		Tree* n = tree_helper(t, &arr[i], &cmp);
+		int r_height = 0;
+		int l_height = 0;
+		if (n->left != NULL)
+		{
+			l_height = n->left->height + 1;
+		}
+		if (n->right != NULL)
+		{
+			r_height = n->right->height + 1;
+		}
+		cr_expect_leq(abs(l_height - r_height), 1);
+		if (l_height == 0 && r_height == 0)
+		{
+			cr_expect_eq(n->height, 0);
+		}
+		else if (l_height >= r_height)
+		{
+			cr_expect_eq(n->height, l_height);
+		}
+		else
+		{
+			cr_expect_eq(n->height, r_height);
+		}
 	}
-	Tab* t = make_tab(buf);
-	int index = pt_get_line_index(t->pt, 1);
-	pt_rm(t->pt, index + 2);
-	index = pt_get_line_index(t->pt, 0);
-	index = pt_get_line_index(t->pt, 1);
-	index = pt_get_line_index(t->pt, 2);
-	print_info(t->pt->pieces, &print_piece);
-	free_tab(t);
+}
+
+Test(tree, test_rm, .init = setup_tree)
+{
+	for (int i = 0; i < ARR_LENGTH; i++)
+	{
+		t = tree_rm(t, &arr[i], &cmp, &free, NULL);
+		void* elt = tree_get(t, &arr[i], &cmp);
+		cr_expect_eq(elt, NULL);
+	}
+	cr_expect_eq(t, NULL);
 }

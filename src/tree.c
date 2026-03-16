@@ -20,9 +20,9 @@ Tree* tree_create(void* elt)
 
 Tree* tree_helper(Tree* t, void* elt, int (*cmp)(Tree*, void*))
 {
-	if (t == NULL)
+	if (t == NULL || cmp == NULL)
 	{
-		return NULL;
+		return t;
 	}
 
 	int delta = (*cmp)(t, elt);
@@ -46,6 +46,10 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 	{
 		return tree_create(elt);
 	}
+	if (cmp == NULL)
+	{
+		return t;
+	}
 
 	int delta = (*cmp)(t, elt);
 	if (delta == 1)
@@ -54,7 +58,6 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 		{
 			t->right = tree_create(elt);
 			t->right->prev = t;
-			(*update_relative_info)(t->right);
 			return tree_balance(t, cmp, update_relative_info);
 		}
 		return tree_add_elt(t->right, elt, cmp, update_relative_info);
@@ -95,7 +98,10 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*free_node)(vo
 			spot_to_fill = &t->prev->left;
 		}
 
-		(*free_node)(t->elt);
+		if (free_node != NULL)
+		{
+			(*free_node)(t->elt);
+		}
 		if (t->left == NULL && t->right == NULL)
 		{
 			if (spot_to_fill == NULL)
@@ -219,7 +225,7 @@ Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*upda
 	{
 		return NULL;
 	}
-	if (to_add == NULL)
+	if (to_add == NULL || cmp == NULL)
 	{
 		return t;
 	}
@@ -281,7 +287,10 @@ void tree_free(Tree* t, void (*free_node)(void*))
 	{
 		return;
 	}
-	(*free_node)(t->elt);
+	if (free_node != NULL)
+	{
+		(*free_node)(t->elt);
+	}
 	Tree* storel = t->left;
 	Tree* storer = t->right;
 	free(t);
@@ -572,7 +581,7 @@ void print_tree(Tree* t, bool reset, int row, int col)
 
 void tree_recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
 {
-	if (t == NULL)
+	if (t == NULL || update_relative_info == NULL)
 	{
 		return;
 	}
