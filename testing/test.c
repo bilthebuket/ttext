@@ -99,3 +99,107 @@ Test(tree, test_rm, .init = setup_tree)
 	}
 	cr_expect_eq(t, NULL);
 }
+
+PieceTable* pt;
+char* text;
+int size;
+
+void setup_pt(void)
+{
+	FILE* f = fopen("testing/test_string", "r");
+	fseek(f, 0, SEEK_END);
+	size = ftell(f);
+	rewind(f);
+	text = malloc(sizeof(char) * size);
+	char* text2 = malloc(sizeof(char) * size);
+	fread(text, sizeof(char), size, f);
+	rewind(f);
+	fread(text2, sizeof(char), size, f);
+	pt = pt_create(text2, size);
+}
+
+void teardown_pt(void)
+{
+	pt_free(pt);
+}
+
+Test(piece_table, test_get, .init = setup_pt, .fini = teardown_pt)
+{
+	for (int i = 0; i < size; i++)
+	{
+		cr_expect_eq(text[i], pt_get(pt, i));
+	}
+}
+
+Test(piece_table, test_rm, .init = setup_pt, .fini = teardown_pt)
+{
+	for (int i = 0; i < size - 1; i++)
+	{
+		text[i] = text[i + 1];
+	}
+	pt_rm(pt, 0);
+
+	for (int i = 4; i < size - 2; i++)
+	{
+		text[i] = text[i + 1];
+	}
+	pt_rm(pt, 4);
+
+	for (int i = 9; i < size - 3; i++)
+	{
+		text[i] = text[i + 1];
+	}
+	pt_rm(pt, 9);
+
+	for (int i = 2; i < size - 4; i++)
+	{
+		text[i] = text[i + 1];
+	}
+	pt_rm(pt, 2);
+
+	pt_rm(pt, size - 5);
+
+	for (int i = 0; i < size - 5; i++)
+	{
+		cr_expect_eq(text[i], pt_get(pt, i));
+	}
+}
+
+Test(piece_table, test_insert, .init = setup_pt, .fini = teardown_pt)
+{
+	char* new_text = malloc(sizeof(char) * (size + 3));
+	for (int i = 0; i < size; i++)
+	{
+		new_text[i] = text[i];
+	}
+
+	for (int i = size; i > 0; i--)
+	{
+		new_text[i] = new_text[i - 1];
+	}
+	new_text[0] = 'c';
+	pt_insert(pt, 'c', 0);
+
+	for (int i = size + 1; i > 4; i--)
+	{
+		new_text[i] = new_text[i - 1];
+	}
+	new_text[4] = 'a';
+	pt_insert(pt, 'a', 4);
+
+	for (int i = size + 2; i > 6; i--)
+	{
+		new_text[i] = new_text[i - 1];
+	}
+	new_text[6] = 'm';
+	pt_insert(pt, 'm', 6);
+
+	new_text[size + 3] = '2';
+	pt_insert(pt, '2', size + 3);
+
+	for (int i = 0; i < size + 3; i++)
+	{
+		cr_expect_eq(new_text[i], pt_get(pt, i));
+	}
+	free(new_text);
+}

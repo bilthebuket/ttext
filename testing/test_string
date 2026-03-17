@@ -1,0 +1,4 @@
+for ()
+{
+    static void func(int x);
+}
