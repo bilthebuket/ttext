@@ -51,7 +51,7 @@ void print_tab(Tab* t)
 
 	int y, x;
 	getyx(stdscr, y, x);
-	for (int i = t->top_line_index; i <= t->top_line_index + t->height && i - t->top_line_index < height - 1; i++)
+	for (int i = t->top_line_index; i < t->top_line_index + t->height && i - t->top_line_index < height - 1; i++)
 	{
 		print_line(t, i);
 	}
@@ -125,7 +125,7 @@ void print_line(Tab* t, int line_index)
 		{
 			return;
 		}
-		for (int i = t->xpos; i <= t->xpos + t->width; i++)
+		for (int i = t->xpos; i < t->xpos + t->width; i++)
 		{
 			if (endofline)
 			{
@@ -286,9 +286,9 @@ void check_bottom_update(Tab* t)
 		log_error("found NULL in check_bottom_update\n");
 		return;
 	}
-	if (t->y > t->top_line_index + t->height)
+	if (t->y >= t->top_line_index + t->height)
 	{
-		t->top_line_index = t->y - t->height;
+		t->top_line_index = t->y - t->height + 1;
 		print_tab(t);
 	}
 }

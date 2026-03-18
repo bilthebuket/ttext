@@ -40,7 +40,7 @@
 
 #define NUM_CHARS 128
 
-#define TERMINAL_HEIGHT 5
+#define TERMINAL_HEIGHT 10
 #define MESSAGE_LINE_HEIGHT 1
 
 typedef struct EditorState

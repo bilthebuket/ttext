@@ -10,6 +10,7 @@
 #include "io_tools.h"
 #include "normal_mode.h"
 #include "terminal_mode.h"
+#include "insert_mode.h"
 #include "line.h"
 #include "piece_table.h"
 
@@ -22,6 +23,8 @@ int main(int argc, char* argv[])
 	pt_init_arrays();
 
 
+	insert_mode_create();
+	normal_mode_create();
 	if (!terminal_create(&es))
 	{
 		endwin();
