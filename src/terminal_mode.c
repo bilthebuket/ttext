@@ -112,7 +112,30 @@ static void handle_enter(EditorState* es, int ch)
 			only_one_arg = true;
 		}
 
-		if (!gb_strcmp(gb, start_index, end_index, "tabnew"))
+		if (!gb_strcmp(gb, start_index, end_index, "find"))
+		{
+			if (only_one_arg)
+			{
+				print_message("Please pass a string to look for");
+				make_input_line();
+				return;
+			}
+
+			start_index = end_index + 1;
+			end_index++;
+			for (; gb_get(gb, end_index) != '\0'; end_index++) {}
+
+			char* string_to_look_for = malloc(sizeof(char) * (end_index - start_index + 1));
+			if (string_to_look_for == NULL)
+			{
+				return;
+			}
+
+			finder_free(es->finder);
+			es->finder = finder_create(t->pt, string_to_look_for);
+			find_next(t, es->finder);
+		}
+		else if (!gb_strcmp(gb, start_index, end_index, "tabnew"))
 		{
 			if (only_one_arg)
 			{
@@ -514,7 +537,7 @@ static void handle_enter(EditorState* es, int ch)
 				{
 					if (es->tabs->size == 1)
 					{
-						es->terminate = true;
+						es->flags = TERMINATE_FLAG;
 					}
 					else
 					{
@@ -570,7 +593,7 @@ static void handle_enter(EditorState* es, int ch)
 			{
 				if (es->tabs->size == 1)
 				{
-					es->terminate = true;
+					es->flags = TERMINATE_FLAG;
 					return;
 				}
 				else
@@ -830,7 +853,7 @@ void terminal_mode(EditorState* es, int ch)
 void* listener_func(void* v)
 {
 	EditorState* es = (EditorState*) v;
-	while (!es->terminate)
+	while (!(es->flags & TERMINATE_FLAG))
 	{
 		listener_buf = malloc(sizeof(char) * LINE_SIZE);
 		if (listener_buf == NULL)

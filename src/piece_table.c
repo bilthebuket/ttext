@@ -163,10 +163,12 @@ int piece_finder_compare_characters(Tree* t, void* elt)
 	if (f->global_char_index == -1)
 	{
 		f->global_char_index = p->chars_contained;
+		f->global_line_index = p->lines_contained;
 	}
 
 	int left_length = 0;
 	int right_length = 0;
+	int right_line_length = 0;
 
 	if (t->left != NULL && t->left->elt != NULL)
 	{
@@ -175,6 +177,7 @@ int piece_finder_compare_characters(Tree* t, void* elt)
 	if (t->right != NULL && t->right->elt != NULL)
 	{
 		right_length = ((Piece*) t->right->elt)->chars_contained;
+		right_line_length = ((Piece*) t->right->elt)->lines_contained;
 	}
 
 	if (f->contained <= left_length)
@@ -182,9 +185,11 @@ int piece_finder_compare_characters(Tree* t, void* elt)
 		if (f->contained >= 0 && (t->left == NULL || t->left->elt == NULL))
 		{
 			f->global_char_index -= p->len + right_length;
+			f->global_line_index -= p->lines_inside + right_line_length;
 			return 0;
 		}
 		f->global_char_index -= p->len + right_length;
+		f->global_line_index -= p->lines_inside + right_line_length;
 		return -1;
 	}
 	else if (f->contained > left_length + p->len)
@@ -195,6 +200,7 @@ int piece_finder_compare_characters(Tree* t, void* elt)
 	else
 	{
 		f->global_char_index -= p->len + right_length;
+		f->global_line_index -= p->lines_inside + right_line_length;
 		return 0;
 	}
 }

@@ -17,7 +17,8 @@
 int main(int argc, char* argv[])
 {
 	EditorState es;
-	es.terminate = false;
+	es.flags = 0;
+	es.finder = NULL;
 	sem_init(&es.sem, 0, 1);
 	screen_create();
 	pt_init_arrays();
@@ -90,7 +91,7 @@ int main(int argc, char* argv[])
 
 	error_log = fopen("errors.log", "a");
 
-	while (!es.terminate)
+	while (!(es.flags & TERMINATE_FLAG))
 	{
 		char c = getch();
 		sem_wait(&es.sem);

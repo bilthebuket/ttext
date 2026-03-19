@@ -43,6 +43,11 @@
 #define TERMINAL_HEIGHT 10
 #define MESSAGE_LINE_HEIGHT 1
 
+#define TERMINATE_FLAG 1
+#define UPDATE_FINDER_FLAG (1 << 1)
+
+#include "finder.h"
+
 typedef struct EditorState
 {
 	void (*mode)(struct EditorState*, int);
@@ -50,9 +55,10 @@ typedef struct EditorState
 	// maintained in ascending order of z_index (last element in list is on top of screen)
 	LinkedList* tabs;
 	Tab* active_tab;
+	Finder* finder;
 	sem_t sem;
 	int active_tab_index;
-	bool terminate;
+	int flags;
 } EditorState;
 
 extern FILE* error_log;
