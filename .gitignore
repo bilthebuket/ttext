@@ -1,6 +1,12 @@
+*
+!*.*
+!*/
+
 #ignore vim .swp files
 
 *.swp
+
+
 *.txt
 *.log
 parse_logs
