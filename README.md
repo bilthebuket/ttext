@@ -54,14 +54,14 @@
 `example_function(args)`
 
 for functions involving a particular struct, it should be the struct abbreviation followed by the function purpose
-example: gb_create(args) -> creates a GapBuffer
+example: `gb_create(args)` -> creates a GapBuffer
 preferred grammar:
 
-- abv_create() -> create struct
-- abv_free() -> free/destroy struct
-- abv_get() -> get element from struct
-- abv_insert() -> add element to struct
-- abv_rm() -> remove element from struct
+- `abv_create()` -> create struct
+- `abv_free()` -> free/destroy struct
+- `abv_get()` -> get element from struct
+- `abv_insert()` -> add element to struct
+- `abv_rm()` -> remove element from struct
 
 ## Struct Names 
 
@@ -95,4 +95,4 @@ abbreviations are acceptable as long as it is clear what the variable does
 
 ## Filenames
 
-file_name.extension
+`file_name.extension`
