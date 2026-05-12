@@ -54,7 +54,9 @@
 `example_function(args)`
 
 for functions involving a particular struct, it should be the struct abbreviation followed by the function purpose
+
 example: `gb_create(args)` -> creates a GapBuffer
+
 preferred grammar:
 
 - `abv_create()` -> create struct
@@ -81,16 +83,19 @@ function()
 ## Comments 
 
 any way of typing comments is acceptable (ex //, /* */)
+
 *if the purpose of a block of code/function name, argument, or return value is not easily understandable, it should be commented*
 
 ## Constants
 
 `EXAMPLE_CONSTANT`
+
 should be #define'd in include/global.h, unless it's only used in one source/header file
 
 ## Variables
 
 `example_variable, ex_var`
+
 abbreviations are acceptable as long as it is clear what the variable does
 
 ## Filenames
