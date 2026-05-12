@@ -1,14 +1,19 @@
 #required libraries
+
 -ncurses
 
 #compile
+
 `bash compile.sh`
 
 #run
+
 `./ttext <filename1> <filename2> ...`
 
 #use
+
 ##normal mode
+
 -hjkl -> left down up right
 -x -> delete character
 -0 -> move to first character in line
@@ -20,10 +25,12 @@
 -t -> enter terminal mode
 
 ##insert mode
+
 -default -> insert character
 -esc -> enter normal mode
 
 ##terminal mode
+
 -default -> insert character
 -enter -> send command
 -backspace -> delete character
@@ -43,11 +50,13 @@
 #Styling Guide
 
 ##function names 
-example_function(args)
+
+`example_function(args)`
 
 for functions involving a particular struct, it should be the struct abbreviation followed by the function purpose
 example: gb_create(args) -> creates a GapBuffer
 preferred grammar:
+
 -abv_create() -> create struct
 -abv_free() -> free/destroy struct
 -abv_get() -> get element from struct
@@ -55,26 +64,35 @@ preferred grammar:
 -abv_rm() -> remove element from struct
 
 ##struct names 
-ExampleStruct
+
+`ExampleStruct`
+
 *all structs should use typedef so that you don't need to type struct <struct_name>*
 
 ##braces
+
+```
 function()
 {
 
 }
+```
 
 ##comments 
+
 any way of typing comments is acceptable (ex //, /* */)
 *if the purpose of a block of code/function name, argument, or return value is not easily understandable, it should be commented*
 
 ##constants
-EXAMPLE_CONSTANT
+
+`EXAMPLE_CONSTANT`
 should be #define'd in include/global.h, unless it's only used in one source/header file
 
 ##variables
-example_variable, ex_var
+
+`example_variable, ex_var`
 abbreviations are acceptable as long as it is clear what the variable does
 
 ##filenames
+
 file_name.extension
