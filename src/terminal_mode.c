@@ -12,6 +12,7 @@
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"
+#include "finder.h"
 
 static Tab* terminal;
 static char* listener_buf = NULL;
@@ -129,6 +130,11 @@ static void handle_enter(EditorState* es, int ch)
 			if (string_to_look_for == NULL)
 			{
 				return;
+			}
+
+			for (int i = start_index; i <= end_index; i++)
+			{
+				string_to_look_for[i - start_index] = gb_get(gb, i);
 			}
 
 			finder_free(es->finder);

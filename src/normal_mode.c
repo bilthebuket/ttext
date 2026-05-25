@@ -6,6 +6,7 @@
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"
+#include "finder.h"
 
 static void handle_default(EditorState* es)
 {
@@ -413,6 +414,12 @@ static void handle_percent_sign(EditorState* es)
 	t->saved_x_index = t->x;
 }
 
+static void handle_n(EditorState* es)
+{
+	find_next(es->active_tab, es->finder);
+	move_cursor_to_tab(es->active_tab);
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -433,6 +440,7 @@ void normal_mode_create(void)
 	execute_char['o'] = &handle_o;
 	execute_char['x'] = &handle_x;
 	execute_char['%'] = &handle_percent_sign;
+	execute_char['n'] = &handle_n;
 }
 
 void normal_mode(EditorState* es, int ch)

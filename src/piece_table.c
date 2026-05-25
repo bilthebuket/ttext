@@ -878,6 +878,29 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 	return finder.global_char_index + i - p->start_index;
 }
 
+int pt_get_line_index_inverse(PieceTable* pt, int char_index)
+{
+	PieceFinder finder;
+	finder.contained = char_index + 1;
+	finder.global_char_index = -1;
+	Piece* p = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
+	if (p == NULL)
+	{
+		return -1;
+	}
+
+	int r = finder.global_line_index;
+	for (int i = p->start_index; i < p->start_index + p->len && i < p->start_index + (char_index - finder.global_char_index); i++)
+	{
+		if ((*p->text)[i] == '\n')
+		{
+			r++;
+		}
+	}
+
+	return r;
+}
+
 void pt_free(PieceTable* pt)
 {
 	if (pt == NULL)

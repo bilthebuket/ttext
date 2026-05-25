@@ -75,6 +75,9 @@ void pt_free(PieceTable* pt);
 // gets the index of the first character in the line in the piece table of index line_index
 int pt_get_line_index(PieceTable* pt, int line_index);
 
+// gets the index of the line that a character resides in
+int pt_get_line_index_inverse(PieceTable* pt, int char_index);
+
 int pt_get_color(PieceTable* pt, int index);
 void pt_update_color_indices(PieceTable* pt, int index);
 void ci_update_info(Tree* t);
