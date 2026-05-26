@@ -34,4 +34,7 @@ void print_tree(Tree* t, bool reset, int row, int col);
 void print_info(Tree* t, void (*print_elt)(void*));
 bool tree_find(Tree* t, Tree* to_find);
 
+void* tree_get_rightmost(Tree* t);
+void* tree_get_leftmost(Tree* t);
+
 #endif

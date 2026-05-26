@@ -603,3 +603,33 @@ bool tree_find(Tree* t, Tree* to_find)
 	}
 	return tree_find(t->left, to_find) || tree_find(t->right, to_find);
 }
+
+void* tree_get_rightmost(Tree* t)
+{
+	if (t == NULL)
+	{
+		return NULL;
+	}
+
+	Tree* ptr = t;
+	while (ptr->right != NULL)
+	{
+		ptr = ptr->right;
+	}
+	return ptr->elt;
+}
+
+void* tree_get_leftmost(Tree* t)
+{
+	if (t == NULL)
+	{
+		return NULL;
+	}
+
+	Tree* ptr = t;
+	while (ptr->left != NULL)
+	{
+		ptr = ptr->left;
+	}
+	return ptr->elt;
+}

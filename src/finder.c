@@ -83,6 +83,7 @@ void finder_update(Finder* f, PieceTable* pt)
 
 				new->len = index_looking_at + 1;
 				// if there are existing finder nodes then this node will span in between the rightmost finder node and this latest instance of what we're searching for
+				// the number of characters between the end of the rightmost node and the end of the new node is total contained characters in the tree
 				if (f->indices_found != NULL && f->indices_found->elt != NULL)
 				{
 					new->len -= ((FinderNode*) f->indices_found->elt)->contained;
@@ -149,7 +150,9 @@ void find_next(Tab* t, Finder* f)
 		return;
 	}
 	index += t->x;
-	ff.contained = index + 1;
+
+	// plus two because if we just found something we want to go to the next one
+	ff.contained = index + 2;
 	ff.global_char_index = -1;
 	FinderNode* fn = (FinderNode*) tree_get(f->indices_found, &ff, &finder_finder_compare);
 	
@@ -198,10 +201,14 @@ int finder_node_compare(Tree* t, void* v)
 		left_length = ((FinderNode*) t->left->elt)->contained;
 	}
 
-	if (fn2->contained - fn2->len >= left_length + fn2->len)
+	if (fn2->contained - fn2->len >= left_length)
 	{
-		fn2->contained -=  left_length + fn2->len;
-		return 1;
+		if (fn2->contained - fn2->len >= left_length + fn1->len)
+		{
+			fn2->contained -= left_length + fn1->len;
+			return 1;
+		}
+		return 0;
 	}
 	else
 	{

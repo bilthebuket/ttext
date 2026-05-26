@@ -1,9 +1,0 @@
-for ()
-{
-    static void func(int x);
-}
-
-static void func(int y)
-{
-	printf("test\n");
-}
