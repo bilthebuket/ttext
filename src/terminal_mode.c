@@ -140,6 +140,7 @@ static void handle_enter(EditorState* es, int ch)
 			finder_free(es->finder);
 			es->finder = finder_create(t->pt, string_to_look_for);
 			find_next(t, es->finder);
+			es->flags &= ~UPDATE_FINDER_FLAG;
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "tabnew"))
 		{
@@ -178,6 +179,7 @@ static void handle_enter(EditorState* es, int ch)
 			es->active_tab_index = es->tabs->size - 1;
 			es->active_tab = new_tab;
 			print_screen(es);
+			es->flags |= UPDATE_FINDER_FLAG;
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "tabn"))
 		{
@@ -225,6 +227,7 @@ static void handle_enter(EditorState* es, int ch)
 			ll_insert(es->tabs, es->active_tab, es->tabs->size);
 			es->active_tab_index = es->tabs->size - 1;
 			print_screen(es);
+			es->flags |= UPDATE_FINDER_FLAG;
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "tabp"))
 		{
@@ -272,6 +275,7 @@ static void handle_enter(EditorState* es, int ch)
 			ll_insert(es->tabs, es->active_tab, es->tabs->size);
 			es->active_tab_index = es->tabs->size - 1;
 			print_screen(es);
+			es->flags |= UPDATE_FINDER_FLAG;
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "tab"))
 		{
@@ -327,6 +331,7 @@ static void handle_enter(EditorState* es, int ch)
 			ll_insert(es->tabs, es->active_tab, es->tabs->size);
 			es->active_tab_index = es->tabs->size - 1;
 			print_screen(es);
+			es->flags |= UPDATE_FINDER_FLAG;
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "rs"))
 		{
@@ -560,6 +565,7 @@ static void handle_enter(EditorState* es, int ch)
 						tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
 						es->active_tab_index--;
 						print_screen(es);
+						es->flags |= UPDATE_FINDER_FLAG;
 					}
 				}
 				else
@@ -576,12 +582,14 @@ static void handle_enter(EditorState* es, int ch)
 					es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index + 1);
 					tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
 					print_screen(es);
+					es->flags |= UPDATE_FINDER_FLAG;
 				}
 
 				if (es->active_tab == NULL)
 				{
 					log_error("es->active_tab_index referencing NULL element in es->tabs linked list in terminal_mode\n");
 					es->active_tab = tab_create(NULL);
+					es->flags |= UPDATE_FINDER_FLAG;
 					if (es->active_tab == NULL)
 					{
 						log_error("tab_create failed in terminal_mode\n");
@@ -617,6 +625,7 @@ static void handle_enter(EditorState* es, int ch)
 					tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
 					es->active_tab_index--;
 					print_screen(es);
+					es->flags |= UPDATE_FINDER_FLAG;
 				}
 			}
 			else
@@ -633,12 +642,14 @@ static void handle_enter(EditorState* es, int ch)
 				es->active_tab = (Tab*) ll_get_elt(es->tabs, es->active_tab_index + 1);
 				tab_free((Tab*) ll_rm(es->tabs, es->active_tab_index));
 				print_screen(es);
+				es->flags |= UPDATE_FINDER_FLAG;
 			}
 
 			if (es->active_tab == NULL)
 			{
 				log_error("es->active_tab_index referencing NULL element in es->tabs linked list in terminal_mode\n");
 				es->active_tab = tab_create(NULL);
+				es->flags |= UPDATE_FINDER_FLAG;
 				if (es->active_tab == NULL)
 				{
 					log_error("tab_create failed in terminal_mode\n");

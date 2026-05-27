@@ -176,6 +176,7 @@ static void handle_escape(EditorState* es, int ch)
 	check_left_update(t);
 	move_cursor_to_tab(t);
 	es->mode = &normal_mode;
+	es->flags |= UPDATE_FINDER_FLAG;
 }
 
 static void handle_enter(EditorState* es, int ch)

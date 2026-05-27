@@ -290,6 +290,8 @@ static void handle_x(EditorState* es)
 		}
 
 		print_line(t, t->y);
+
+		es->flags |= UPDATE_FINDER_FLAG;
 	}
 }
 
@@ -416,6 +418,13 @@ static void handle_percent_sign(EditorState* es)
 
 static void handle_n(EditorState* es)
 {
+	if (es->flags & UPDATE_FINDER_FLAG)
+	{
+		Finder* store = es->finder;
+		es->finder = finder_create(es->active_tab->pt, store->looking_for);
+		finder_free(store);
+		es->flags &= ~UPDATE_FINDER_FLAG;
+	}
 	find_next(es->active_tab, es->finder);
 	move_cursor_to_tab(es->active_tab);
 }
