@@ -39,8 +39,11 @@ typedef struct PieceIterator
 
 /*
  * How to use:
- * to search by line, set contained to line_index, use finder_compare_lines
- * to search by character, set contained to char_index + 1, use finder_compare_characters
+ * to search by line, set contained to line_index, use piece_finder_compare_lines
+ * to search by character, set contained to char_index + 1, use piece_finder_compare_characters
+ * the reason its not line_index + 1 is because the piece_finder_compare_lines function is dealing with the number
+ * of newline characters, which will always be 1 less than the number of lines, whereas piece_finder_compare_characters uses
+ * the number of characters, which is equal to the character index plus one
 */
 
 typedef struct PieceFinder
