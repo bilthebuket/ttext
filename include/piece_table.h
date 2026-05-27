@@ -2,10 +2,15 @@
 #define PIECE_TABLE_H
 
 #include "tree.h"
+#include "linked_list.h"
 #include <stdbool.h>
 
 #define NUM_PRIME_NUMBERS 8
 #define MAX_HASH_VALUE 2000
+
+#define UNDO_CREATE 1
+#define UNDO_UPDATE 2
+#define UNDO_DELETE 3
 
 typedef struct ColorIndex
 {
@@ -61,9 +66,26 @@ typedef struct PieceTable
 	char* append;
 	Tree* pieces;
 	Tree* color_indices;
+	LinkedList* undos;
 	int append_size;
 	int append_len;
 } PieceTable;
+
+typedef struct Undo
+{
+	// points to a struct that contains the data required to execute whatever type of undo this is
+	// makes more sense when you look at pt_undo_execute
+	void* stuff_we_need;
+	int operation;
+} Undo;
+
+typedef struct UndoUpdate
+{
+	Tree* to_update;
+	int start_index;
+	int len;
+	int lines_inside;
+}
 
 void pt_init_arrays(void);
 
@@ -101,5 +123,8 @@ void piece_update_info(Tree* t);
 
 void print_piece(void* v);
 void print_color_index(void* v);
+
+void pt_undo_insert(PieceTable* pt, Undo* elt);
+void pt_undo_execute(PieceTable* pt);
 
 #endif

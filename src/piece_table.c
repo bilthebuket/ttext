@@ -1327,3 +1327,49 @@ void ci_update_info(Tree* t)
 		ci->chars_contained += ((ColorIndex*) t->right->elt)->chars_contained;
 	}
 }
+
+void pt_undo_insert(PieceTable* pt, Undo* elt)
+{
+	ll_insert(pt->undos, elt, 0);
+}
+
+void pt_undo_execute(PieceTable* pt)
+{
+	Undo* to_execute = (Undo*) ll_get_elt(pt->undos, 0);
+	if (to_execute == NULL)
+	{
+		return;
+	}
+
+	switch (to_execute->operation)
+	{
+		case UNDO_CREATE:
+		{
+			Piece* p (Piece*) to_execute->stuff_we_need;
+			pt->pieces = tree_add_elt(pt->pieces, p, &piece_compare, &piece_update_info);
+		}
+
+		case UNDO_UPDATE:
+		{
+			UndoUpdate* u = (UndoUpdate*) to_execute->stuff_we_need;
+			Piece* piece_to_update = (Piece*) u->to_update;
+			piece_to_update->start_index = u->start_index;
+			piece_to_update->len = u->len;
+			piece_to_update->lines_inside = u->lines_inside;
+			recursive_update_to_root(u->to_update, &piece_update_info);
+			free(u);
+		}
+
+		case UNDO_DELETE:
+		{
+			PieceFinder f;
+			f.contained = *((int*) to_execute->stuff_we_need) + 1;
+			f.global_char_index = -1;
+			pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free);
+			free(to_execute->stuff_we_need);
+		}
+	}
+
+	free(to_execute);
+	ll_rm(pt->undos, 0);
+}
