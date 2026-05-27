@@ -1345,8 +1345,9 @@ void pt_undo_execute(PieceTable* pt)
 	{
 		case UNDO_CREATE:
 		{
-			Piece* p (Piece*) to_execute->stuff_we_need;
+			Piece* p = (Piece*) to_execute->stuff_we_need;
 			pt->pieces = tree_add_elt(pt->pieces, p, &piece_compare, &piece_update_info);
+			break;
 		}
 
 		case UNDO_UPDATE:
@@ -1356,8 +1357,9 @@ void pt_undo_execute(PieceTable* pt)
 			piece_to_update->start_index = u->start_index;
 			piece_to_update->len = u->len;
 			piece_to_update->lines_inside = u->lines_inside;
-			recursive_update_to_root(u->to_update, &piece_update_info);
+			tree_recursive_update_to_root(u->to_update, &piece_update_info);
 			free(u);
+			break;
 		}
 
 		case UNDO_DELETE:
@@ -1365,8 +1367,9 @@ void pt_undo_execute(PieceTable* pt)
 			PieceFinder f;
 			f.contained = *((int*) to_execute->stuff_we_need) + 1;
 			f.global_char_index = -1;
-			pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free);
+			pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
 			free(to_execute->stuff_we_need);
+			break;
 		}
 	}
 

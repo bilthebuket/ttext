@@ -85,7 +85,7 @@ typedef struct UndoUpdate
 	int start_index;
 	int len;
 	int lines_inside;
-}
+} UndoUpdate;
 
 void pt_init_arrays(void);
 
