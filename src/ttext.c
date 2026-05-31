@@ -114,4 +114,5 @@ int main(int argc, char* argv[])
 		tab_free(t);
 	}
 	ll_free(es.tabs);
+	finder_free(es.finder);
 }

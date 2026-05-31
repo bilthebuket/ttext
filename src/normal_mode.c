@@ -420,9 +420,21 @@ static void handle_n(EditorState* es)
 {
 	if (es->flags & UPDATE_FINDER_FLAG)
 	{
-		Finder* store = es->finder;
-		es->finder = finder_create(es->active_tab->pt, store->looking_for);
-		finder_free(store);
+		// making a copy of looking_for instead of using it directly because it gets freed
+		// in finder_free. i could call free() on es->finder which wouldn't free es->finder->looking_for,
+		// however that would make the code less readable
+		int len = 0;
+		for (; es->finder->looking_for[len] != '\0'; len++) {}
+		len++;
+
+		char* copy = malloc(sizeof(char) * len);
+		for (int i = 0; i < len; i++)
+		{
+			copy[i] = es->finder->looking_for[i];
+		}
+
+		finder_free(es->finder);
+		es->finder = finder_create(es->active_tab->pt, copy);
 		es->flags &= ~UPDATE_FINDER_FLAG;
 	}
 	find_next(es->active_tab, es->finder);
