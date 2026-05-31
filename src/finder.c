@@ -134,6 +134,7 @@ void finder_free(Finder* f)
 	{
 		tree_free(f->indices_found, &free);
 		free(f->looking_for);
+		free(f);
 	}
 }
 
