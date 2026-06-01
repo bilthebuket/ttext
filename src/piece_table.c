@@ -386,6 +386,13 @@ PieceTable* pt_create(char* buf, int len)
 		{
 			r->color_indices = NULL;
 		}
+
+		r->undos = ll_create();
+		if (r->undos == NULL)
+		{
+			pt_free(r);
+			return NULL;
+		}
 	}
 	return r;
 }
@@ -924,6 +931,24 @@ void pt_free(PieceTable* pt)
 	}
 	tree_free(pt->pieces, &piece_free);
 	tree_free(pt->color_indices, &free);
+
+	while (1)
+	{
+		Undo** undos = (Undo**) ll_rm(pt->undos, 0);
+
+		if (undos = NULL)
+		{
+			break;
+		}
+
+		for (int i = 0; undos[i] != NULL; i++)
+		{
+			pt_undo_free(undos[i]);
+		}
+		free(undos);
+	}
+	ll_free(pt->undos);
+
 	free(pt);
 }
 
@@ -1338,9 +1363,73 @@ void ci_update_info(Tree* t)
 	}
 }
 
-void pt_undo_insert(PieceTable* pt, Undo** elt)
+// creates a new set of undos
+void pt_undo_insert(PieceTable* pt)
 {
+	Undo** elt = malloc(sizeof(Undo*));
+	elt[0] = NULL;
 	ll_insert(pt->undos, elt, 0);
+}
+
+// updates the set of undos at the top of the undo stack
+void pt_undo_update(PieceTable* pt, Undo* to_add)
+{
+	Undo** latest_undos = (Undo**) ll_get(pt->undos, 0);
+
+	// if the new undo is updating the same piece as the first undo in the undos that is at the top of the stack,
+	// we can just combine them. this will be utilized heavily when computing undos from insert mode,
+	// as that undo will be a bunch of adjacent inserts/deletes, thus they will be combineable
+	if (latest_undos[0] != NULL)
+	{
+		if (latest_undos[0]->operation == UNDO_UPDATE && to_add->operation == UNDO_UPDATE)
+		{
+			UndoUpdate* existing = (UndoUpdate*) latest_undos[0]->stuff_we_need;
+			UndoUpdate* new = (UndoUpdate*) to_add->stuff_we_need;
+
+			if (existing->to_update == new->to_update)
+			{
+				existing->start_index = new->start_index;
+				existing->len = new->len;
+				existing->lines_inside = new->lines_inside;
+				free(new);
+				free(to_add);
+				return;
+			}
+		}
+	}
+
+	int len = 0;
+	for (; latest_undos[len] != NULL; len++) {}
+	len++;
+
+	Undo** new_latest_undos = malloc(sizeof(Undo*) * (len + 1));
+	for (int i = 0; i < len; i++)
+	{
+		new_latest_undos[i + 1] = latest_undos[i];
+	}
+	new_latest_undos[0] = to_add;
+	
+	free(latest_undos);
+}
+
+void pt_undo_free(Undo* u)
+{
+	if (u == NULL)
+	{
+		return;
+	}
+	switch (u->operation)
+	{
+		default:
+		{
+			free(u->stuff_we_need);
+		}
+		case UNDO_CREATE:
+		{
+			piece_free((Piece*) u->stuff_we_need);
+		}
+	}
+	free(u);
 }
 
 void pt_undo_execute(PieceTable* pt)
@@ -1388,6 +1477,7 @@ void pt_undo_execute(PieceTable* pt)
 		}
 
 		free(to_execute);
-		ll_rm(pt->undos, 0);
 	}
+	ll_rm(pt->undos, 0);
+	free(undos);
 }

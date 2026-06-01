@@ -169,6 +169,7 @@ static void handle_i(EditorState* es)
 
 	t->tab_num_flags &= ~CHANGES_SAVED;
 	print_message("Insert Mode");
+	pt_undo_insert(t->pt);
 	es->mode = &insert_mode;
 }
 
@@ -198,6 +199,7 @@ static void handle_a(EditorState* es)
 		}
 		move_cursor_to_tab(t);
 	}
+	pt_undo_insert(t->pt);
 	es->mode = &insert_mode;
 }
 
@@ -245,6 +247,9 @@ static void handle_o(EditorState* es)
 		return;
 	}
 
+
+	pt_undo_insert(t->pt);
+
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
@@ -269,6 +274,8 @@ static void handle_x(EditorState* es)
 	{
 		return;
 	}
+
+	pt_undo_insert(t->pt);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)

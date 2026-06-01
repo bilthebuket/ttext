@@ -126,7 +126,18 @@ void piece_update_info(Tree* t);
 void print_piece(void* v);
 void print_color_index(void* v);
 
-void pt_undo_insert(PieceTable* pt, Undo** elt);
+/*
+ * undo functions:
+ * basic idea: we have a stack of undos, every time the user presses 'u' the latest set of changes will be popped off the undo stack and executed (pt_undo_execute)
+ * when we want to add a new undo to the set of undos on top of the undo stack, use pt_undo_update
+ * when we want to create a new set of undos on top of the undo stack, use pt_undo_insert
+ * pt_undo_free just frees an Undo struct
+ * the reason its done this way is because some actions (noteably insert mode) will create multiple Undo structs that need to be executed together when the user presses 'u'
+ * in general only pt_insert and pt_rm should be calling pt_undo_update, and then exterior functions (normal_mode, terminal_mode, etc.) will call pt_undo_insert and pt_undo_execute
+*/
+void pt_undo_insert(PieceTable* pt);
 void pt_undo_execute(PieceTable* pt);
+void pt_undo_free(Undo* u);
+void pt_undo_update(PieceTable* pt, Undo* to_add);
 
 #endif

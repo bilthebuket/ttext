@@ -1,3 +1,4 @@
+#ignore files without extensions (executeables primarily)
 *
 !*.*
 !*/
@@ -10,3 +11,5 @@
 *.txt
 *.log
 parse_logs
+
+vgcore.*
