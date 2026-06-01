@@ -559,6 +559,8 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		pt_update_color_indices(pt, f.global_char_index - 1);
 	}
+
+	// updating every color index moving to the right until we call pt_update_color_indices and the color doesn't change, meaning we are done
 	while (true)
 	{
 		f.contained = f.global_char_index + len + 1;
@@ -695,6 +697,8 @@ void pt_rm(PieceTable* pt, int index)
 		}
 	}
 
+	// this last section of the function shortens the color index for the char we just removed (or gets rid of it if that was the last character in the color index)
+	// updates adjacent color indicies until everything is how it should be
 	ColorIndexFinder f;
 	f.contained = index + 1;
 	f.global_char_index = -1;
@@ -743,6 +747,9 @@ void pt_rm(PieceTable* pt, int index)
 	{
 		pt_update_color_indices(pt, f.global_char_index - 1);
 	}
+
+	// keeps updating colors (moving to the right) until pt_update_color_indices is called but no color is changed
+	// when that occurs, we are done with updates
 	while (true)
 	{
 		f.contained = f.global_char_index + len + 1;
@@ -1035,6 +1042,9 @@ ColorIndex* ci_create(int color, int len, int chars_contained)
 	return r;
 }
 
+// if index points to an existing color index that is properly formatted, then the color of that color index will be updated
+// if index points to a color index that needs to be broken up (ex: if the color index contains the text "int x", this needs to be split into "int" and "x")
+// then the index will be split into two, which will both be updated using recursion
 void pt_update_color_indices(PieceTable* pt, int index)
 {
 	if (pt == NULL || pt->color_indices == NULL)
@@ -1328,51 +1338,56 @@ void ci_update_info(Tree* t)
 	}
 }
 
-void pt_undo_insert(PieceTable* pt, Undo* elt)
+void pt_undo_insert(PieceTable* pt, Undo** elt)
 {
 	ll_insert(pt->undos, elt, 0);
 }
 
 void pt_undo_execute(PieceTable* pt)
 {
-	Undo* to_execute = (Undo*) ll_get_elt(pt->undos, 0);
-	if (to_execute == NULL)
+	Undo** undos = (Undo**) ll_get_elt(pt->undos, 0);
+	if (undos == NULL)
 	{
 		return;
 	}
 
-	switch (to_execute->operation)
+	for (int i = 0; undos[i] != NULL; i++)
 	{
-		case UNDO_CREATE:
+		Undo* to_execute = undos[i];
+
+		switch (to_execute->operation)
 		{
-			Piece* p = (Piece*) to_execute->stuff_we_need;
-			pt->pieces = tree_add_elt(pt->pieces, p, &piece_compare, &piece_update_info);
-			break;
+			case UNDO_CREATE:
+			{
+				Piece* p = (Piece*) to_execute->stuff_we_need;
+				pt->pieces = tree_add_elt(pt->pieces, p, &piece_compare, &piece_update_info);
+				break;
+			}
+
+			case UNDO_UPDATE:
+			{
+				UndoUpdate* u = (UndoUpdate*) to_execute->stuff_we_need;
+				Piece* piece_to_update = (Piece*) u->to_update;
+				piece_to_update->start_index = u->start_index;
+				piece_to_update->len = u->len;
+				piece_to_update->lines_inside = u->lines_inside;
+				tree_recursive_update_to_root(u->to_update, &piece_update_info);
+				free(u);
+				break;
+			}
+
+			case UNDO_DELETE:
+			{
+				PieceFinder f;
+				f.contained = *((int*) to_execute->stuff_we_need) + 1;
+				f.global_char_index = -1;
+				pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+				free(to_execute->stuff_we_need);
+				break;
+			}
 		}
 
-		case UNDO_UPDATE:
-		{
-			UndoUpdate* u = (UndoUpdate*) to_execute->stuff_we_need;
-			Piece* piece_to_update = (Piece*) u->to_update;
-			piece_to_update->start_index = u->start_index;
-			piece_to_update->len = u->len;
-			piece_to_update->lines_inside = u->lines_inside;
-			tree_recursive_update_to_root(u->to_update, &piece_update_info);
-			free(u);
-			break;
-		}
-
-		case UNDO_DELETE:
-		{
-			PieceFinder f;
-			f.contained = *((int*) to_execute->stuff_we_need) + 1;
-			f.global_char_index = -1;
-			pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
-			free(to_execute->stuff_we_need);
-			break;
-		}
+		free(to_execute);
+		ll_rm(pt->undos, 0);
 	}
-
-	free(to_execute);
-	ll_rm(pt->undos, 0);
 }

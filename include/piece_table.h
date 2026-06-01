@@ -66,6 +66,8 @@ typedef struct PieceTable
 	char* append;
 	Tree* pieces;
 	Tree* color_indices;
+
+	// each element in this linked list is an Undo** which must be terminated with a null pointer
 	LinkedList* undos;
 	int append_size;
 	int append_len;
@@ -124,7 +126,7 @@ void piece_update_info(Tree* t);
 void print_piece(void* v);
 void print_color_index(void* v);
 
-void pt_undo_insert(PieceTable* pt, Undo* elt);
+void pt_undo_insert(PieceTable* pt, Undo** elt);
 void pt_undo_execute(PieceTable* pt);
 
 #endif

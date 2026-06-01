@@ -441,6 +441,11 @@ static void handle_n(EditorState* es)
 	move_cursor_to_tab(es->active_tab);
 }
 
+static void handle_u(EditorState* es)
+{
+	pt_undo_execute(es->active_tab->pt);
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -462,6 +467,7 @@ void normal_mode_create(void)
 	execute_char['x'] = &handle_x;
 	execute_char['%'] = &handle_percent_sign;
 	execute_char['n'] = &handle_n;
+	execute_char['u'] = &handle_u;
 }
 
 void normal_mode(EditorState* es, int ch)
@@ -470,5 +476,8 @@ void normal_mode(EditorState* es, int ch)
 	{
 		return;
 	}
-	(*execute_char[ch])(es);
+	if (ch >= 0 && ch < NUM_CHARS)
+	{
+		(*execute_char[ch])(es);
+	}
 }
