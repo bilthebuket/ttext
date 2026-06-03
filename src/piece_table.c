@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "piece_table.h"
+#include "linked_list.h"
 #include "global.h"
 #include "tree.h"
 
@@ -624,14 +625,39 @@ void pt_rm(PieceTable* pt, int index)
 		return;
 	}
 
+	static inline void handle_piece_being_removed(void)
+	{
+		// if i wanted to be clever i could make a function to add this piece to the undos and pass it to the free_node() function parameter in tree_rm
+		// but that would make this code unreadable, so instead it will be 2 * logn instead of just logn
+
+		finder.contained = index + 1;
+		finder.global_char_index = -1;
+		Piece* to_undo = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
+
+		finder.contained = index + 1;
+		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
+
+		if (to_undo != NULL)
+		{
+			// resetting the piece's contained so when pt_insert is called it can travel down the tree properly
+			to_undo->contained = finder.global_char_index + 1;
+			Undo* u = malloc(sizeof(Undo));
+			if (u != NULL)
+			{
+				u->operation = UNDO_CREATE;
+				u->stuff_we_need = to_undo;
+				pt_undo_update(pt, u);
+			}
+		}
+	}
+
 	// if we are removing a character on the edge of a piece we can just adjust the piece
 	// otherwise we must break it into two pieces
 	if (index == finder.global_char_index)
 	{
 		if (p->len == 1)
 		{
-			finder.contained = index + 1;
-			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+			handle_piece_being_removed();
 		}
 		else
 		{
@@ -648,14 +674,9 @@ void pt_rm(PieceTable* pt, int index)
 	}
 	else if (index - finder.global_char_index == p->len - 1)
 	{
-		if (p->start_index + p->len == pt->append_len && *p->text == pt->append)
-		{
-			pt->append_len--;
-		}
 		if (p->len == 1)
 		{
-			finder.contained = index + 1;
-			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+			handle_piece_being_removed();
 		}
 		else
 		{
@@ -936,7 +957,7 @@ void pt_free(PieceTable* pt)
 	{
 		Undo** undos = (Undo**) ll_rm(pt->undos, 0);
 
-		if (undos = NULL)
+		if (undos == NULL)
 		{
 			break;
 		}
@@ -1374,7 +1395,7 @@ void pt_undo_insert(PieceTable* pt)
 // updates the set of undos at the top of the undo stack
 void pt_undo_update(PieceTable* pt, Undo* to_add)
 {
-	Undo** latest_undos = (Undo**) ll_get(pt->undos, 0);
+	Undo** latest_undos = (Undo**) ll_get_elt(pt->undos, 0);
 
 	// if the new undo is updating the same piece as the first undo in the undos that is at the top of the stack,
 	// we can just combine them. this will be utilized heavily when computing undos from insert mode,
