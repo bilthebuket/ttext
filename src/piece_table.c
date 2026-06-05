@@ -596,6 +596,25 @@ void pt_insert(PieceTable* pt, char c, int index)
 	}
 }
 
+static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, int index)
+{
+	PieceFinder finder;
+	finder.contained = index + 1;
+	finder.global_char_index = -1;
+	pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
+
+	if (to_undo != NULL)
+	{
+		// resetting the piece's contained so when pt_insert is called it can travel down the tree properly
+		to_undo->chars_contained = finder.global_char_index + 1;
+		Undo* u = undo_create_create(to_undo);
+		if (u != NULL)
+		{
+			pt_undo_update(pt, u);
+		}
+	}
+}
+
 void pt_rm(PieceTable* pt, int index)
 {
 	if (pt == NULL)
@@ -625,42 +644,22 @@ void pt_rm(PieceTable* pt, int index)
 		return;
 	}
 
-	static inline void handle_piece_being_removed(void)
-	{
-		// if i wanted to be clever i could make a function to add this piece to the undos and pass it to the free_node() function parameter in tree_rm
-		// but that would make this code unreadable, so instead it will be 2 * logn instead of just logn
-
-		finder.contained = index + 1;
-		finder.global_char_index = -1;
-		Piece* to_undo = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
-
-		finder.contained = index + 1;
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
-
-		if (to_undo != NULL)
-		{
-			// resetting the piece's contained so when pt_insert is called it can travel down the tree properly
-			to_undo->contained = finder.global_char_index + 1;
-			Undo* u = malloc(sizeof(Undo));
-			if (u != NULL)
-			{
-				u->operation = UNDO_CREATE;
-				u->stuff_we_need = to_undo;
-				pt_undo_update(pt, u);
-			}
-		}
-	}
-
 	// if we are removing a character on the edge of a piece we can just adjust the piece
 	// otherwise we must break it into two pieces
 	if (index == finder.global_char_index)
 	{
 		if (p->len == 1)
 		{
-			handle_piece_being_removed();
+			handle_piece_being_removed(pt, p, index);
 		}
 		else
 		{
+			Undo* u = undo_update_create(t);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
+
 			if ((*p->text)[p->start_index] == '\n')
 			{
 				p->lines_contained--;
@@ -676,10 +675,16 @@ void pt_rm(PieceTable* pt, int index)
 	{
 		if (p->len == 1)
 		{
-			handle_piece_being_removed();
+			handle_piece_being_removed(pt, p, index);
 		}
 		else
 		{
+			Undo* u = undo_update_create(t);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
+
 			if ((*p->text)[p->start_index + p->len - 1] == '\n')
 			{
 				p->lines_contained--;
@@ -705,10 +710,26 @@ void pt_rm(PieceTable* pt, int index)
 		}
 
 		finder.contained = index + 1;
-		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+		Piece* to_remove = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
+
+		finder.contained = index + 1;
+		finder.global_char_index = -1;
+		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
+
+		to_remove->chars_contained = finder.global_char_index + 1;
+		Undo* one = undo_create_create(to_remove);
+		if (one != NULL)
+		{
+			pt_undo_update(pt, one);
+		}
 
 		if (new_one->len > 0)
 		{
+			Undo* two = undo_rm_create(new_one->chars_contained);
+			if (two != NULL)
+			{
+				pt_undo_update(pt, two);
+			}
 			pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
 		}
 		else
@@ -717,6 +738,11 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		if (new_two->len > 0)
 		{
+			Undo* three = undo_rm_create(new_two->chars_contained);
+			if (three != NULL)
+			{
+				pt_undo_update(pt, three);
+			}
 			pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
 		}
 		else
@@ -964,7 +990,7 @@ void pt_free(PieceTable* pt)
 
 		for (int i = 0; undos[i] != NULL; i++)
 		{
-			pt_undo_free(undos[i]);
+			undo_free(undos[i]);
 		}
 		free(undos);
 	}
@@ -1431,23 +1457,28 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 	new_latest_undos[0] = to_add;
 	
 	free(latest_undos);
+	ll_rm(pt->undos, 0);
+	ll_insert(pt->undos, new_latest_undos, 0);
 }
 
-void pt_undo_free(Undo* u)
+void undo_free(Undo* u)
 {
 	if (u == NULL)
 	{
 		return;
 	}
+
 	switch (u->operation)
 	{
 		default:
 		{
 			free(u->stuff_we_need);
+			break;
 		}
 		case UNDO_CREATE:
 		{
 			piece_free((Piece*) u->stuff_we_need);
+			break;
 		}
 	}
 	free(u);
@@ -1486,7 +1517,7 @@ void pt_undo_execute(PieceTable* pt)
 				break;
 			}
 
-			case UNDO_DELETE:
+			case UNDO_RM:
 			{
 				PieceFinder f;
 				f.contained = *((int*) to_execute->stuff_we_need) + 1;
@@ -1501,4 +1532,71 @@ void pt_undo_execute(PieceTable* pt)
 	}
 	ll_rm(pt->undos, 0);
 	free(undos);
+}
+
+Undo* undo_update_create(Tree* t)
+{
+	if (t == NULL || t->elt == NULL)
+	{
+		return NULL;
+	}
+
+	Piece* p = (Piece*) t->elt;
+
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		UndoUpdate* u = malloc(sizeof(UndoUpdate));
+		if (u != NULL)
+		{
+			u->start_index = p->start_index;
+			u->len = p->len;
+			u->lines_inside = p->lines_inside;
+			u->to_update = t;
+
+			r->stuff_we_need = u;
+			r->operation = UNDO_UPDATE;
+		}
+		else
+		{
+			free(r);
+			return NULL;
+		}
+	}
+
+	return r;
+}
+
+Undo* undo_rm_create(int index)
+{
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		int* indexptr = malloc(sizeof(int));
+		if (indexptr == NULL)
+		{
+			free(r);
+			return NULL;
+		}
+		*indexptr = index;
+		r->stuff_we_need = indexptr;
+		r->operation = UNDO_RM;
+	}
+	return r;
+}
+
+Undo* undo_create_create(Piece* p)
+{
+	if (p == NULL)
+	{
+		return NULL;
+	}
+
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		r->stuff_we_need = p;
+		r->operation = UNDO_CREATE;
+	}
+	return r;
 }

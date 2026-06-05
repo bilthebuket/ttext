@@ -537,7 +537,7 @@ void print_info(Tree* t, void (*print_elt)(void*))
 	{
 		(*print_elt)(t->elt);
 	}
-	fprintf(stderr, ") | ptr: %p | left: %p | right: %p | prev: %p\n", t, t->left, t->right, t->prev);
+	fprintf(stderr, ") | ptr: %p | left: %p | right: %p | prev: %p\n", (void*) t, (void*) t->left, (void*) t->right, (void*) t->prev);
 	print_info(t->left, print_elt);
 	print_info(t->right, print_elt);
 	fprintf(stderr, "\n");

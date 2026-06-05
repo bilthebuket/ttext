@@ -10,7 +10,7 @@
 
 #define UNDO_CREATE 1
 #define UNDO_UPDATE 2
-#define UNDO_DELETE 3
+#define UNDO_RM 3
 
 typedef struct ColorIndex
 {
@@ -137,7 +137,11 @@ void print_color_index(void* v);
 */
 void pt_undo_insert(PieceTable* pt);
 void pt_undo_execute(PieceTable* pt);
-void pt_undo_free(Undo* u);
+void undo_free(Undo* u);
 void pt_undo_update(PieceTable* pt, Undo* to_add);
+
+Undo* undo_update_create(Tree* t);
+Undo* undo_rm_create(int index);
+Undo* undo_create_create(Piece* p);
 
 #endif
