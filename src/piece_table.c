@@ -654,7 +654,7 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		else
 		{
-			Undo* u = undo_update_create(t);
+			Undo* u = undo_update_create(p, index, p->start_index, p->len, p->lines_inside);
 			if (u != NULL)
 			{
 				pt_undo_update(pt, u);
@@ -679,7 +679,7 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		else
 		{
-			Undo* u = undo_update_create(t);
+			Undo* u = undo_update_create(p, index, p->start_index, p->len, p->lines_inside);
 			if (u != NULL)
 			{
 				pt_undo_update(pt, u);
@@ -1433,11 +1433,8 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 			UndoUpdate* existing = (UndoUpdate*) latest_undos[0]->stuff_we_need;
 			UndoUpdate* new = (UndoUpdate*) to_add->stuff_we_need;
 
-			if (existing->to_update == new->to_update)
+			if (existing->p == new->p)
 			{
-				existing->start_index = new->start_index;
-				existing->len = new->len;
-				existing->lines_inside = new->lines_inside;
 				free(new);
 				free(to_add);
 				return;
@@ -1508,11 +1505,21 @@ void pt_undo_execute(PieceTable* pt)
 			case UNDO_UPDATE:
 			{
 				UndoUpdate* u = (UndoUpdate*) to_execute->stuff_we_need;
-				Piece* piece_to_update = (Piece*) u->to_update;
+
+				PieceFinder f;
+				f.contained = u->index + 1;
+
+				Tree* to_update = tree_helper(pt->pieces, &f, piece_finder_compare_characters);
+				if (to_update == NULL || to_update->elt == NULL)
+				{
+					return;
+				}
+				Piece* piece_to_update = (Piece*) to_update->elt;
+
 				piece_to_update->start_index = u->start_index;
 				piece_to_update->len = u->len;
 				piece_to_update->lines_inside = u->lines_inside;
-				tree_recursive_update_to_root(u->to_update, &piece_update_info);
+				tree_recursive_update_to_root(to_update, &piece_update_info);
 				free(u);
 				break;
 			}
@@ -1534,25 +1541,19 @@ void pt_undo_execute(PieceTable* pt)
 	free(undos);
 }
 
-Undo* undo_update_create(Tree* t)
+Undo* undo_update_create(Piece* p, int index, int start_index, int len, int lines_inside)
 {
-	if (t == NULL || t->elt == NULL)
-	{
-		return NULL;
-	}
-
-	Piece* p = (Piece*) t->elt;
-
 	Undo* r = malloc(sizeof(Undo));
 	if (r != NULL)
 	{
 		UndoUpdate* u = malloc(sizeof(UndoUpdate));
 		if (u != NULL)
 		{
-			u->start_index = p->start_index;
-			u->len = p->len;
-			u->lines_inside = p->lines_inside;
-			u->to_update = t;
+			u->p = p;
+			u->start_index = start_index;
+			u->len = len;
+			u->lines_inside = lines_inside;
+			u->index = index;
 
 			r->stuff_we_need = u;
 			r->operation = UNDO_UPDATE;

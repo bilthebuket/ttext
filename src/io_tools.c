@@ -366,6 +366,49 @@ int indent_line(Tab* t, int index)
 	return 0;
 }
 
+void move_cursor_to_valid_coordinates(Tab* t)
+{
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		
+	}
+	else
+	{
+		line_below_index = pt_get_line_index(t->pt, t->y + 1);
+		if (line_below_index >= 0)
+		{
+			// adjust t->x by one because of newline character
+			if (line_below_index - line_index < t->x - 1)
+			{
+				t->x = line_below_index - 2;
+			}
+		}
+		else
+		{
+			PieceIterator pi;
+			if (pt_iterator_init(t->pt, &pi, line_index))
+			{
+				int i = 0;
+				char c = pt_iterate(&pi);
+				while (i <= t->x)
+				{
+					if (c == '\n' || c == '\0')
+					{
+						t->x = i - 1;
+					}
+					i++;
+					c = pt_iterate(&pi);
+				}
+			}
+			else
+			{
+				t->x = 0;
+			}
+		}
+	}
+}
+
 void log_error(const char* str)
 {
 	if (error_log != NULL && error_log != NULL)

@@ -83,7 +83,8 @@ typedef struct Undo
 
 typedef struct UndoUpdate
 {
-	Tree* to_update;
+	Piece* p;
+	int index;
 	int start_index;
 	int len;
 	int lines_inside;
@@ -140,7 +141,7 @@ void pt_undo_execute(PieceTable* pt);
 void undo_free(Undo* u);
 void pt_undo_update(PieceTable* pt, Undo* to_add);
 
-Undo* undo_update_create(Tree* t);
+Undo* undo_update_create(Piece* p, int index, int start_index, int len, int lines_inside);
 Undo* undo_rm_create(int index);
 Undo* undo_create_create(Piece* p);
 
