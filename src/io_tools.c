@@ -371,11 +371,13 @@ void move_cursor_to_valid_coordinates(Tab* t)
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		
+		t->x = 0;
+		t->y--;
+		for (; pt_get_line_index(t->pt, t->y) < 0 && t->y > 0; t->y--) {}
 	}
 	else
 	{
-		line_below_index = pt_get_line_index(t->pt, t->y + 1);
+		int line_below_index = pt_get_line_index(t->pt, t->y + 1);
 		if (line_below_index >= 0)
 		{
 			// adjust t->x by one because of newline character
@@ -407,6 +409,7 @@ void move_cursor_to_valid_coordinates(Tab* t)
 			}
 		}
 	}
+	move_cursor_to_tab(t);
 }
 
 void log_error(const char* str)
