@@ -44,10 +44,19 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 {
 	if (t == NULL)
 	{
-		return tree_create(elt);
+		Tree* r = tree_create(elt);
+		if (update_relative_info != NULL)
+		{
+			(*update_relative_info)(r);
+		}
+		return r;
 	}
 	if (cmp == NULL)
 	{
+		if (update_relative_info != NULL)
+		{
+			(*update_relative_info)(t);
+		}
 		return t;
 	}
 

@@ -606,7 +606,7 @@ static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, in
 	if (to_undo != NULL)
 	{
 		// resetting the piece's contained so when pt_insert is called it can travel down the tree properly
-		to_undo->chars_contained = finder.global_char_index + 1;
+		to_undo->chars_contained = finder.global_char_index;
 		Undo* u = undo_create_create(to_undo);
 		if (u != NULL)
 		{
@@ -709,14 +709,13 @@ void pt_rm(PieceTable* pt, int index)
 			return;
 		}
 
-		finder.contained = index + 1;
-		Piece* to_remove = (Piece*) tree_get(pt->pieces, &finder, &piece_finder_compare_characters);
+		Piece* to_remove = p;
 
 		finder.contained = index + 1;
 		finder.global_char_index = -1;
 		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
 
-		to_remove->chars_contained = finder.global_char_index + 1;
+		to_remove->chars_contained = finder.global_char_index + to_remove->len;
 		Undo* one = undo_create_create(to_remove);
 		if (one != NULL)
 		{
@@ -1527,7 +1526,7 @@ void pt_undo_execute(PieceTable* pt)
 			case UNDO_RM:
 			{
 				PieceFinder f;
-				f.contained = *((int*) to_execute->stuff_we_need) + 1;
+				f.contained = *((int*) to_execute->stuff_we_need);
 				f.global_char_index = -1;
 				pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
 				free(to_execute->stuff_we_need);

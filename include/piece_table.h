@@ -26,6 +26,8 @@ typedef struct ColorIndexFinder
 	int global_char_index;
 } ColorIndexFinder;
 
+
+// when you are inserting a piece into pt->pieces, set piece->chars_contained to global index of the last character of the piece + 1
 typedef struct Piece
 {
 	char** text;
