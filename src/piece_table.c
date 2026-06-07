@@ -426,6 +426,12 @@ void pt_insert(PieceTable* pt, char c, int index)
 		Piece* new_piece = piece_create(&pt->append, pt->append_len, 1, 1);
 		pt->pieces = tree_create(new_piece);
 		pt->append_len++;
+
+		Undo* u = undo_rm_create(0);
+		if (u != NULL)
+		{
+			pt_undo_update(pt, u);
+		}
 	}
 	else
 	{
@@ -462,6 +468,12 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 		if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
 		{
+			Undo* u = undo_update_create(p, index, p->start_index, p->len, p->lines_inside);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
+
 			pt->append[pt->append_len] = c;
 			pt->append_len++;
 			p->len++;
@@ -487,11 +499,23 @@ void pt_insert(PieceTable* pt, char c, int index)
 				return;
 			}
 
+			p->chars_contained = index;
+			Undo* u = undo_create_create(p);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
+
 			finder.contained = index;
-			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
 
 			if (new_one->len > 0)
 			{
+				Undo* u = undo_rm_create(new_one->chars_contained);
+				if (u != NULL)
+				{
+					pt_undo_update(pt, u);
+				}
 				pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
 			}
 			else
@@ -500,6 +524,11 @@ void pt_insert(PieceTable* pt, char c, int index)
 			}
 			if (new_two->len > 0)
 			{
+				Undo* u = undo_rm_create(new_two->chars_contained);
+				if (u != NULL)
+				{
+					pt_undo_update(pt, u);
+				}
 				pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
 			}
 			else
@@ -510,6 +539,11 @@ void pt_insert(PieceTable* pt, char c, int index)
 			pt->append[pt->append_len] = c;
 			pt->append_len++;
 
+			u = undo_rm_create(index + 1);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
 			Piece* new_piece = piece_create(&pt->append, pt->append_len - 1, 1, index + 1);
 			if (new_piece == NULL)
 			{
