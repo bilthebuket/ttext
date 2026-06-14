@@ -132,7 +132,7 @@ void ll_insert(LinkedList* lst, void* elt, int index)
 
 void* ll_rm(LinkedList* lst, int index)
 {
-	if (lst == NULL)
+	if (lst == NULL || lst->size < 1)
 	{
 		return NULL;
 	}

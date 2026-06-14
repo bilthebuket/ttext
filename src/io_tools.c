@@ -383,7 +383,7 @@ void move_cursor_to_valid_coordinates(Tab* t)
 			// adjust t->x by one because of newline character
 			if (line_below_index - line_index < t->x - 1)
 			{
-				t->x = line_below_index - 2;
+				t->x = line_below_index - 2 - line_index;
 			}
 		}
 		else

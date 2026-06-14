@@ -106,7 +106,7 @@ int size;
 
 void setup_pt(void)
 {
-	FILE* f = fopen("testing/test_string", "r");
+	FILE* f = fopen("testing/test2.txt", "r");
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	rewind(f);
@@ -116,11 +116,13 @@ void setup_pt(void)
 	rewind(f);
 	fread(text2, sizeof(char), size, f);
 	pt = pt_create(text2, size);
+	fclose(f);
 }
 
 void teardown_pt(void)
 {
 	pt_free(pt);
+	free(text);
 }
 
 Test(piece_table, test_get, .init = setup_pt, .fini = teardown_pt)
@@ -167,7 +169,7 @@ Test(piece_table, test_rm, .init = setup_pt, .fini = teardown_pt)
 
 Test(piece_table, test_insert, .init = setup_pt, .fini = teardown_pt)
 {
-	char* new_text = malloc(sizeof(char) * (size + 3));
+	char* new_text = malloc(sizeof(char) * (size + 4));
 	for (int i = 0; i < size; i++)
 	{
 		new_text[i] = text[i];

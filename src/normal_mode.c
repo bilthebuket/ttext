@@ -451,6 +451,7 @@ static void handle_n(EditorState* es)
 static void handle_u(EditorState* es)
 {
 	pt_undo_execute(es->active_tab->pt);
+	es->flags |= UPDATE_FINDER_FLAG;
 	move_cursor_to_valid_coordinates(es->active_tab);
 	print_tab(es->active_tab);
 }

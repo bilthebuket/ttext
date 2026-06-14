@@ -499,7 +499,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 				return;
 			}
 
-			p->chars_contained = index;
+			p->chars_contained = finder.global_char_index + p->len;
 			Undo* u = undo_create_create(p);
 			if (u != NULL)
 			{
@@ -507,6 +507,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 			}
 
 			finder.contained = index;
+			finder.global_char_index = -1;
 			pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
 
 			if (new_one->len > 0)
@@ -946,8 +947,13 @@ int pt_get_line_index(PieceTable* pt, int line_index)
 	{
 		return -1;
 	}
+	// if pt->pieces is null, only the 0th line is valid
 	if (pt->pieces == NULL)
 	{
+		if (line_index > 0)
+		{
+			return -1;
+		}
 		return 0;
 	}
 	PieceFinder finder;
@@ -1516,7 +1522,7 @@ void undo_free(Undo* u)
 
 void pt_undo_execute(PieceTable* pt)
 {
-	Undo** undos = (Undo**) ll_get_elt(pt->undos, 0);
+	Undo** undos = (Undo**) ll_rm(pt->undos, 0);
 	if (undos == NULL)
 	{
 		return;
@@ -1541,6 +1547,7 @@ void pt_undo_execute(PieceTable* pt)
 
 				PieceFinder f;
 				f.contained = u->index + 1;
+				f.global_char_index = -1;
 
 				Tree* to_update = tree_helper(pt->pieces, &f, piece_finder_compare_characters);
 				if (to_update == NULL || to_update->elt == NULL)
@@ -1570,7 +1577,6 @@ void pt_undo_execute(PieceTable* pt)
 
 		free(to_execute);
 	}
-	ll_rm(pt->undos, 0);
 	free(undos);
 }
 
