@@ -12,21 +12,6 @@
 #define UNDO_UPDATE 2
 #define UNDO_RM 3
 
-typedef struct ColorIndex
-{
-	int chars_contained;
-	int len;
-	int color;
-} ColorIndex;
-
-// works the same as PieceFinder
-typedef struct ColorIndexFinder
-{
-	int contained;
-	int global_char_index;
-} ColorIndexFinder;
-
-
 // when you are inserting a piece into pt->pieces, set piece->chars_contained to global index of the last character of the piece + 1
 typedef struct Piece
 {
@@ -92,8 +77,6 @@ typedef struct UndoUpdate
 	int lines_inside;
 } UndoUpdate;
 
-void pt_init_arrays(void);
-
 void pt_insert(PieceTable* pt, char c, int index);
 void pt_rm(PieceTable* pt, int index);
 char pt_get(PieceTable* pt, int index);
@@ -107,14 +90,6 @@ int pt_get_line_index(PieceTable* pt, int line_index);
 
 // gets the index of the line that a character resides in
 int pt_get_line_index_inverse(PieceTable* pt, int char_index);
-
-int pt_get_color(PieceTable* pt, int index);
-void pt_update_color_indices(PieceTable* pt, int index);
-void ci_update_info(Tree* t);
-ColorIndex* ci_create(int color, int len, int chars_contained);
-
-int ci_compare(Tree* t, void* elt);
-int ci_finder_compare_characters(Tree* t, void* elt);
 
 Piece* piece_create(char** text, int start_index, int len, int chars_contained);
 void piece_free(void* v);

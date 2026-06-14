@@ -13,6 +13,7 @@
 #include "insert_mode.h"
 #include "line.h"
 #include "piece_table.h"
+#include "piece_table_color_indices.h"
 
 int main(int argc, char* argv[])
 {
@@ -21,7 +22,7 @@ int main(int argc, char* argv[])
 	es.finder = NULL;
 	sem_init(&es.sem, 0, 1);
 	screen_create();
-	pt_init_arrays();
+	ci_init_arrays();
 
 
 	insert_mode_create();

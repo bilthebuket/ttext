@@ -5,6 +5,7 @@
 #include "global.h"
 #include "line.h"
 #include "terminal_mode.h"
+#include "piece_table_color_indices.h"
 
 static int height;
 static int width;
