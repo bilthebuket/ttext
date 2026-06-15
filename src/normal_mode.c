@@ -7,6 +7,7 @@
 #include "io_tools.h"
 #include "line.h"
 #include "finder.h"
+#include "piece_table/undo.h"
 
 static void handle_default(EditorState* es)
 {

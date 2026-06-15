@@ -1,7 +1,7 @@
 #ifndef PIECE_TABLE_COLOR_INDICES_H
 #define PIECE_TABLE_COLOR_INDICES_H
 
-#include "piece_table.h"
+#include "piece_table/piece_table.h"
 #include "tree.h"
 
 typedef struct ColorIndex

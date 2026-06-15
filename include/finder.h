@@ -2,7 +2,7 @@
 #define FINDER_H
 
 #include "tab.h"
-#include "piece_table.h"
+#include "piece_table/piece_table.h"
 #include "tree.h"
 
 typedef struct FinderFinder

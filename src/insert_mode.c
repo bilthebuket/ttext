@@ -7,7 +7,7 @@
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"
-#include "piece_table.h"
+#include "piece_table/piece_table.h"
 
 static void handle_default(EditorState* es, int ch)
 {

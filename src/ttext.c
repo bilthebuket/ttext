@@ -12,8 +12,8 @@
 #include "terminal_mode.h"
 #include "insert_mode.h"
 #include "line.h"
-#include "piece_table.h"
-#include "piece_table_color_indices.h"
+#include "piece_table/piece_table.h"
+#include "piece_table/color_indices.h"
 
 int main(int argc, char* argv[])
 {

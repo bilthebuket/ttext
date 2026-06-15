@@ -2,7 +2,7 @@
 #define TAB_H
 
 #include "linked_list.h"
-#include "piece_table.h"
+#include "piece_table/piece_table.h"
 
 typedef struct Tab
 {
