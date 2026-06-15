@@ -444,6 +444,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 			}
 
 			p->chars_contained = finder.global_char_index + p->len;
+			p->lines_contained = p->lines_inside;
 			Undo* u = undo_create_create(p);
 			if (u != NULL)
 			{
@@ -621,6 +622,7 @@ void pt_rm(PieceTable* pt, int index)
 		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
 
 		to_remove->chars_contained = finder.global_char_index + to_remove->len;
+		to_remove->lines_contained = to_remove->lines_inside;
 		Undo* one = undo_create_create(to_remove);
 		if (one != NULL)
 		{
