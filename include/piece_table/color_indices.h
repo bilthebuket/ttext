@@ -4,6 +4,9 @@
 #include "piece_table/piece_table.h"
 #include "tree.h"
 
+#define NUM_PRIME_NUMBERS 8
+#define MAX_HASH_VALUE 2000
+
 typedef struct ColorIndex
 {
 	int chars_contained;

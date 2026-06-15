@@ -5,9 +5,6 @@
 #include "linked_list.h"
 #include <stdbool.h>
 
-#define NUM_PRIME_NUMBERS 8
-#define MAX_HASH_VALUE 2000
-
 // when you are inserting a piece into pt->pieces, set piece->chars_contained to global index of the last character of the piece + 1
 typedef struct Piece
 {

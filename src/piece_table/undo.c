@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "piece_table/undo.h"
 #include "piece_table/piece_table.h"
+#include "piece_table/color_indices.h"
 
 // creates a new set of undos
 void pt_undo_insert(PieceTable* pt)
@@ -15,21 +16,35 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 {
 	Undo** latest_undos = (Undo**) ll_get_elt(pt->undos, 0);
 
-	// if the new undo is updating the same piece as the first undo in the undos that is at the top of the stack,
+	// if the new undo is updating the same piece as another undo in the undos list,
 	// we can just combine them. this will be utilized heavily when computing undos from insert mode,
 	// as that undo will be a bunch of adjacent inserts/deletes, thus they will be combineable
-	if (latest_undos[0] != NULL)
+	// TODO: hash the pointer value of the piece/color index to a set of bitflags for O(1) checks rather than O(n)
+	if (to_add->operation == UNDO_UPDATE || to_add->operation == UNDO_CI_UPDATE)
 	{
-		if (latest_undos[0]->operation == UNDO_UPDATE && to_add->operation == UNDO_UPDATE)
+		for (int i = 0; latest_undos[i] != NULL; i++)
 		{
-			UndoUpdate* existing = (UndoUpdate*) latest_undos[0]->stuff_we_need;
-			UndoUpdate* new = (UndoUpdate*) to_add->stuff_we_need;
-
-			if (existing->p == new->p)
+			if (latest_undos[i]->operation == UNDO_UPDATE && to_add->operation == UNDO_UPDATE)
 			{
-				free(new);
-				free(to_add);
-				return;
+				UndoUpdate* existing = (UndoUpdate*) latest_undos[0]->stuff_we_need;
+				UndoUpdate* new = (UndoUpdate*) to_add->stuff_we_need;
+
+				if (existing->p == new->p)
+				{
+					undo_free(to_add);
+					return;
+				}
+			}
+			else if (latest_undos[i]->operation == UNDO_CI_UPDATE && to_add->operation == UNDO_CI_UPDATE)
+			{
+				UndoUpdateColorIndex* existing = (UndoUpdateColorIndex*) latest_undos[0]->stuff_we_need;
+				UndoUpdateColorIndex* new = (UndoUpdateColorIndex*) to_add->stuff_we_need;
+
+				if (existing->ci == new->ci)
+				{
+					undo_free(to_add);
+					return;
+				}
 			}
 		}
 	}
@@ -69,6 +84,11 @@ void undo_free(Undo* u)
 			piece_free((Piece*) u->stuff_we_need);
 			break;
 		}
+		case UNDO_CI_CREATE:
+		{
+			free((ColorIndex*) u->stuff_we_need);
+			break;
+		}
 	}
 	free(u);
 }
@@ -102,7 +122,7 @@ void pt_undo_execute(PieceTable* pt)
 				f.contained = u->index + 1;
 				f.global_char_index = -1;
 
-				Tree* to_update = tree_helper(pt->pieces, &f, piece_finder_compare_characters);
+				Tree* to_update = tree_helper(pt->pieces, &f, &piece_finder_compare_characters);
 				if (to_update == NULL || to_update->elt == NULL)
 				{
 					return;
@@ -123,6 +143,46 @@ void pt_undo_execute(PieceTable* pt)
 				f.contained = *((int*) to_execute->stuff_we_need);
 				f.global_char_index = -1;
 				pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
+				free(to_execute->stuff_we_need);
+				break;
+			}
+
+			case UNDO_CI_CREATE:
+			{
+				ColorIndex* ci = (ColorIndex*) to_execute->stuff_we_need;
+				pt->color_indices = tree_add_elt(pt->color_indices, ci, &ci_compare, &ci_update_info);
+				break;
+			}
+
+			case UNDO_CI_UPDATE:
+			{
+				UndoUpdateColorIndex* u = (UndoUpdateColorIndex*) to_execute->stuff_we_need;
+
+				ColorIndexFinder f;
+				f.contained = u->index + 1;
+				f.global_char_index = -1;
+
+				Tree* to_update = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
+				if (to_update == NULL || to_update->elt == NULL)
+				{
+					return;
+				}
+				ColorIndex* ci_to_update = (ColorIndex*) to_update->elt;
+
+				ci_to_update->chars_contained = u->chars_contained;
+				ci_to_update->len = u->len;
+				ci_to_update->color = u->color;
+				tree_recursive_update_to_root(to_update, &ci_update_info);
+				free(u);
+				break;
+			}
+
+			case UNDO_CI_RM:
+			{
+				ColorIndexFinder f;
+				f.contained = *((int*) to_execute->stuff_we_need);
+				f.global_char_index = -1;
+				pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
 				free(to_execute->stuff_we_need);
 				break;
 			}
@@ -190,6 +250,66 @@ Undo* undo_create_create(Piece* p)
 	{
 		r->stuff_we_need = p;
 		r->operation = UNDO_CREATE;
+	}
+	return r;
+}
+
+Undo* undo_update_color_index_create(ColorIndex* ci, int index, int chars_contained, int len, int color)
+{
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		UndoUpdateColorIndex* u = malloc(sizeof(UndoUpdate));
+		if (u != NULL)
+		{
+			u->ci = ci;
+			u->index = index;
+			u->chars_contained = chars_contained;
+			u->len = len;
+			u->color = color;
+
+			r->stuff_we_need = u;
+			r->operation = UNDO_CI_UPDATE;
+		}
+		else
+		{
+			free(r);
+			return NULL;
+		}
+	}
+	return r;
+}
+
+Undo* undo_rm_color_index_create(int index)
+{
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		int* indexptr = malloc(sizeof(int));
+		if (indexptr == NULL)
+		{
+			free(r);
+			return NULL;
+		}
+		*indexptr = index;
+		r->stuff_we_need = indexptr;
+		r->operation = UNDO_CI_RM;
+	}
+	return r;
+}
+
+Undo* undo_create_color_index_create(ColorIndex* ci)
+{
+	if (ci == NULL)
+	{
+		return NULL;
+	}
+
+	Undo* r = malloc(sizeof(Undo));
+	if (r != NULL)
+	{
+		r->stuff_we_need = ci;
+		r->operation = UNDO_CI_CREATE;
 	}
 	return r;
 }
