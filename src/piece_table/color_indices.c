@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
+#include "piece_table/undo.h"
 #include "tree.h"
 #include "global.h"
 
@@ -124,6 +125,9 @@ void ci_handle_insert(PieceTable* pt, int index)
 			{
 				pt->color_indices = tree_create(ci);
 				t = pt->color_indices;
+
+				Undo* u = undo_rm_color_index_create(ci->chars_contained + 1);
+				pt_undo_update(pt, u);
 			}
 		}
 	}
@@ -163,6 +167,9 @@ void ci_handle_rm(PieceTable* pt, int index)
 			{
 				pt->color_indices = tree_create(ci);
 				t = pt->color_indices;
+
+				Undo* u = undo_rm_color_index_create(ci->chars_contained - 1);
+				pt_undo_update(pt, u);
 			}
 		}
 	}
@@ -176,18 +183,27 @@ void ci_handle_rm(PieceTable* pt, int index)
 	{
 		f.contained = index + 1;
 		f.global_char_index = -1;
-		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
+		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, NULL, &ci_update_info);
 		len = 0;
+
+		ColorIndex* to_remove = (ColorIndex*) t->elt;
+		to_remove->chars_contained = f.global_char_index + to_remove->len;
+		Undo* u = undo_create_color_index_create(to_remove);
+		pt_undo_update(pt, u);
 	}
 	else
 	{
+		ColorIndex* to_update = (ColorIndex*) t->elt;
+		Undo* u = undo_update_color_index_create(to_update, index, to_update->chars_contained, to_update->len, to_update->color);
+		pt_undo_update(pt, u);
+
 		int index_to_update = index;
 		if (f.global_char_index + len - 1 == index_to_update)
 		{
 			index_to_update--;
 		}
-		((ColorIndex*) t->elt)->len--;
-		((ColorIndex*) t->elt)->chars_contained--;
+		to_update->len--;
+		to_update->chars_contained--;
 		len--;
 		tree_recursive_update_to_root(t, &ci_update_info);
 		pt_update_color_indices(pt, index_to_update);
@@ -377,6 +393,10 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			{
 				return;
 			}
+
+			Undo* u = undo_rm_color_index_create(new->chars_contained);
+			pt_undo_update(pt, u);
+
 			ci->len -= ci->len - i;
 			tree_recursive_update_to_root(t, &ci_update_info);		
 			pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
@@ -400,9 +420,15 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			ci->len -= ci->len - i;
 			tree_recursive_update_to_root(t, &ci_update_info);
 
+			Undo* u1 = undo_rm_color_index_create(new_one->chars_contained);
+			pt_undo_update(pt, u1);
+
 			pt->color_indices = tree_add_elt(pt->color_indices, new_one, &ci_compare, &ci_update_info);
 			if (new_two->len > 0)
 			{
+				Undo* u2 = undo_rm_color_index_create(new_two->chars_contained);
+				pt_undo_update(pt, u2);
+
 				pt->color_indices = tree_add_elt(pt->color_indices, new_two, &ci_compare, &ci_update_info);
 				pt_update_color_indices(pt, f.global_char_index);
 				pt_update_color_indices(pt, f.global_char_index + i);
@@ -419,6 +445,9 @@ void pt_update_color_indices(PieceTable* pt, int index)
 	}
 	else
 	{
+		Undo* u = undo_update_color_index_create(ci, index, ci->chars_contained, ci->len, ci->color);
+		pt_undo_update(pt, u);
+
 		if (!pt_iterator_init(pt, &pi, f.global_char_index))
 		{
 			return;

@@ -14,6 +14,11 @@ void pt_undo_insert(PieceTable* pt)
 // updates the set of undos at the top of the undo stack
 void pt_undo_update(PieceTable* pt, Undo* to_add)
 {
+	if (pt == NULL || to_add == NULL)
+	{
+		return;
+	}
+
 	Undo** latest_undos = (Undo**) ll_get_elt(pt->undos, 0);
 
 	// if the new undo is updating the same piece as another undo in the undos list,
