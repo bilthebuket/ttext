@@ -56,7 +56,7 @@ Node* ll_get_node(LinkedList* lst, int index)
 
 void* ll_get_elt(LinkedList* lst, int index)
 {
-	if (lst->size == 0)
+	if (lst == NULL || lst->size == 0)
 	{
 		return NULL;
 	}

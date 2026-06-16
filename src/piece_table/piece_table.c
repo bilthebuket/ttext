@@ -513,6 +513,7 @@ static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, in
 	{
 		// resetting the piece's contained so when pt_insert is called it can travel down the tree properly
 		to_undo->chars_contained = finder.global_char_index;
+		to_undo->lines_contained = to_undo->lines_inside;
 		Undo* u = undo_create_create(to_undo);
 		if (u != NULL)
 		{

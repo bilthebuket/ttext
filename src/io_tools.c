@@ -213,7 +213,10 @@ void print_message(const char* const str)
 	{
 		mvaddch(height - MESSAGE_LINE_HEIGHT, i, ' ');
 	}
-	mvaddstr(height - MESSAGE_LINE_HEIGHT, 0, str);
+	for (int i = 0; i < width && str[i] != '\0'; i++)
+	{
+		mvaddch(height - MESSAGE_LINE_HEIGHT, i, unctrl(str[i])[0]);
+	}
 	move(y, x);
 }
 
@@ -420,4 +423,20 @@ void log_error(const char* str)
 		fprintf(error_log, str);
 		fflush(error_log);
 	}
+}
+
+void print_pt_to_message_bar(PieceTable* pt)
+{
+	char buf[width];
+	int i = 0;
+	for (; i < width && pt_get(pt, i) != '\0'; i++)
+	{
+		buf[i] = pt_get(pt, i);
+	}
+	if (i < width)
+	{
+		buf[i] = '\0';
+	}
+
+	print_message(buf);
 }

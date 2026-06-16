@@ -5,6 +5,7 @@
 #include "tab.h"
 #include "line.h"
 #include "global.h"
+#include "piece_table/piece_table.h"
 
 void print_tab(Tab* t);
 void print_line(Tab* t, int line_index);
@@ -31,5 +32,6 @@ int indent_line(Tab* t, int index);
 void move_cursor_to_valid_coordinates(Tab* t);
 
 void log_error(const char* str);
+void print_pt_to_message_bar(PieceTable* pt);
 
 #endif

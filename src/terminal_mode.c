@@ -348,7 +348,7 @@ static void handle_enter(EditorState* es, int ch)
 
 			if (only_one_arg)
 			{
-				print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
+				print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 				make_input_line();
 				return;
 			}
@@ -359,7 +359,7 @@ static void handle_enter(EditorState* es, int ch)
 
 			if (gb_get(gb, end_index) == '\0')
 			{
-				print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
+				print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 				make_input_line();
 				return;
 			}
@@ -395,12 +395,12 @@ static void handle_enter(EditorState* es, int ch)
 
 			if (gb_get(gb, end_index) == '\0')
 			{
-				print_message("Usage: :rs <top/bottom/left/right> <ll_insert/sub> <amount>");
+				print_message("Usage: :rs <top/bottom/left/right> <add/sub> <amount>");
 				make_input_line();
 				return;
 			}
 
-			if (!gb_strcmp(gb, start_index, end_index, "ll_insert"))
+			if (!gb_strcmp(gb, start_index, end_index, "add"))
 			{
 				if (num_to_change2 == NULL)
 				{

@@ -6,7 +6,7 @@
 #include "line.h"
 #include "global.h"
 #include "tree.h"
-#include "piece_table.h"
+#include "piece_table/piece_table.h"
 #include <criterion/criterion.h>
 
 Tree* t = NULL;
@@ -107,6 +107,7 @@ int size;
 void setup_pt(void)
 {
 	FILE* f = fopen("testing/test2.txt", "r");
+	cr_assert_not_null(f);
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
 	rewind(f);

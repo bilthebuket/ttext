@@ -104,13 +104,16 @@ void ci_handle_insert(PieceTable* pt, int index)
 	// one to the left of the character we just inserted, because if we try to get the ci at the character we just inserted,
 	// tree_get will return NULL (there is not ci at the index of the character we just inserted)
 	ColorIndexFinder f;
+	int index_to_update;
 	if (chars_to_split_on[(int) pt_get(pt, index + 1)] || pt_get(pt, index + 1) == '\0')
 	{
 		f.contained = index;
+		index_to_update = index - 1;
 	}
 	else
 	{
 		f.contained = index + 1;
+		index_to_update = index;
 	}
 
 	f.global_char_index = -1;
@@ -137,7 +140,7 @@ void ci_handle_insert(PieceTable* pt, int index)
 	}
 
 	ColorIndex* to_update = (ColorIndex*) t->elt;
-	Undo* u = undo_update_color_index_create(to_update, index, to_update->chars_contained, to_update->len, to_update->color);
+	Undo* u = undo_update_color_index_create(to_update, index_to_update, to_update->chars_contained, to_update->len, to_update->color);
 	pt_undo_update(pt, u);
 
 	((ColorIndex*) t->elt)->len++;

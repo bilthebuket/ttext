@@ -457,6 +457,11 @@ static void handle_u(EditorState* es)
 	print_tab(es->active_tab);
 }
 
+static void handle_p(EditorState* es)
+{
+	print_pt_to_message_bar(es->active_tab->pt);
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -479,6 +484,7 @@ void normal_mode_create(void)
 	execute_char['%'] = &handle_percent_sign;
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
+	execute_char['p'] = &handle_p;
 }
 
 void normal_mode(EditorState* es, int ch)
