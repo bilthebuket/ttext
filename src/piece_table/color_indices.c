@@ -136,6 +136,10 @@ void ci_handle_insert(PieceTable* pt, int index)
 		return;
 	}
 
+	ColorIndex* to_update = (ColorIndex*) t->elt;
+	Undo* u = undo_update_color_index_create(to_update, index, to_update->chars_contained, to_update->len, to_update->color);
+	pt_undo_update(pt, u);
+
 	((ColorIndex*) t->elt)->len++;
 	((ColorIndex*) t->elt)->chars_contained++;
 

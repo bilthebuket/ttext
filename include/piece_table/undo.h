@@ -19,6 +19,12 @@ typedef struct Undo
 	int operation;
 } Undo;
 
+typedef struct Undos
+{
+	Undo** pieces;
+	Undo** color_indices;
+} Undos;
+
 typedef struct UndoUpdate
 {
 	Piece* p;

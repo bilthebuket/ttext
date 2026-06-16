@@ -813,17 +813,23 @@ void pt_free(PieceTable* pt)
 
 	while (1)
 	{
-		Undo** undos = (Undo**) ll_rm(pt->undos, 0);
+		Undos* undos = (Undos*) ll_rm(pt->undos, 0);
 
 		if (undos == NULL)
 		{
 			break;
 		}
 
-		for (int i = 0; undos[i] != NULL; i++)
+		for (int i = 0; undos->pieces[i] != NULL; i++)
 		{
-			undo_free(undos[i]);
+			undo_free(undos->pieces[i]);
 		}
+		for (int i = 0; undos->color_indices[i] != NULL; i++)
+		{
+			undo_free(undos->color_indices[i]);
+		}
+		free(undos->pieces);
+		free(undos->color_indices);
 		free(undos);
 	}
 	ll_free(pt->undos);
