@@ -200,7 +200,7 @@ Test(piece_table, test_insert, .init = setup_pt, .fini = teardown_pt)
 	new_text[size + 3] = '2';
 	pt_insert(pt, '2', size + 3);
 
-	for (int i = 0; i < size + 3; i++)
+	for (int i = 0; i < size + 4; i++)
 	{
 		cr_expect_eq(new_text[i], pt_get(pt, i));
 	}

@@ -42,8 +42,18 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 	Undos* latest_undos = (Undos*) ll_get_elt(pt->undos, 0);
 	if (latest_undos == NULL)
 	{
-		undo_free(to_add);
-		return;
+		pt_undo_insert(pt);
+		latest_undos = (Undos*) ll_get_elt(pt->undos, 0);
+
+		if (latest_undos == NULL)
+		{
+			if (!(to_add->operation == UNDO_CREATE || to_add->operation == UNDO_CI_CREATE))
+			{
+				free(to_add->stuff_we_need);
+			}
+			free(to_add);
+			return;
+		}
 	}
 
 	if (to_add->operation == UNDO_CREATE || to_add->operation == UNDO_RM || to_add->operation == UNDO_UPDATE)

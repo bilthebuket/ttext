@@ -313,6 +313,16 @@ PieceTable* pt_create(char* buf, int len)
 				return NULL;
 			}
 		}
+
+		r->undos = ll_create();
+		if (r->undos == NULL)
+		{
+			pt_free(r);
+			return NULL;
+		}
+
+		r->color_indices = NULL;
+
 		if (len > 0)
 		{
 			ColorIndex* ci;
@@ -326,17 +336,6 @@ PieceTable* pt_create(char* buf, int len)
 			}
 			r->color_indices = tree_create(ci);
 			pt_update_color_indices(r, 0);
-		}
-		else
-		{
-			r->color_indices = NULL;
-		}
-
-		r->undos = ll_create();
-		if (r->undos == NULL)
-		{
-			pt_free(r);
-			return NULL;
 		}
 	}
 	return r;
