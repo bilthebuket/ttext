@@ -63,4 +63,7 @@ typedef struct EditorState
 
 extern FILE* error_log;
 
+int es_init(EditorState* es, int argc, char* argv[]);
+void es_uninit(EditorState* es);
+
 #endif
