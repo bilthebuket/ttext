@@ -142,7 +142,7 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 	simulate_append("for()");
 
 	(*es.mode)(&es, 'h');
-	simulate_insert("int i = 0; i < 10; i++");
+	simulate_append("int i = 0; i < 10; i++");
 
 	(*es.mode)(&es, 'h');
 	(*es.mode)(&es, 'x');

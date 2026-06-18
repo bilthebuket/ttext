@@ -585,7 +585,7 @@ void pt_rm(PieceTable* pt, int index)
 		}
 		else
 		{
-			Undo* u = undo_update_create(p, index, p->start_index, p->len, p->lines_inside);
+			Undo* u = undo_update_create(p, index - 1, p->start_index, p->len, p->lines_inside);
 			if (u != NULL)
 			{
 				pt_undo_update(pt, u);
