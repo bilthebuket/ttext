@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 	screen_create();
 
 	EditorState es;
-	if (!es_setup(&es, argc, argv))
+	if (es_init(&es, argc, argv))
 	{
 		screen_free();
 		return 1;

@@ -188,12 +188,13 @@ void ci_handle_rm(PieceTable* pt, int index)
 	int len = ((ColorIndex*) t->elt)->len;
 	if (len == 1)
 	{
+		ColorIndex* to_remove = (ColorIndex*) t->elt;
+
 		f.contained = index + 1;
 		f.global_char_index = -1;
 		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, NULL, &ci_update_info);
 		len = 0;
 
-		ColorIndex* to_remove = (ColorIndex*) t->elt;
 		to_remove->chars_contained = f.global_char_index + to_remove->len;
 		Undo* u = undo_create_color_index_create(to_remove);
 		pt_undo_update(pt, u);

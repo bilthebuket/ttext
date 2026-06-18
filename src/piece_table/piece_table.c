@@ -656,6 +656,8 @@ void pt_rm(PieceTable* pt, int index)
 			piece_free(new_two);
 		}
 	}
+
+	ci_handle_rm(pt, index);
 }
 
 char pt_get(PieceTable* pt, int index)
