@@ -203,15 +203,14 @@ void ci_handle_rm(PieceTable* pt, int index)
 		// theres similar logic to this in the undo update for pt_rm, but the premise is if we remove the character on the right edge of a piece/color index,
 		// that integer index now points to the piece/color index immediatly to the right of the one we actually want to update
 		// this if else handles that
+		ColorIndex* to_update = (ColorIndex*) t->elt;
 		if (f.global_char_index == index)
 		{
-			ColorIndex* to_update = (ColorIndex*) t->elt;
 			Undo* u = undo_update_color_index_create(to_update, index, to_update->chars_contained, to_update->len, to_update->color);
 			pt_undo_update(pt, u);
 		}
 		else
 		{
-			ColorIndex* to_update = (ColorIndex*) t->elt;
 			Undo* u = undo_update_color_index_create(to_update, index - 1, to_update->chars_contained, to_update->len, to_update->color);
 			pt_undo_update(pt, u);
 		}
