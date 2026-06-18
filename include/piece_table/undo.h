@@ -10,6 +10,7 @@
 
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
+#include "linked_list.h"
 
 typedef struct Undo
 {
@@ -21,8 +22,8 @@ typedef struct Undo
 
 typedef struct Undos
 {
-	Undo** pieces;
-	Undo** color_indices;
+	LinkedList* pieces;
+	LinkedList* color_indices;
 } Undos;
 
 typedef struct UndoUpdate

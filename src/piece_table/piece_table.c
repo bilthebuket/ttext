@@ -822,16 +822,26 @@ void pt_free(PieceTable* pt)
 			break;
 		}
 
-		for (int i = 0; undos->pieces[i] != NULL; i++)
+		while (1)
 		{
-			undo_free(undos->pieces[i]);
+			Undo* to_free = (Undo*) ll_rm(undos->pieces, 0);
+			if (to_free == NULL)
+			{
+				break;
+			}
+			undo_free(to_free);
 		}
-		for (int i = 0; undos->color_indices[i] != NULL; i++)
+		while (1)
 		{
-			undo_free(undos->color_indices[i]);
+			Undo* to_free = (Undo*) ll_rm(undos->color_indices, 0);
+			if (to_free == NULL)
+			{
+				break;
+			}
+			undo_free(to_free);
 		}
-		free(undos->pieces);
-		free(undos->color_indices);
+		ll_free(undos->pieces);
+		ll_free(undos->color_indices);
 		free(undos);
 	}
 	ll_free(pt->undos);

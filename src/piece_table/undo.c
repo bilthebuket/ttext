@@ -12,22 +12,20 @@ void pt_undo_insert(PieceTable* pt)
 		return;
 	}
 
-	elt->pieces = malloc(sizeof(Undo*));
+	elt->pieces = ll_create();
 	if (elt->pieces == NULL)
 	{
 		free(elt);
 		return;
 	}
-	elt->color_indices = malloc(sizeof(Undo*));
+	elt->color_indices = ll_create();
 	if (elt->color_indices == NULL)
 	{
-		free(elt->pieces);
+		ll_free(elt->pieces);
 		free(elt);
 		return;
 	}
 
-	elt->pieces[0] = NULL;
-	elt->color_indices[0] = NULL;
 	ll_insert(pt->undos, elt, 0);
 }
 
@@ -58,10 +56,11 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 
 	if (to_add->operation == UNDO_CREATE || to_add->operation == UNDO_RM || to_add->operation == UNDO_UPDATE)
 	{
-		Undo** piece_undos = latest_undos->pieces;
-		if (piece_undos[0] != NULL && to_add->operation == UNDO_UPDATE && piece_undos[0]->operation == UNDO_UPDATE)
+		LinkedList* piece_undos = latest_undos->pieces;
+		Undo* most_recent = ll_get_elt(piece_undos, 0);
+		if (most_recent != NULL && to_add->operation == UNDO_UPDATE && most_recent->operation == UNDO_UPDATE)
 		{
-			UndoUpdate* existing = (UndoUpdate*) piece_undos[0]->stuff_we_need;
+			UndoUpdate* existing = (UndoUpdate*) most_recent->stuff_we_need;
 			UndoUpdate* new = (UndoUpdate*) to_add->stuff_we_need;
 
 			if (existing->p == new->p)
@@ -72,26 +71,15 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 			}
 		}
 
-		int len = 0;
-		for (; piece_undos[len] != NULL; len++) {}
-		len++;
-
-		Undo** new_piece_undos = malloc(sizeof(Undo*) * (len + 1));
-		for (int i = 0; i < len; i++)
-		{
-			new_piece_undos[i + 1] = piece_undos[i];
-		}
-		new_piece_undos[0] = to_add;
-		
-		free(piece_undos);
-		latest_undos->pieces = new_piece_undos;
+		ll_insert(piece_undos, to_add, 0);
 	}
 	else
 	{
-		Undo** ci_undos = latest_undos->color_indices;
-		if (ci_undos[0] != NULL && to_add->operation == UNDO_CI_UPDATE && ci_undos[0]->operation == UNDO_CI_UPDATE)
+		LinkedList* ci_undos = latest_undos->color_indices;
+		Undo* most_recent = ll_get_elt(ci_undos, 0);
+		if (most_recent != NULL && to_add->operation == UNDO_CI_UPDATE && most_recent->operation == UNDO_CI_UPDATE)
 		{
-			UndoUpdateColorIndex* existing = (UndoUpdateColorIndex*) ci_undos[0]->stuff_we_need;
+			UndoUpdateColorIndex* existing = (UndoUpdateColorIndex*) most_recent->stuff_we_need;
 			UndoUpdateColorIndex* new = (UndoUpdateColorIndex*) to_add->stuff_we_need;
 
 			if (existing->ci == new->ci)
@@ -102,19 +90,7 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 			}
 		}
 
-		int len = 0;
-		for (; ci_undos[len] != NULL; len++) {}
-		len++;
-
-		Undo** new_ci_undos = malloc(sizeof(Undo*) * (len + 1));
-		for (int i = 0; i < len; i++)
-		{
-			new_ci_undos[i + 1] = ci_undos[i];
-		}
-		new_ci_undos[0] = to_add;
-		
-		free(ci_undos);
-		latest_undos->color_indices = new_ci_undos;
+		ll_insert(ci_undos, to_add, 0);
 	}
 }
 
@@ -154,9 +130,13 @@ void pt_undo_execute(PieceTable* pt)
 		return;
 	}
 
-	for (int i = 0; undos->pieces[i] != NULL; i++)
+	while (1)
 	{
-		Undo* to_execute = undos->pieces[i];
+		Undo* to_execute = (Undo*) ll_rm(undos->pieces, 0);
+		if (to_execute == NULL)
+		{
+			break;
+		}
 
 		switch (to_execute->operation)
 		{
@@ -204,9 +184,13 @@ void pt_undo_execute(PieceTable* pt)
 		free(to_execute);
 	}
 
-	for (int i = 0; undos->color_indices[i] != NULL; i++)
+	while (1)
 	{
-		Undo* to_execute = undos->color_indices[i];
+		Undo* to_execute = (Undo*) ll_rm(undos->color_indices, 0);
+		if (to_execute == NULL)
+		{
+			break;
+		}
 
 		switch(to_execute->operation)
 		{
@@ -253,8 +237,8 @@ void pt_undo_execute(PieceTable* pt)
 
 		free(to_execute);
 	}
-	free(undos->pieces);
-	free(undos->color_indices);
+	ll_free(undos->pieces);
+	ll_free(undos->color_indices);
 	free(undos);
 }
 
