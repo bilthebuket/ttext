@@ -5,13 +5,13 @@
  
 # Compile
 
-To use: `bash compile.sh`
-To test: `bash tcompile.sh`
+- To use: `bash compile.sh`
+- To test: `bash tcompile.sh`
 
 # Run
 
-To use: `./ttext <filename1> <filename2> ...`
-To test: `./ttext_test`
+- To use: `./ttext <filename1> <filename2> ...`
+- To test: `./ttext_test`
 
 # Use
 
