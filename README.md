@@ -1,14 +1,17 @@
 # Required Libraries
 
 - ncurses
+- criterion
  
 # Compile
 
-`bash compile.sh`
+To use: `bash compile.sh`
+To test: `bash tcompile.sh`
 
 # Run
 
-`./ttext <filename1> <filename2> ...`
+To use: `./ttext <filename1> <filename2> ...`
+To test: `./ttext_test`
 
 # Use
 
@@ -23,6 +26,9 @@
 - a -> move cursor one to the right and enter insert mode
 - o -> make newline below current line and enter insert mode
 - t -> enter terminal mode
+- n -> goto next instance of string (after using :find)
+- u -> undo
+- p -> prints the entire state of the piece table to the message line for debugging purposes
 
 ## Insert Mode
 
@@ -45,6 +51,7 @@
 - :q -> quit
 - :q! -> force quit (dont check if tab has been written to disk)
 - :w -> write tab to disk
+- :find <string> -> finds instances of a string (essentailly CTRL+F or /<string> in vim)
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
 # Styling Guide
