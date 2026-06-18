@@ -66,6 +66,7 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 
 			if (existing->p == new->p)
 			{
+				existing->index = new->index;
 				undo_free(to_add);
 				return;
 			}
@@ -95,6 +96,7 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 
 			if (existing->ci == new->ci)
 			{
+				existing->index = new->index;
 				undo_free(to_add);
 				return;
 			}

@@ -45,6 +45,21 @@ void print_state()
 	}
 	printf("\n");
 }
+void print_chars(int num)
+{
+	for (int i = 0; i < num; i++)
+	{
+		if (pt_get(es.active_tab->pt, i) == '\0')
+		{
+			printf("^");
+		}
+		else
+		{
+			printf("%c", pt_get(es.active_tab->pt, i));
+		}
+	}
+	printf("\n");
+}
 
 void expect_state(const char* str)
 {
@@ -72,7 +87,7 @@ void expect_state(const char* str)
 		printf("expected:\n");
 		printf("%s\n", str);
 		printf("found:\n");
-		print_state();
+		print_chars(i);
 		fflush(stdout);
 		exit(1);
 	}
@@ -200,6 +215,84 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        \n    }\n}");
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    \n}");
+	(*es.mode)(&es, 'u');
+	expect_state("");
+}
+
+Test(editor, test_undo_complex2, .init = setup_state, .fini = teardown_state)
+{
+	simulate_insert("#include <stdio.h>");
+	(*es.mode)(&es, 'o');
+	(*es.mode)(&es, ESCAPE_KEYCODE);
+	simulate_append("#include <stdlib.h>");
+
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>");
+
+	goto_coords(0, 0);
+	(*es.mode)(&es, '$');
+
+	simulate_append("\n\nint main(void)\n{\nprintf();\n}");
+	goto_coords(10, 4);
+	simulate_append("test");
+
+	goto_coords(9, 2);
+	for (int i = 0; i < 4; i++) {(*es.mode)(&es, 'x');}
+	simulate_insert("int argc, char* argv[]");
+	
+	goto_coords(15, 4);
+	(*es.mode)(&es, 'i');
+	for (int i = 0; i < 4; i++) {(*es.mode)(&es, BACKSPACE_KEYCODE2);}
+	(*es.mode)(&es, ESCAPE_KEYCODE);
+	simulate_append("argc");
+
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf();\n}");
+
+	goto_coords(10, 4);
+	simulate_append("argv[i]");
+
+	goto_coords(0, 3);
+	(*es.mode)(&es, 'o');
+	(*es.mode)(&es, ESCAPE_KEYCODE);
+	simulate_append("for (int i = 1; i < argc; i++)\n{");
+	
+	goto_coords(4, 6);
+	simulate_insert("\t");
+	(*es.mode)(&es, 'o');
+	(*es.mode)(&es, ESCAPE_KEYCODE);
+	simulate_append("}");
+
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n        printf(argv[i]);\n        \n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n        printf(argv[i]);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n    printf(argv[i]);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    \n    printf(argv[i]);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf(argv[i]);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf();\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main()\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(d)\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(id)\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(oid)\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(void)\n{\n    printf(test);\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>\n\nint main(void)\n{\n    printf();\n}");
+	(*es.mode)(&es, 'u');
+	expect_state("#include <stdio.h>");
 	(*es.mode)(&es, 'u');
 	expect_state("");
 }
