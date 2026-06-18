@@ -42,16 +42,16 @@
 - backspace -> delete character
 - esc -> enter normal mode
 - custom commands:
-- :tabnew <filename> -> create new tab
+- :tabnew \<filename\> -> create new tab
 - :tabn -> next tab
 - :tabp -> previous tab
-- :tab <number> -> switch to specified tab
-- :rs <top/bottom/left/right> <add/sub> <value> -> change the size of an edge of the current tab
-- :mv <up/down/left/right> <value> -> move current tab
+- :tab \<number\> -> switch to specified tab
+- :rs \<top/bottom/left/right\> \<add/sub\> \<value\> -> change the size of an edge of the current tab
+- :mv \<up/down/left/right\> \<value\> -> move current tab
 - :q -> quit
 - :q! -> force quit (dont check if tab has been written to disk)
 - :w -> write tab to disk
-- :find <string> -> finds instances of a string (essentailly CTRL+F or /<string> in vim)
+- :find \<string\> -> finds instances of a string (essentailly CTRL+F or /\<string\> in vim)
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
 # Styling Guide
