@@ -642,3 +642,48 @@ void* tree_get_leftmost(Tree* t)
 	}
 	return ptr->elt;
 }
+
+// i could use recursion, but because i need two recursive calls only the second one can be tail call optimized, thus
+// we are going with the while loop to avoid a stack overflow on a massive tree
+void traverse_all(Tree* t, void* place_to_store, void (*thing_to_do)(Tree*, void*))
+{
+	if (t == NULL || place_to_store == NULL || thing_to_do == NULL)
+	{
+		return;
+	}
+
+	while (1)
+	{
+		while (t->left != NULL)
+		{
+			t = t->left;
+		}
+		(*thing_to_do)(t, place_to_store);
+		while (t->prev != NULL && t->prev->right == t)
+		{
+			t = t->prev;
+		}
+		if (t->prev == NULL)
+		{
+			return;
+		}
+		else
+		{
+			t = t->prev;
+			(*thing_to_do)(t, place_to_store);
+			while (t != NULL && t->right == NULL)
+			{
+				t = t->prev;
+				(*thing_to_do)(t, place_to_store);
+			}
+			if (t == NULL)
+			{
+				return;
+			}
+			else
+			{
+				t = t->right;
+			}
+		}
+	}
+}

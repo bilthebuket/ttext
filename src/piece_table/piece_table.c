@@ -848,3 +848,29 @@ void pt_free(PieceTable* pt)
 
 	free(pt);
 }
+
+char* pt_flatten_to_str(PieceTable* pt)
+{
+	char* buf = malloc(sizeof(char) * ((Piece*) pt->pieces->elt)->chars_contained + 1);
+	if (buf != NULL)
+	{
+		PieceIterator pi;
+		if (pt_iterator_init(pt, &pi, 0))
+		{
+			char c = pt_iterate(&pi);
+			int i = 0;
+			for (; c != '\0'; i++)
+			{
+				buf[i] = c;
+			}
+			buf[i] = '\0';
+			return buf;
+		}
+		else
+		{
+			free(buf);
+			return NULL;
+		}
+	}
+	return buf;
+}

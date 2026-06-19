@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "tab.h"
 #include "global.h"
 #include "line.h"
@@ -24,6 +25,7 @@ Tab* tab_create(char* fname)
 	r->left_column_index = 0;
 	r->lines = NULL;
 	r->saved_x_index = 0;
+	r->edits_since_last_backup = 0;
 
 	FILE* f;
 	if (fname != NULL)
@@ -99,5 +101,65 @@ void tab_free(Tab* t)
 		}
 		pt_free(t->pt);
 		free(t);
+	}
+}
+
+// this one includes a '\0'
+#define DATETIME_STRING_LENGTH 20
+#define FILEPATH_PREFIX_LENGTH 14
+
+void backup_increment_and_check(Tab* t)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+
+	t->edits_since_last_backup++;
+
+	if (t->edits_since_last_backup >= BACKUP_EDIT_THRESHOLD)
+	{
+		time_t now = time(NULL);
+		struct tm* tm = localtime(&now);
+		char time[DATETIME_STRING_LENGTH];
+		strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", tm);
+
+		int len = 0;
+		for (; t->fname[len] != '\0'; len++) {}
+
+		const char* prefix = ".ttext_backup/";
+
+		char filepath[DATETIME_STRING_LENGTH + FILEPATH_PREFIX_LENGTH + len + 1];
+		for (int i = 0; prefix[i] != '\0'; i++)
+		{
+			filepath[i] = prefix[i];
+		}
+		for (int i = 0; t->fname[i] != '\0'; i++)
+		{
+			filepath[i + FILEPATH_PREFIX_LENGTH] = t->fname[i];
+		}
+		filepath[FILEPATH_PREFIX_LENGTH + len] = '/';
+		for (int i = 0; time[i] != '\0'; i++)
+		{
+			filepath[i + FILEPATH_PREFIX_LENGTH + len + 1] = time[i];
+		}
+		filepath[FILEPATH_PREFIX_LENGTH + len + DATETIME_STRING_LENGTH] = '\0';
+
+
+		FILE* f = fopen(filepath, "w");
+		if (f != NULL)
+		{
+			char* to_write = pt_flatten_to_str(t->pt);
+			if (to_write != NULL)
+			{
+				int result = fprintf(f, "%s", to_write);
+				if (result >= 0)
+				{
+					t->edits_since_last_backup = 0;
+				}
+				free(to_write);
+			}
+			fclose(f);
+		}
 	}
 }

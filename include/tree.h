@@ -21,6 +21,11 @@ void* tree_get(Tree* t, void* elt, int (*cmp)(Tree*, void*));
 void tree_free(Tree* t, void (*free_node)(void*));
 Tree* tree_balance(Tree* t, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*));
 
+// i wrote this so could i traverse the piece table tree to find out how many characters are in the entire tree.
+// then after i wrote the implementation, using a while loop instead of recursion to save memory, i realised that i am stupid,
+// and ((Piece*) pt->pieces->elt)->chars_contained already has what i need
+void traverse_all(Tree* t, void* place_to_store, void (*thing_to_do)(Tree*, void*));
+
 // only updates the height of t, not any of the nodes connected to it
 void tree_update_height(Tree* t, void (*update_relative_info)(Tree*));
 

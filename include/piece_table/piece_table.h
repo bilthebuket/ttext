@@ -60,6 +60,7 @@ bool pt_iterator_init(PieceTable* pt, PieceIterator* pi, int index);
 char pt_iterate(PieceIterator* pi);
 PieceTable* pt_create(char* buf, int len);
 void pt_free(PieceTable* pt);
+char* pt_flatten_to_str(PieceTable* pt);
 
 // gets the index of the first character in the line in the piece table of index line_index
 int pt_get_line_index(PieceTable* pt, int line_index);
