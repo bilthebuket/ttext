@@ -37,7 +37,7 @@ int gb_strcmp(GapBuffer* gb, int start_index, int end_index, const char* const s
 
 // valid use is only for non negative integers
 // if a negative integer is returned, it is either an error code or undefined behavior
-int gb_atoi(GapBuffer* gb, int start_index, int end_index);
+int gb_atoi(GapBuffer* gb, int start_index, int end_index, bool convert_constants);
 
 void line_free(Line* line);
 

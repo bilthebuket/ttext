@@ -288,7 +288,7 @@ static void handle_enter(EditorState* es, int ch)
 
 			start_index = end_index + 1;
 			end_index = gb->num_chars - 1;
-			int tab_num = gb_atoi(gb, start_index, end_index);
+			int tab_num = gb_atoi(gb, start_index, end_index, false);
 
 			if (tab_num < 0 || tab_num >= es->tabs->size)
 			{
@@ -427,7 +427,7 @@ static void handle_enter(EditorState* es, int ch)
 
 			start_index = end_index + 1;;
 			end_index = gb->num_chars - 1;
-			amount = gb_atoi(gb, start_index, end_index);
+			amount = gb_atoi(gb, start_index, end_index, true);
 
 			if (amount < 0)
 			{
@@ -470,7 +470,7 @@ static void handle_enter(EditorState* es, int ch)
 		{
 			if (only_one_arg)
 			{
-				print_message("Ussage: :mv <left/right/up/down> <amount>");
+				print_message("Usage: :mv <left/right/up/down> <amount>");
 				make_input_line();
 				return;
 			}
@@ -517,7 +517,7 @@ static void handle_enter(EditorState* es, int ch)
 
 			start_index = end_index + 1;
 			end_index = gb->num_chars - 1;
-			amount = gb_atoi(gb, start_index, end_index);
+			amount = gb_atoi(gb, start_index, end_index, true);
 
 			if (amount < 0)
 			{

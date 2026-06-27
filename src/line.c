@@ -252,7 +252,7 @@ int gb_strcmp(GapBuffer* gb, int start_index, int end_index, const char* const s
 	return 2;
 }
 
-int gb_atoi(GapBuffer* gb, int start_index, int end_index)
+int gb_atoi(GapBuffer* gb, int start_index, int end_index, bool convert_constants)
 {
 	if (gb == NULL || start_index < 0 || end_index < 0 || end_index < start_index || end_index > gb->text_size)
 	{
@@ -263,6 +263,19 @@ int gb_atoi(GapBuffer* gb, int start_index, int end_index)
 	char c = gb->text[end_index];
 	gb->text[end_index] = '\0';
 	char* ptr = &gb->text[start_index];
+	if (convert_constants)
+	{
+		char copy[end_index - start_index + 1];
+		for (int i = 0; i < end_index - start_index + 1; i++)
+		{
+			copy[i] = ptr[i];
+		}
+		ptr = parse_screen_values(copy);
+		if (ptr == NULL)
+		{
+			return -1;
+		}
+	}
 	int r = atoi(ptr);
 	gb->text[end_index] = c;
 	gb_goto(gb, index);

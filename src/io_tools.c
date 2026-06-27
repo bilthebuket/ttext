@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <ncurses.h>
+#include <math.h>
 #include "io_tools.h"
 #include "global.h"
 #include "line.h"
@@ -17,8 +19,8 @@ bool is_tab_on_screen(Tab* t)
 
 void set_tab_to_fill_screen(Tab* t)
 {
-	t->height = height - MESSAGE_LINE_HEIGHT;
-	t->width = width;
+	t->height = height - MESSAGE_LINE_HEIGHT - 1;
+	t->width = width - 1;
 }
 
 void screen_create(void)
@@ -439,4 +441,105 @@ void print_pt_to_message_bar(PieceTable* pt)
 	}
 
 	print_message(buf);
+}
+
+char* parse_screen_values(char* str)
+{
+	if (str == NULL)
+	{
+		return NULL;
+	}
+
+	// starting at one for the null char
+	int new_str_len = 1;
+
+	int i = 0;
+	for (; str[i] != '\0'; i++)
+	{
+		if (str[i] == 'h')
+		{
+			int j = 1;
+			for (; str[i + j] >= '0' && str[i + j] <= '9'; j++) {}
+			if (j > 1)
+			{
+				char store = str[i + j];
+				str[i + j] = '\0';
+				int num = atoi(&str[i + 1]);
+				str[i + j] = store;
+
+				new_str_len += (int)(log(height / num) + 1);
+			}
+		}
+		else if (str[i] == 'w')
+		{
+			int j = 1;
+			for (; str[i + j] >= '0' && str[i + j] <= '9'; j++) {}
+			if (j > 1)
+			{
+				char store = str[i + j];
+				str[i + j] = '\0';
+				int num = atoi(&str[i + 1]);
+				str[i + j] = store;
+
+				new_str_len += (int)(log(width / num) + 1);
+			}
+		}
+	}
+	new_str_len += i;
+
+	char* r = malloc(sizeof(char) * new_str_len);
+	if (r == NULL)
+	{
+		return NULL;
+	}
+
+	i = 0;
+	int offset = 0;
+	for (; str[i] != '\0'; i++)
+	{
+		if (str[i] == 'h')
+		{
+			int j = 1;
+			for (; str[i + j] >= '0' && str[i + j] <= '9'; j++) {}
+			if (j > 1)
+			{
+				char store = str[i + j];
+				str[i + j] = '\0';
+				int num = atoi(&str[i + 1]);
+				str[i + j] = store;
+				char buf[(int)(log(height/ num) + 1)];
+				int num_read = sprintf(buf, "%d", height / num);
+				for (int k = 0; k < num_read; k++)
+				{
+					r[i + offset + k] = buf[k];
+				}
+				offset += num_read - j;
+			}
+		}
+		else if (str[i] == 'w')
+		{
+			int j = 1;
+			for (; str[i + j] >= '0' && str[i + j] <= '9'; j++) {}
+			if (j > 1)
+			{
+				char store = str[i + j];
+				str[i + j] = '\0';
+				int num = atoi(&str[i + 1]);
+				str[i + j] = store;
+				char buf[(int)(log(width / num) + 1)];
+				int num_read = sprintf(buf, "%d", width / num);
+				for (int k = 0; k < num_read; k++)
+				{
+					r[i + offset + k] = buf[k];
+				}
+				offset += num_read - j;
+			}
+		}
+		else
+		{
+			r[i + offset] = str[i];
+		}
+	}
+
+	return r;
 }

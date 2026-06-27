@@ -34,4 +34,8 @@ void move_cursor_to_valid_coordinates(Tab* t);
 void log_error(const char* str);
 void print_pt_to_message_bar(PieceTable* pt);
 
+// checks for values like "w", "w2", "w3", "h", "h4" and replaces them with the actual constants
+// used for screen movement and resizing in terminal mode
+char* parse_screen_values(char* str);
+
 #endif

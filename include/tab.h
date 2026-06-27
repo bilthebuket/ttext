@@ -4,7 +4,7 @@
 #include "linked_list.h"
 #include "piece_table/piece_table.h"
 
-#define BACKUP_EDIT_THRESHOLD 5
+#define BACKUP_EDIT_THRESHOLD 50
 
 typedef struct Tab
 {
