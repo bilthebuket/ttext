@@ -288,6 +288,7 @@ static void handle_x(EditorState* es)
 	{
 		t->tab_num_flags &= ~CHANGES_SAVED;
 		pt_rm(t->pt, line_index + t->x);
+		backup_increment_and_check(es->active_tab);
 
 		if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
 		{
@@ -454,6 +455,7 @@ static void handle_u(EditorState* es)
 	pt_undo_execute(es->active_tab->pt);
 	es->flags |= UPDATE_FINDER_FLAG;
 	move_cursor_to_valid_coordinates(es->active_tab);
+	backup_increment_and_check(es->active_tab);
 	print_tab(es->active_tab);
 }
 

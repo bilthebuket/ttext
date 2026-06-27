@@ -859,7 +859,7 @@ char* pt_flatten_to_str(PieceTable* pt)
 		{
 			char c = pt_iterate(&pi);
 			int i = 0;
-			for (; c != '\0'; i++)
+			for (; c != '\0'; i++, c = pt_iterate(&pi))
 			{
 				buf[i] = c;
 			}

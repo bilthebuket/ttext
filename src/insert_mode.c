@@ -175,6 +175,7 @@ static void handle_escape(EditorState* es, int ch)
 	t->saved_x_index = t->x;
 	check_left_update(t);
 	move_cursor_to_tab(t);
+	backup_increment_and_check(es->active_tab);
 	es->mode = &normal_mode;
 	es->flags |= UPDATE_FINDER_FLAG;
 }

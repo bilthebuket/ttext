@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "tab.h"
 #include "global.h"
 #include "line.h"
@@ -112,6 +113,7 @@ void backup_increment_and_check(Tab* t)
 {
 	if (t == NULL)
 	{
+		print_message("Attemped automatic backup failed");
 		return;
 	}
 
@@ -121,24 +123,47 @@ void backup_increment_and_check(Tab* t)
 	{
 		time_t now = time(NULL);
 		struct tm* tm = localtime(&now);
-		char time[DATETIME_STRING_LENGTH];
-		strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", tm);
+		if (tm == NULL)
+		{
+			print_message("Attemped automatic backup failed");
+			return;
+		}
 
+		char time[DATETIME_STRING_LENGTH];
+		if (strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S", tm) == 0)
+		{
+			print_message("Attemped automatic backup failed");
+			return;
+		}
+
+		char* fname;
+		if (t->fname == NULL)
+		{
+			fname = "untit.txt";
+		}
+		else
+		{
+			fname = t->fname;
+		}
 		int len = 0;
-		for (; t->fname[len] != '\0'; len++) {}
+		for (; fname[len] != '\0'; len++) {}
 
 		const char* prefix = ".ttext_backup/";
 
 		char filepath[DATETIME_STRING_LENGTH + FILEPATH_PREFIX_LENGTH + len + 1];
+		char directory_path[FILEPATH_PREFIX_LENGTH + len + 1];
 		for (int i = 0; prefix[i] != '\0'; i++)
 		{
 			filepath[i] = prefix[i];
+			directory_path[i] = prefix[i];
 		}
-		for (int i = 0; t->fname[i] != '\0'; i++)
+		for (int i = 0; fname[i] != '\0'; i++)
 		{
-			filepath[i + FILEPATH_PREFIX_LENGTH] = t->fname[i];
+			filepath[i + FILEPATH_PREFIX_LENGTH] = fname[i];
+			directory_path[i + FILEPATH_PREFIX_LENGTH] = fname[i];
 		}
 		filepath[FILEPATH_PREFIX_LENGTH + len] = '/';
+		directory_path[FILEPATH_PREFIX_LENGTH + len] = '\0';
 		for (int i = 0; time[i] != '\0'; i++)
 		{
 			filepath[i + FILEPATH_PREFIX_LENGTH + len + 1] = time[i];
@@ -146,6 +171,10 @@ void backup_increment_and_check(Tab* t)
 		filepath[FILEPATH_PREFIX_LENGTH + len + DATETIME_STRING_LENGTH] = '\0';
 
 
+		// 0755 = rwx perm for owner rx for everyone else
+		// not handling errors because if either of these fails fopen will return NULL which is already handled
+		mkdir(".ttext_backup", 0755);
+		mkdir(directory_path, 0755);
 		FILE* f = fopen(filepath, "w");
 		if (f != NULL)
 		{
@@ -159,7 +188,15 @@ void backup_increment_and_check(Tab* t)
 				}
 				free(to_write);
 			}
+			else
+			{
+				print_message("Attemped automatic backup failed");
+			}
 			fclose(f);
+		}
+		else
+		{
+			print_message("Attemped automatic backup failed");
 		}
 	}
 }
