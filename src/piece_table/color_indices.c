@@ -6,20 +6,10 @@
 #include "tree.h"
 #include "global.h"
 
-// TODO: use bitflags intead of bool array
-static int prime_numbers[NUM_PRIME_NUMBERS];
+#define MAX_HASH_VALUE 2000
+
 static bool chars_to_split_on[NUM_CHARS];
 static bool control_word_check[MAX_HASH_VALUE];
-
-static int hash_function(const char* s, int len)
-{
-	uint64_t val = 0;
-	for (int i = 0; i < len; i++)
-	{
-		val += ((int) s[i]) * prime_numbers[i % NUM_PRIME_NUMBERS];
-	}
-	return (int) (val % MAX_HASH_VALUE);
-}
 
 void ci_init_arrays(void)
 {
@@ -37,31 +27,23 @@ void ci_init_arrays(void)
 	chars_to_split_on[')'] = true;
 	chars_to_split_on[';'] = true;
 	chars_to_split_on[','] = true;
-	prime_numbers[0] = 67;
-	prime_numbers[1] = 283;
-	prime_numbers[2] = 31;
-	prime_numbers[3] = 593;
-	prime_numbers[4] = 379;
-	prime_numbers[5] = 389;
-	prime_numbers[6] = 821;
-	prime_numbers[7] = 113;
 	for (int i = 0; i < MAX_HASH_VALUE; i++)
 	{
 		control_word_check[i] = false;
 	}
-	control_word_check[hash_function("break", 5)] = true;
-	control_word_check[hash_function("case", 4)] = true;
-	control_word_check[hash_function("continue", 8)] = true;
-	control_word_check[hash_function("default", 7)] = true;
-	control_word_check[hash_function("do", 2)] = true;
-	control_word_check[hash_function("else", 4)] = true;
-	control_word_check[hash_function("for", 3)] = true;
-	control_word_check[hash_function("goto", 4)] = true;
-	control_word_check[hash_function("if", 2)] = true;
-	control_word_check[hash_function("return", 6)] = true;
-	control_word_check[hash_function("switch", 6)] = true;
-	control_word_check[hash_function("typedef", 7)] = true;
-	control_word_check[hash_function("while", 5)] = true;
+	control_word_check[hash_function("break", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("case", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("continue", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("default", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("do", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("else", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("for", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("goto", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("if", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("return", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("switch", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("typedef", MAX_HASH_VALUE)] = true;
+	control_word_check[hash_function("while", MAX_HASH_VALUE)] = true;
 }
 
 static void update_until_no_update_occurs(PieceTable* pt, ColorIndexFinder f, int len)
@@ -550,7 +532,8 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				buf[i] = c;
 				c = pt_iterate(&pi);
 			}
-			if (control_word_check[hash_function(&buf[0], i)])
+			buf[i] = '\0';
+			if (control_word_check[hash_function(&buf[0], MAX_HASH_VALUE)])
 			{
 				ci->color = MAGENTA_TEXT;
 				return;

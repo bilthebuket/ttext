@@ -46,6 +46,9 @@
 #define TERMINATE_FLAG 1
 #define UPDATE_FINDER_FLAG (1 << 1)
 
+#define NUM_PRIME_NUMBERS 8
+
+
 #include "finder.h"
 
 typedef struct EditorState
@@ -65,5 +68,6 @@ extern FILE* error_log;
 
 int es_init(EditorState* es, int argc, char* argv[]);
 void es_uninit(EditorState* es);
+int hash_function(const char* s, int max_value);
 
 #endif

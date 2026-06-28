@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "io_tools.h"
 #include "normal_mode.h"
 #include "insert_mode.h"
@@ -89,4 +90,21 @@ void es_uninit(EditorState* es)
 	}
 	ll_free(es->tabs);
 	finder_free(es->finder);
+}
+
+// TODO: use bitflags intead of bool array
+static int prime_numbers[NUM_PRIME_NUMBERS] = {67, 283, 31, 593, 379, 389, 821, 113};
+
+int hash_function(const char* s, int max_value)
+{
+	if (s == NULL)
+	{
+		return -1;
+	}
+	uint64_t val = 0;
+	for (int i = 0; s[i] != '\0'; i++)
+	{
+		val += ((int) s[i]) * prime_numbers[i % NUM_PRIME_NUMBERS];
+	}
+	return (int) (val % max_value);
 }
