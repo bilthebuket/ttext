@@ -58,6 +58,7 @@ void pt_rm(PieceTable* pt, int index);
 char pt_get(PieceTable* pt, int index);
 bool pt_iterator_init(PieceTable* pt, PieceIterator* pi, int index);
 char pt_iterate(PieceIterator* pi);
+char pt_iterate_backwards(PieceIterator* pi);
 PieceTable* pt_create(char* buf, int len);
 void pt_free(PieceTable* pt);
 char* pt_flatten_to_str(PieceTable* pt);

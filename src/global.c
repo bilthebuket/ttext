@@ -95,8 +95,9 @@ void es_uninit(EditorState* es)
 // TODO: use bitflags intead of bool array
 static int prime_numbers[NUM_PRIME_NUMBERS] = {67, 283, 31, 593, 379, 389, 821, 113};
 
-int hash_function(const char* s, int max_value)
+int hash_function(void* v, int max_value)
 {
+	char* s = (char*) v;
 	if (s == NULL)
 	{
 		return -1;

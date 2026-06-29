@@ -1,6 +1,7 @@
 #ifndef PIECE_TABLE_COLOR_INDICES_H
 #define PIECE_TABLE_COLOR_INDICES_H
 
+#include <stdbool.h>
 #include "piece_table/piece_table.h"
 #include "tree.h"
 
@@ -30,5 +31,7 @@ int ci_finder_compare_characters(Tree* t, void* elt);
 
 void ci_handle_insert(PieceTable* pt, int index);
 void ci_handle_rm(PieceTable* pt, int index);
+
+bool is_control_word(char* s);
 
 #endif

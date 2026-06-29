@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
@@ -10,6 +11,11 @@
 
 static bool chars_to_split_on[NUM_CHARS];
 static bool control_word_check[MAX_HASH_VALUE];
+
+bool is_control_word(char* s)
+{
+	return control_word_check[hash_function(s, MAX_HASH_VALUE)];
+}
 
 void ci_init_arrays(void)
 {

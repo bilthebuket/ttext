@@ -68,6 +68,6 @@ extern FILE* error_log;
 
 int es_init(EditorState* es, int argc, char* argv[]);
 void es_uninit(EditorState* es);
-int hash_function(const char* s, int max_value);
+int hash_function(void* v, int max_value);
 
 #endif

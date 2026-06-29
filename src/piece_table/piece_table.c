@@ -736,6 +736,46 @@ char pt_iterate(PieceIterator* pi)
 	return c;
 }
 
+char pt_iterate_backwards(PieceIterator* pi)
+{
+	if (pi == NULL || pi->node == NULL)
+	{
+		return '\0';
+	}
+
+	Piece* p = (Piece*) pi->node->elt;
+	char c = (*p->text)[p->start_index + pi->index];
+	if (pi->index == 0)
+	{
+		pi->index = 0;
+		if (pi->node->left != NULL)
+		{
+			pi->node = pi->node->left;
+			while (pi->node->right != NULL)
+			{
+				pi->node = pi->node->right;
+			}
+		}
+		else
+		{
+			Tree* prev = pi->node->prev;
+			while (prev != NULL && prev->left == pi->node)
+			{
+				pi->node = prev;
+				prev = prev->prev;
+			}
+			pi->node = prev;
+		}
+		pi->index = ((Piece*) pi->node->elt)->len - 1;
+	}
+	else
+	{
+		pi->index--;
+	}
+
+	return c;
+}
+
 int pt_get_line_index(PieceTable* pt, int line_index)
 {
 	if (pt == NULL || line_index < 0)
