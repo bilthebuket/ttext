@@ -13,6 +13,7 @@
 #include "io_tools.h"
 #include "line.h"
 #include "finder.h"
+#include "signature.h"
 
 static Tab* terminal;
 static char* listener_buf = NULL;
@@ -705,8 +706,70 @@ static void handle_enter(EditorState* es, int ch)
 			fclose(f);
 			t->tab_num_flags |= CHANGES_SAVED;
 		}
-		else if (!gb_strcmp(gb, start_index, end_index, "findreplace"))
+		else if (!gb_strcmp(gb, start_index, end_index, "flookup"))
 		{
+			if (only_one_arg)
+			{
+				print_message("usage: :flookup <function_name>");
+				return;
+			}
+
+			start_index = end_index + 1;
+			end_index++;
+			for (; gb_get(gb, end_index) != ' ' && gb_get(gb, end_index) != '\0'; end_index++) {}
+
+			char buf[end_index - start_index + 1];
+			for (int i = start_index; i < end_index; i++)
+			{
+				buf[i - start_index] = gb_get(gb, i);
+			}
+			buf[end_index - start_index] = '\0';
+
+			LinkedList* lst = hm_get(es->signatures, buf, &hash_function, NULL);
+			gb_goto(gb, gb->num_chars - 1);
+			for (int i = 0; ll_get_elt(lst, i) != NULL; i++)
+			{
+				Signature* s = (Signature*) ll_get_elt(lst, i);
+				int len1 = 0;
+				for (; s->file_name[len1] != '\0'; len1++) {}
+				int len2 = 0;
+				for (; s->signature[len2] != '\0'; len2++) {}
+				// the 3 covers the ':' ' ' and '\0'
+				char* text = malloc(sizeof(char) * (len1 + len2 + 3));
+				if (text == NULL)
+				{
+					return;
+				}
+
+				for (int i = 0; i < len1; i++)
+				{
+					text[i] = s->file_name[i];
+				}
+				text[len1] = ':';
+				text[len1 + 1] = ' ';
+				for (int i = 0; i < len2; i++)
+				{
+					text[i + len1 + 2] = s->signature[i];
+				}
+				text[len1 + len2 + 2] = '\0';
+
+				Line* l = malloc(sizeof(Line));
+				if (l == NULL)
+				{
+					free(text);
+					return;
+				}
+
+				l->gb = gb_create(text, -1);
+				if (l->gb == NULL)
+				{
+					free(l);
+					free(text);
+					return;
+				}
+
+				ll_insert(terminal->lines, l, terminal->lines->size - 1);
+			}
 
 		}
 

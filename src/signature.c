@@ -320,3 +320,22 @@ Signature* signature_create(char* signature, char* file_name)
 	}
 	return r;
 }
+
+void signature_free(void* v)
+{
+	if (v == NULL)
+	{
+		return;
+	}
+	Signature* s = (Signature*) v;
+
+	if (s->signature != NULL)
+	{
+		free(s->signature);
+	}
+	if (s->file_name != NULL)
+	{
+		free(s->file_name);
+	}
+	free(s);
+}

@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "io_tools.h"
+#include "signature.h"
 #include "normal_mode.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"
@@ -75,6 +76,12 @@ int es_init(EditorState* es, int argc, char* argv[])
 		es->active_tab_index = argc - 2;
 	}
 	es->mode = &normal_mode;
+	es->signatures = hm_create();
+	if (es->signatures == NULL)
+	{
+		es_uninit(es);
+		return 1;
+	}
 
 	return 0;
 }
@@ -90,6 +97,7 @@ void es_uninit(EditorState* es)
 	}
 	ll_free(es->tabs);
 	finder_free(es->finder);
+	hm_free(es->signatures, &free, &signature_free);
 }
 
 // TODO: use bitflags intead of bool array

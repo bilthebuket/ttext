@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "linked_list.h"
+#include "hash_map.h"
 #include "tab.h"
 #include "semaphore.h"
 
@@ -59,6 +60,7 @@ typedef struct EditorState
 	LinkedList* tabs;
 	Tab* active_tab;
 	Finder* finder;
+	HashMap* signatures;
 	sem_t sem;
 	int active_tab_index;
 	int flags;

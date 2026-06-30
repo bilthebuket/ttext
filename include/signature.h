@@ -15,5 +15,6 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 HashMap* initialize_signatures(void);
 Signature* signature_create(char* signature, char* file_name);
 bool signature_equals(void* v1, void* v2);
+void signature_free(void* v);
 
 #endif
