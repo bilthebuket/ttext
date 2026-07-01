@@ -18,6 +18,7 @@
 int main(int argc, char* argv[])
 {
 	screen_create();
+	print_message("initializing...");
 
 	EditorState es;
 	if (es_init(&es, argc, argv))
@@ -32,6 +33,8 @@ int main(int argc, char* argv[])
 	sem_post(&es.sem);
 
 	error_log = fopen("errors.log", "a");
+
+	print_message("normal mode");
 
 	while (!(es.flags & TERMINATE_FLAG))
 	{

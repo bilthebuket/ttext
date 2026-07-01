@@ -1,6 +1,7 @@
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
+#include <stdbool.h>
 #include "linked_list.h"
 
 #define INITIAL_SIZE 128

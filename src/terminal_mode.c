@@ -768,7 +768,8 @@ static void handle_enter(EditorState* es, int ch)
 					return;
 				}
 
-				ll_insert(terminal->lines, l, terminal->lines->size - 1);
+				ll_insert(terminal->lines, l, terminal->lines->size);
+				terminal->y++;
 			}
 
 		}

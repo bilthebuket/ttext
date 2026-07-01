@@ -255,8 +255,12 @@ void hm_free(HashMap* map, void (*key_free)(void*), void (*value_free)(void*))
 					(*value_free)(elt->value);
 				}
 				free(elt);
+				elt = (HashMapElt*) ll_rm(lst, 0);
 			}
 			ll_free(lst);
 		}
 	}
+
+	free(map->arr);
+	free(map);
 }

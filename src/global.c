@@ -76,7 +76,7 @@ int es_init(EditorState* es, int argc, char* argv[])
 		es->active_tab_index = argc - 2;
 	}
 	es->mode = &normal_mode;
-	es->signatures = hm_create();
+	es->signatures = initialize_signatures();
 	if (es->signatures == NULL)
 	{
 		es_uninit(es);

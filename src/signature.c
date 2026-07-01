@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <string.h>
 #include "signature.h"
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
@@ -19,6 +20,16 @@ bool signature_equals(void* v1, void* v2)
 	int i = 0;
 	for (; s1->file_name[i] != '\0' && s2->file_name[i] != '\0' && s1->file_name[i] == s2->file_name[i]; i++) {}
 	return s1->file_name[i] == '\0' && s2->file_name[i] == '\0';
+}
+
+bool function_name_equals(void* v1, void* v2)
+{
+	char* name1 = (char*) v1;
+	char* name2 = (char*) v2;
+
+	int i = 0;
+	for (; name1[i] != '\0' && name2[i] != '\0' && name1[i] == name2[i]; i++) {}
+	return name1[i] == '\0' && name2[i] == '\0';
 }
 
 void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_name, int index)
@@ -116,12 +127,8 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	c = pt_iterate_backwards(&pi);
 	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(&pi)) {}
 
-	while (c != ' ' && c != '\n' && c != '\0')
+	while (c == ' ' || c == '\n' || c == '\0' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
 	{
-		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
-		{
-			break;
-		}
 		c = pt_iterate_backwards(&pi);
 	}
 
@@ -134,6 +141,12 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	}
 	else
 	{
+		// we are flipping from backwards to forwards
+		// first iteratation we are looking at the char to the left of the terminating character (the ';', '}', '{', etc; whatever broke the while loop)
+		// second iteration we are looking at the terminating character
+		// third iteration we are looking at the first character thats actually part of the signature
+		c = pt_iterate(&pi);
+		c = pt_iterate(&pi);
 		c = pt_iterate(&pi);
 	}
 
@@ -149,14 +162,18 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		return;
 	}
 
+	i++;
 	int store = i;
 	for (; i < FUNCTION_NAME_BUFFER_SIZE; i++)
 	{
 		function_name_formatted[i - store] = function_name[i];
 	}
 
+	while (c == ' ' || c == '\n')
+	{
+		c = pt_iterate(&pi);
+	}
 	i = 0;
-	c = pt_iterate(&pi);
 	while (c != ';' && c != '{' && c != '}' && c != '\0' && i < FUNCTION_SIGNATURE_BUFFER_SIZE)
 	{
 		signature[i] = c;
@@ -164,7 +181,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		i++;
 	}
 
-	LinkedList* existing = hm_get(signatures, function_name_formatted, &hash_function, &signature_equals);
+	LinkedList* existing = hm_get(signatures, function_name_formatted, &hash_function, &function_name_equals);
 	Signature* existing_signature = NULL;
 
 	bool same = true;
@@ -175,18 +192,25 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	else
 	{
 		existing_signature = (Signature*) ll_get_elt(existing, 0);
-		i = 0;
-		for (; file_name[i] != '\0' && existing_signature->file_name[i] != '\0'; i++)
-		{
-			if (file_name[i] != existing_signature->file_name[i])
-			{
-				same = false;
-				break;
-			}
-		}
-		if (existing_signature->file_name[i] != '\0')
+		if (existing_signature == NULL)
 		{
 			same = false;
+		}
+		else
+		{
+			i = 0;
+			for (; file_name[i] != '\0' && existing_signature->file_name[i] != '\0'; i++)
+			{
+				if (file_name[i] != existing_signature->file_name[i])
+				{
+					same = false;
+					break;
+				}
+			}
+			if (existing_signature->file_name[i] != '\0')
+			{
+				same = false;
+			}
 		}
 	}
 
@@ -198,7 +222,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	}
 	else
 	{
-		// making a copy of file name to prevent scattered pointers and double frees
+		// making a copy of file name to prevent scattered references and double frees
 		int len = 0;
 		for (; file_name[len] != '\0'; len++) {}
 		len++;
@@ -255,26 +279,63 @@ static void add_signatures(HashMap* map, const char* file)
 		return;
 	}
 
-	int parenthesis_dif = 0;
-	for (size_t i = 0; i < size; i++)
+	PieceIterator pi;
+	if (!pt_iterator_init(pt, &pi, 0))
 	{
-		if (buf[i] == '{')
+		return;
+	}
+
+	char c = pt_iterate(&pi);
+	int brace_dif = 0;
+	for (int i = 0; c != '\0'; i++, c = pt_iterate(&pi))
+	{
+		if (c == '{')
 		{
-			if (parenthesis_dif == 0)
+			if (brace_dif == 0)
 			{
 				update_signatures(map, pt, file, i);
 			}
-			parenthesis_dif++;
+			brace_dif++;
 		}
-		else if (buf[i] == '}')
+		else if (c == '}')
 		{
-			parenthesis_dif--;
+			brace_dif--;
 		}
 	}
 }
 
+static char* concat_directory_path(const char* parent, const char* file)
+{
+	int len1 = 0;
+	int len2 = 0;
+	for (; parent[len1] != '\0'; len1++) {}
+	for (; file[len2] != '\0'; len2++) {}
+	// 2 = one for '\0' plus one for '/'
+	char* r = malloc(sizeof(char) * (len1 + len2 + 2));
+	if (r != NULL)
+	{
+		for (int i = 0; i < len1; i++)
+		{
+			r[i] = parent[i];
+		}
+		r[len1] = '/';
+		for (int i = 0; i < len2; i++)
+		{
+			r[i + len1 + 1] = file[i];
+		}
+		r[len1 + len2 + 1] = '\0';
+	}
+
+	return r;
+}
+
 static void initialize_signatures_helper(HashMap* map, const char* directory)
 {
+	if (directory == NULL)
+	{
+		return;
+	}
+
 	DIR* dir = opendir(directory);
 	if (dir == NULL)
 	{
@@ -285,15 +346,20 @@ static void initialize_signatures_helper(HashMap* map, const char* directory)
 	while ((entry = readdir(dir)) != NULL)
 	{
 		const char* name = entry->d_name;
-		int len = 0;
-		for (; name[len] != '\0'; len++) {}
-		if (len > 0 && name[len] == 'c' && name[len - 1] == '.')
+		char* path = concat_directory_path(directory, name);
+		if (path != NULL)
 		{
-			add_signatures(map, name);
-		}
-		else
-		{
-			initialize_signatures_helper(map, name);
+			int len = 0;
+			for (; path[len] != '\0'; len++) {}
+			if (len > 0 && path[len - 1] == 'c' && path[len - 2] == '.')
+			{
+				add_signatures(map, path);
+			}
+			else if (strcmp(name, ".") && strcmp(name, ".."))
+			{
+				initialize_signatures_helper(map, path);
+			}
+			free(path);
 		}
 	}
 
@@ -307,7 +373,7 @@ HashMap* initialize_signatures(void)
 	{
 		initialize_signatures_helper(r, ".");
 	}
-	return NULL;
+	return r;
 }
 
 Signature* signature_create(char* signature, char* file_name)
