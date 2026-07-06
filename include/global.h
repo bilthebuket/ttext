@@ -32,7 +32,6 @@
 #define CYAN_TEXT 7
 
 #define NUM_DATA_TYPES 14
-#define NUM_CONTROL_WORDS 11
 #define NUM_LITERALS 3
 
 #define CSI_ESC 1

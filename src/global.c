@@ -88,6 +88,7 @@ int es_init(EditorState* es, int argc, char* argv[])
 
 void es_uninit(EditorState* es)
 {
+	ci_uninit_arrays();
 	terminal_free(es);
 	sem_destroy(&es->sem);
 	while (es->tabs->size > 0)

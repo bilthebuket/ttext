@@ -20,6 +20,7 @@ typedef struct ColorIndexFinder
 } ColorIndexFinder;
 
 void ci_init_arrays(void);
+void ci_uninit_arrays(void);
 
 int pt_get_color(PieceTable* pt, int index);
 void pt_update_color_indices(PieceTable* pt, int index);

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
 #include "piece_table/undo.h"
@@ -8,13 +9,30 @@
 #include "global.h"
 
 #define MAX_HASH_VALUE 2000
+#define NUM_CONTROL_WORDS 13
 
 static bool chars_to_split_on[NUM_CHARS];
-static bool control_word_check[MAX_HASH_VALUE];
+static LinkedList* control_word_check[MAX_HASH_VALUE];
+static char* control_words[] = {"break", "case", "continue", "default", "do", "else", "for", "goto", "if", "return", "switch", "typedef", "while"};
 
 bool is_control_word(char* s)
 {
-	return control_word_check[hash_function(s, MAX_HASH_VALUE)];
+	LinkedList* lst = control_word_check[hash_function(s, MAX_HASH_VALUE)];
+	if (lst != NULL)
+	{
+		for (int i = 0; i < lst->size; i++)
+		{
+			char* str = ll_get_elt(lst, i);
+			if (str != NULL)
+			{
+				if (!strcmp(s, str))
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 void ci_init_arrays(void)
@@ -35,21 +53,31 @@ void ci_init_arrays(void)
 	chars_to_split_on[','] = true;
 	for (int i = 0; i < MAX_HASH_VALUE; i++)
 	{
-		control_word_check[i] = false;
+		control_word_check[i] = NULL;
 	}
-	control_word_check[hash_function("break", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("case", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("continue", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("default", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("do", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("else", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("for", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("goto", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("if", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("return", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("switch", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("typedef", MAX_HASH_VALUE)] = true;
-	control_word_check[hash_function("while", MAX_HASH_VALUE)] = true;
+	for (int i = 0; i < NUM_CONTROL_WORDS; i++)
+	{
+		if (control_word_check[hash_function(control_words[i], MAX_HASH_VALUE)] == NULL)
+		{
+			control_word_check[hash_function(control_words[i], MAX_HASH_VALUE)] = ll_create();
+		}
+		ll_insert(control_word_check[hash_function(control_words[i], MAX_HASH_VALUE)], control_words[i], 0);
+	}
+}
+void ci_uninit_arrays(void)
+{
+	for (int i = 0; i < NUM_CONTROL_WORDS; i++)
+	{
+		LinkedList* lst = control_word_check[hash_function(control_words[i], MAX_HASH_VALUE)];
+		if (lst != NULL)
+		{
+			while (lst->size > 0)
+			{
+				ll_rm(lst, 0);
+			}
+			ll_free(lst);
+		}
+	}
 }
 
 static void update_until_no_update_occurs(PieceTable* pt, ColorIndexFinder f, int len)
@@ -539,7 +567,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				c = pt_iterate(&pi);
 			}
 			buf[i] = '\0';
-			if (control_word_check[hash_function(&buf[0], MAX_HASH_VALUE)])
+			if (is_control_word(&buf[0]))
 			{
 				ci->color = MAGENTA_TEXT;
 				return;
