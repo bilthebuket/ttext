@@ -17,6 +17,13 @@
 
 int main(int argc, char* argv[])
 {
+	error_log = fopen("errors.log", "a");
+	if (error_log == NULL)
+	{
+		fprintf(stderr, "could not open error log");
+		return 1;
+	}
+
 	screen_create();
 	print_message("initializing...");
 
@@ -31,8 +38,6 @@ int main(int argc, char* argv[])
 	print_screen(&es);
 	refresh();
 	sem_post(&es.sem);
-
-	error_log = fopen("errors.log", "a");
 
 	print_message("normal mode");
 

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <dirent.h>
@@ -86,7 +87,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 			return;
 		}
 		c = pt_iterate_backwards(&pi);
-		if (parenthesis_balance == 0)
+		if (parenthesis_balance == 0 || c == '\0')
 		{
 			break;
 		}
@@ -404,4 +405,32 @@ void signature_free(void* v)
 		free(s->file_name);
 	}
 	free(s);
+}
+
+void print_all_signatures(HashMap* signatures, FILE* f)
+{
+	if (signatures == NULL || f == NULL)
+	{
+		return;
+	}
+
+	for (int i = 0; i < signatures->arr_size; i++)
+	{
+		LinkedList* lst = (LinkedList*) signatures->arr[i];
+		if (lst == NULL)
+		{
+			continue;
+		}
+		for (int j = 0; j < lst->size; j++)
+		{
+			HashMapElt* elt = (HashMapElt*) ll_get_elt(lst, j);
+			Signature* s = (Signature*) elt->value;
+			char* key = (char*) elt->key;
+			if (s != NULL && s->file_name != NULL && s->signature != NULL)
+			{
+				fprintf(f, "index %d | function name %s | signature %s | file_name %s\n", i, key, s->signature, s->file_name);
+				fflush(f);
+			}
+		}
+	}
 }

@@ -1,6 +1,7 @@
 #ifndef SIGNATURE_H
 #define SIGNATURE_H
 
+#include <stdio.h>
 #include "hash_map.h"
 #include "piece_table/piece_table.h"
 
@@ -19,5 +20,7 @@ bool signature_equals(void* v1, void* v2);
 void signature_free(void* v);
 
 bool function_name_equals(void* v1, void* v2);
+
+void print_all_signatures(HashMap* signatures, FILE* f);
 
 #endif
