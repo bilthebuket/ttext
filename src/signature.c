@@ -13,6 +13,11 @@
 #define FUNCTION_NAME_BUFFER_SIZE 100
 #define FUNCTION_SIGNATURE_BUFFER_SIZE 200
 
+static bool is_valid_name_character(char c)
+{
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '*' || c == '[' || c == ']';
+}
+
 bool signature_equals(void* v1, void* v2)
 {
 	Signature* s1 = (Signature*) v1;
@@ -33,44 +38,48 @@ bool function_name_equals(void* v1, void* v2)
 	return name1[i] == '\0' && name2[i] == '\0';
 }
 
-void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_name, int index)
+static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int index, char* function_name, int function_name_size)
 {
-	if (signatures == NULL || pt == NULL)
+	if (!pt_iterator_init(pt, pi, index))
 	{
-		return;
+		return -1;
 	}
 
-	PieceIterator pi;
-	if (!pt_iterator_init(pt, &pi, index))
-	{
-		return;
-	}
-
-	char c = pt_iterate(&pi);
+	char c = pt_iterate(pi);
 	int i = index;
-	for (; c != ';' && c != '}' && c != '{' && c != '\0'; c = pt_iterate(&pi), i++) {}
+	for (; c != ';' && c != '}' && c != '{' && c != '\0'; c = pt_iterate(pi), i++) {}
 
-	if (!pt_iterator_init(pt, &pi, i - 1))
+	if (c == '\0')
 	{
-		return;
+		if (!pt_iterator_init(pt, pi, i - 1))
+		{
+			return -1;
+		}
+		index = i - 1;
 	}
-
-	c = pt_iterate_backwards(&pi);
-	c = pt_iterate_backwards(&pi);
+	else
+	{
+		c = pt_iterate_backwards(pi);
+		c = pt_iterate_backwards(pi);
+		c = pt_iterate_backwards(pi);
+		index = i - 1;
+	}
 	while (1)
 	{
 		if (c == '\n' || c == ' ')
 		{
-			c = pt_iterate_backwards(&pi);
+			c = pt_iterate_backwards(pi);
+			index--;
 			continue;
 		}
 		if (c == ')')
 		{
 			break;
 		}
-		return;
+		return -1;
 	}
-	c = pt_iterate_backwards(&pi);
+	c = pt_iterate_backwards(pi);
+	index--;
 	int parenthesis_balance = 1;
 	while (1)
 	{
@@ -84,71 +93,106 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		}
 		else if (c == '}' || c == '{' || c == ';')
 		{
-			return;
+			return -1;
 		}
-		c = pt_iterate_backwards(&pi);
+		c = pt_iterate_backwards(pi);
+		index--;
 		if (parenthesis_balance == 0 || c == '\0')
 		{
 			break;
 		}
 	}
 
-	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(&pi)) {}
+	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
-	char function_name[FUNCTION_NAME_BUFFER_SIZE];
-	function_name[FUNCTION_NAME_BUFFER_SIZE - 1] = '\0';
-	i = FUNCTION_NAME_BUFFER_SIZE - 2;
-	for (; i >= 0 && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'); i--, c = pt_iterate_backwards(&pi))
+	function_name[function_name_size - 1] = '\0';
+	i = function_name_size - 2;
+	for (; i >= 0 && is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--)
 	{
 		function_name[i] = c;
 	}
 
 	if (c != ' ' && c != '\n')
 	{
-		return;
+		return -1;
 	}
 
 	if (is_control_word(&function_name[i + 1]))
 	{
-		return;
+		return -1;
 	}
 
-	c = pt_iterate_backwards(&pi);
-	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(&pi)) {}
+	c = pt_iterate_backwards(pi);
+	index--;
+	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
 	while (c != ' ' && c != '\n' && c != '\0')
 	{
-		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'))
+		if (!is_valid_name_character(c))
 		{
-			return;
+			return -1;
 		}
-		c = pt_iterate_backwards(&pi);
+		c = pt_iterate_backwards(pi);
+		index--;
 	}
 
-	c = pt_iterate_backwards(&pi);
-	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(&pi)) {}
+	c = pt_iterate_backwards(pi);
+	index--;
+	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
-	while (c == ' ' || c == '\n' || c == '\0' || (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_')
+	while (c == ' ' || c == '\n' || c == '\0' || is_valid_name_character(c))
 	{
-		c = pt_iterate_backwards(&pi);
+		c = pt_iterate_backwards(pi);
+		index--;
 	}
 
 	if (c == '\0')
 	{
-		if (!pt_iterator_init(pt, &pi, 0))
+		if (!pt_iterator_init(pt, pi, 0))
 		{
-			return;
+			return -1;
 		}
+		index = 0;
 	}
-	else
+	else if (c == ';' || c == '}' || c == '{')
 	{
 		// we are flipping from backwards to forwards
 		// first iteratation we are looking at the char to the left of the terminating character (the ';', '}', '{', etc; whatever broke the while loop)
 		// second iteration we are looking at the terminating character
 		// third iteration we are looking at the first character thats actually part of the signature
-		c = pt_iterate(&pi);
-		c = pt_iterate(&pi);
-		c = pt_iterate(&pi);
+		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		index++;
+	}
+	else
+	{
+		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		index++;
+		while (c != '\n' && c != '\0')
+		{
+			c = pt_iterate(pi);
+			index++;
+		}
+	}
+
+	return index;
+}
+
+void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_name, int index)
+{
+	if (signatures == NULL || pt == NULL)
+	{
+		return;
+	}
+
+	PieceIterator pi;
+	char function_name[FUNCTION_NAME_BUFFER_SIZE];
+	if (iterate_to_signature_start(pt, &pi, index, function_name, FUNCTION_NAME_BUFFER_SIZE) < 0)
+	{
+		return;
 	}
 
 	char* function_name_formatted = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
@@ -199,16 +243,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		}
 		else
 		{
-			i = 0;
-			for (; file_name[i] != '\0' && existing_signature->file_name[i] != '\0'; i++)
-			{
-				if (file_name[i] != existing_signature->file_name[i])
-				{
-					same = false;
-					break;
-				}
-			}
-			if (existing_signature->file_name[i] != '\0')
+			if (strcmp(file_name, existing_signautre->file_name))
 			{
 				same = false;
 			}
@@ -434,3 +469,151 @@ void print_all_signatures(HashMap* signatures, FILE* f)
 		}
 	}
 }
+
+void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_name, int index)
+{
+	if (signatures == NULL || pt == NULL || index < 0)
+	{
+		return;
+	}
+
+	PieceIterator pi;
+	char function_name[FUNCTION_NAME_BUFFER_SIZE];
+	int start_index = iterate_to_signature_start(pt, &pi, index, function_name, FUNCTION_NAME_BUFFER_SIZE);
+	if (start_index < 0)
+	{
+		return;
+	}
+
+	if (!pt_iterator_init(pt, &pi, start_index))
+	{
+		return;
+	}
+	int index_we_are_at = start_index;
+	int start_of_function_name = start_index;
+	char c = pt_iterate(&pi);
+
+	while ((is_valid_name_character(c) || c == ' ' || c == '\n') && index_we_are_at != index)
+	{
+		if (c == ' ' || c == '\n')
+		{
+			c = pt_iterate(&pi);
+			if (is_valid_name_chararacter(c))
+			{
+				start_of_function_name = index_we_are_at;
+			}
+		}
+		else
+		{
+			c = pt_iterate(&pi);
+		index_we_are_at++;
+	}
+
+	if (index_we_are_at == index && is_valid_name_character(c))
+	{
+		while (is_valid_name_character(c))
+		{
+			c = pt_iterate(&pi);
+		}
+		while (c == ' ' || c == '\n')
+		{
+			c = pt_iterate(&pi);
+		}
+
+		if (c == '(')
+		{
+			// the function name has changed so we need to re enter it into the hash map
+
+			char old_function_name[FUNCTION_NAME_BUFFER_SIZE];
+			char* new_function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
+			if (new_function == NULL)
+			{
+				return;
+			}
+
+			int i = FUNCTION_NAME_BUFFER_SIZE - 1;
+			index_we_are_at = start_of_function_name;
+			int delta = 0;
+			for (; function_name[i] != '\0'; i--, index_we_are_at++)
+			{
+				new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = function_name[i];
+				if (index_we_are_at == index)
+				{
+					delta--;
+					continue;
+				}
+				old_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i + delta] = function_name[i];
+			}
+			new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = '\0';
+
+			char* new_signature = malloc(sizeof(char) * FUNCTION_SIGNATURE_BUFFER_SIZE);
+			if (new_signature == NULL)
+			{
+				free(new_function_name);
+				return;
+			}
+
+			if (!pt_iterator_init(pt, &pi, start_index))
+			{
+				free(new_function_name);
+				free(new_signature);
+				return;
+			}
+
+			c = pt_iterate(&pi);
+			i = 0;
+			while (c != '{' && c != '\0' && i < FUNCTION_SIGNATURE_BUFFER_SIZE - 1)
+			{
+				new_signature[i] = c;
+				c = pt_iterate(&pi);
+				i++;
+			}
+			new_signature[i] = '\0';
+
+			LinkedList* lst = hm_rm(signatures, old_function_name, &hash_function, &function_name_equals, &free);
+			bool need_to_make_another = false;
+			while (lst->size > 0)
+			{
+				Signature* s = (Signature*) ll_get_elt(lst, 0);
+				if (need_to_make_another)
+				{
+					char* dupe = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
+					i = 0;
+					for (; new_function_name[i] != '\0'; i++)
+					{
+						dupe[i] = new_function_name[i];
+					}
+					dupe[i] = '\0';
+					dupe = new_function_name;
+				}
+
+				if (!strcmp(s->file_name, file_name))
+				{
+					free(s->signature);
+					s->signature = new_signature;
+					hm_insert(signatures, new_function_name, s, &hash_function);
+					need_to_make_another = true;
+				}
+				else
+				{
+					hm_insert(signatures, new_function_name, s, &hash_function);
+					need_to_make_another = true;
+				}
+			}
+
+			ll_free(lst);
+		}
+	}
+
+
+	if (c == '(')
+	{
+	}
+	else
+	{
+
+	}
+}
+
+void handle_character_removal(HashMap* signatures, PieceTable* pt, int index);
+

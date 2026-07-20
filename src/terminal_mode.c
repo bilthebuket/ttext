@@ -725,7 +725,7 @@ static void handle_enter(EditorState* es, int ch)
 			}
 			buf[end_index - start_index] = '\0';
 
-			LinkedList* lst = hm_get(es->signatures, buf, &hash_function, NULL);
+			LinkedList* lst = hm_get(es->signatures, buf, &hash_function, &function_name_equals);
 			gb_goto(gb, gb->num_chars - 1);
 			for (int i = 0; ll_get_elt(lst, i) != NULL; i++)
 			{
