@@ -26,6 +26,6 @@ void print_all_signatures(HashMap* signatures, FILE* f);
 // index is the index in pt of the character that was just added
 void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_name, int index);
 // index is the index where the removed character used to be (now points to the character to the right of the removed character)
-void handle_character_removal(HashMap* signatures, PieceTable* pt, int index);
+void handle_character_removal(HashMap* signatures, PieceTable* pt, char* file_name, int index);
 
 #endif

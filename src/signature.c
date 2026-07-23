@@ -472,7 +472,7 @@ void print_all_signatures(HashMap* signatures, FILE* f)
 
 void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_name, int index)
 {
-	if (signatures == NULL || pt == NULL || index < 0)
+	if (signatures == NULL || pt == NULL || file_name == NULL || index < 0)
 	{
 		return;
 	}
@@ -498,6 +498,7 @@ void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_n
 		if (c == ' ' || c == '\n')
 		{
 			c = pt_iterate(&pi);
+			index_we_are_at++;
 			if (is_valid_name_chararacter(c))
 			{
 				start_of_function_name = index_we_are_at;
@@ -506,11 +507,14 @@ void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_n
 		else
 		{
 			c = pt_iterate(&pi);
-		index_we_are_at++;
+			index_we_are_at++;
+		}
 	}
 
 	if (index_we_are_at == index && is_valid_name_character(c))
 	{
+		bool update_function_name = false;
+
 		while (is_valid_name_character(c))
 		{
 			c = pt_iterate(&pi);
@@ -523,97 +527,183 @@ void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_n
 		if (c == '(')
 		{
 			// the function name has changed so we need to re enter it into the hash map
+			update_function_name = true;
+		}
 
-			char old_function_name[FUNCTION_NAME_BUFFER_SIZE];
-			char* new_function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
-			if (new_function == NULL)
+		char* old_function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
+		if (old_function_name == NULL)
+		{
+			return;
+		}
+		char* new_function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
+		if (new_function_name == NULL)
+		{
+			free(old_function_name);
+			return;
+		}
+
+		int i = FUNCTION_NAME_BUFFER_SIZE - 1;
+		index_we_are_at = start_of_function_name;
+		int delta = 0;
+		for (; function_name[i] != '\0'; i--, index_we_are_at++)
+		{
+			new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = function_name[i];
+			if (index_we_are_at == index)
 			{
-				return;
+				delta--;
+				continue;
 			}
+			old_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i + delta] = function_name[i];
+		}
+		new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = '\0';
 
-			int i = FUNCTION_NAME_BUFFER_SIZE - 1;
-			index_we_are_at = start_of_function_name;
-			int delta = 0;
-			for (; function_name[i] != '\0'; i--, index_we_are_at++)
-			{
-				new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = function_name[i];
-				if (index_we_are_at == index)
-				{
-					delta--;
-					continue;
-				}
-				old_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i + delta] = function_name[i];
-			}
-			new_function_name[FUNCTION_NAME_BUFFER_SIZE - 1 - i] = '\0';
+		char* new_signature = malloc(sizeof(char) * FUNCTION_SIGNATURE_BUFFER_SIZE);
+		if (new_signature == NULL)
+		{
+			free(old_function_name);
+			free(new_function_name);
+			return;
+		}
 
-			char* new_signature = malloc(sizeof(char) * FUNCTION_SIGNATURE_BUFFER_SIZE);
-			if (new_signature == NULL)
-			{
-				free(new_function_name);
-				return;
-			}
+		if (!pt_iterator_init(pt, &pi, start_index))
+		{
+			free(old_function_name);
+			free(new_function_name);
+			free(new_signature);
+			return;
+		}
 
-			if (!pt_iterator_init(pt, &pi, start_index))
+		c = pt_iterate(&pi);
+		i = 0;
+		while (c != '{' && c != '\0' && i < FUNCTION_SIGNATURE_BUFFER_SIZE - 1)
+		{
+			new_signature[i] = c;
+			c = pt_iterate(&pi);
+			i++;
+		}
+		new_signature[i] = '\0';
+
+		LinkedList* lst;
+		if (update_function_name)
+		{
+			lst = hm_rm(signatures, old_function_name, &hash_function, &function_name_equals, &free);
+		}
+		else
+		{
+			lst = hm_get(signatures, old_function_name, &hash_function, &function_name_equals, &free);
+		}
+
+		if (lst == NULL)
+		{
+			int len = 0;
+			for (; file_name[len] != '\0'; len++) {}
+			len++;
+
+			char* file_name_dupe = malloc(sizeof(char) * len);
+			if (file_name_dupe == NULL)
 			{
+				free(old_function_name);
 				free(new_function_name);
 				free(new_signature);
 				return;
 			}
 
-			c = pt_iterate(&pi);
-			i = 0;
-			while (c != '{' && c != '\0' && i < FUNCTION_SIGNATURE_BUFFER_SIZE - 1)
+			for (int j = 0; file_name[j] != '\0'; j++)
 			{
-				new_signature[i] = c;
-				c = pt_iterate(&pi);
-				i++;
+				file_name_dupe[j] = file_name[j];
 			}
-			new_signature[i] = '\0';
+			file_name_dupe[len - 1] = '\0';
 
-			LinkedList* lst = hm_rm(signatures, old_function_name, &hash_function, &function_name_equals, &free);
-			bool need_to_make_another = false;
+			Signature* s = signature_create(new_function_name, file_name_dupe);
+			if (s == NULL)
+			{
+				free(old_function_name);
+				free(new_function_name);
+				free(new_signature);
+				free(file_name_dupe);
+				return;
+			}
+
+			hm_insert(signatures, new_function_name, s, &hash_function);
+		}
+		else
+		{
+			bool duplicate = false;
+			bool added = false;
 			while (lst->size > 0)
 			{
-				Signature* s = (Signature*) ll_get_elt(lst, 0);
-				if (need_to_make_another)
+				Signature* s = (Signature*) ll_rm(lst, 0);
+				if (duplicate)
 				{
 					char* dupe = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
-					i = 0;
-					for (; new_function_name[i] != '\0'; i++)
+					if (dupe == NULL)
 					{
-						dupe[i] = new_function_name[i];
+						if (!added)
+						{
+							free(new_function_name);
+							free(new_signature);
+						}
+						return;
+					}
+
+					i = 0;
+					for (; old_function_name[i] != '\0'; i++)
+					{
+						dupe[i] = old_function_name[i];
 					}
 					dupe[i] = '\0';
-					dupe = new_function_name;
+					old_function_name = dupe;
+					duplicate = false;
 				}
 
 				if (!strcmp(s->file_name, file_name))
 				{
-					free(s->signature);
-					s->signature = new_signature;
-					hm_insert(signatures, new_function_name, s, &hash_function);
-					need_to_make_another = true;
+					if (!added)
+					{
+						free(s->signature);
+						s->signature = new_signature;
+						if (update_function_name)
+						{
+							hm_insert(signatures, new_function_name, s, &hash_function);
+						}
+						added = true;
+					}
+					else
+					{
+						signature_free(s);
+					}
 				}
-				else
+				else if
 				{
-					hm_insert(signatures, new_function_name, s, &hash_function);
-					need_to_make_another = true;
+					if (update_function_name)
+					{
+						hm_insert(signatures, old_function_name, s, &hash_function);
+						duplicate = true;
+					}
 				}
+			}
+
+			if (!duplicate)
+			{
+				free(old_function_name);
+			}
+			if (!added)
+			{
+				free(new_function_name);
+				free(new_signature);
 			}
 
 			ll_free(lst);
 		}
 	}
-
-
-	if (c == '(')
-	{
-	}
-	else
-	{
-
-	}
 }
 
-void handle_character_removal(HashMap* signatures, PieceTable* pt, int index);
+void handle_character_removal(HashMap* signatures, PieceTable* pt, char* file_name, int index)
+{
+	if (signatures == NULL || pt == NULL || file_name == NULL || index < 0)
+	{
+		return;
+	}
 
+	
+}
