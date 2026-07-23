@@ -21,11 +21,14 @@ void signature_free(void* v);
 
 bool function_name_equals(void* v1, void* v2);
 
-void print_all_signatures(HashMap* signatures, FILE* f);
+// checks if index is within a signature, if true, then store_function_name will have the function name for that signature
+// if false store_function_name is undefined
+bool in_signature_huh(HashMap* signatures, PieceTable* pt, int index);
 
-// index is the index in pt of the character that was just added
-void handle_character_addition(HashMap* Signatures, PieceTable* pt, char* file_name, int index);
-// index is the index where the removed character used to be (now points to the character to the right of the removed character)
-void handle_character_removal(HashMap* signatures, PieceTable* pt, char* file_name, int index);
+// file_name should be a single file name, or NULL to remove all instances of these function names
+void remove_signatures(HashMap* signatures, LinkedList* function_names, char* file_name);
+void remove_signature(HashMap* signatures, char* function_name, char* file_name);
+
+void print_all_signatures(HashMap* signatures, FILE* f);
 
 #endif

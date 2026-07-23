@@ -48,6 +48,8 @@
 
 #define NUM_PRIME_NUMBERS 8
 
+#define FUNCTION_NAME_BUFFER_SIZE 100
+#define FUNCTION_SIGNATURE_BUFFER_SIZE 200
 
 #include "finder.h"
 

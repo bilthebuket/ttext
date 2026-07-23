@@ -108,7 +108,7 @@ void hm_insert(HashMap* map, void* key, void* value, int (*hash)(void*, int))
 	}
 }
 
-LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*equals)(void*, void*), void (*key_free)(void*))
+LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool), void (*key_free)(void*))
 {
 	if (map == NULL || hash == NULL)
 	{
@@ -140,9 +140,13 @@ LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*equal
 			}
 
 			bool are_keys_equal = true;
-			if (equals != NULL)
+			if (key_equals != NULL)
 			{
-				are_keys_equal = (*equals)(key, elt->key);
+				are_keys_equal = (*key_equals)(key, elt->key);
+			}
+			if (elt_equals != NULL)
+			{
+				are_keys_equal &&= (*elt_equals)(elt->value, true);
 			}
 
 			if (are_keys_equal)
@@ -165,7 +169,7 @@ LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*equal
 	return r;
 }
 
-LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*equals)(void*, void*))
+LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool))
 {
 	if (map == NULL || hash == NULL)
 	{
@@ -197,9 +201,13 @@ LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*equa
 			}
 
 			bool are_keys_equal = true;
-			if (equals != NULL)
+			if (key_equals != NULL)
 			{
-				are_keys_equal = (*equals)(key, elt->key);
+				are_keys_equal = (*key_equals)(key, elt->key);
+			}
+			if (elt_equals != NULL)
+			{
+				are_keys_equals &&= (*elt_equals)(elt->value, true);
 			}
 
 			if (are_keys_equal)
