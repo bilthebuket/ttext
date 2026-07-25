@@ -727,49 +727,53 @@ static void handle_enter(EditorState* es, int ch)
 
 			LinkedList* lst = hm_get(es->signatures, buf, &hash_function, &function_name_equals, NULL);
 			gb_goto(gb, gb->num_chars - 1);
-			for (int i = 0; ll_get_elt(lst, i) != NULL; i++)
+			if (lst != NULL)
 			{
-				Signature* s = (Signature*) ll_get_elt(lst, i);
-				int len1 = 0;
-				for (; s->file_name[len1] != '\0'; len1++) {}
-				int len2 = 0;
-				for (; s->signature[len2] != '\0'; len2++) {}
-				// the 3 covers the ':' ' ' and '\0'
-				char* text = malloc(sizeof(char) * (len1 + len2 + 3));
-				if (text == NULL)
+				while (lst->size > 0)
 				{
-					return;
-				}
+					Signature* s = (Signature*) ll_rm(lst, 0);
+					int len1 = 0;
+					for (; s->file_name[len1] != '\0'; len1++) {}
+					int len2 = 0;
+					for (; s->signature[len2] != '\0'; len2++) {}
+					// the 3 covers the ':' ' ' and '\0'
+					char* text = malloc(sizeof(char) * (len1 + len2 + 3));
+					if (text == NULL)
+					{
+						continue;
+					}
 
-				for (int i = 0; i < len1; i++)
-				{
-					text[i] = s->file_name[i];
-				}
-				text[len1] = ':';
-				text[len1 + 1] = ' ';
-				for (int i = 0; i < len2; i++)
-				{
-					text[i + len1 + 2] = s->signature[i];
-				}
-				text[len1 + len2 + 2] = '\0';
+					for (int i = 0; i < len1; i++)
+					{
+						text[i] = s->file_name[i];
+					}
+					text[len1] = ':';
+					text[len1 + 1] = ' ';
+					for (int i = 0; i < len2; i++)
+					{
+						text[i + len1 + 2] = s->signature[i];
+					}
+					text[len1 + len2 + 2] = '\0';
 
-				Line* l = malloc(sizeof(Line));
-				if (l == NULL)
-				{
-					free(text);
-					return;
-				}
+					Line* l = malloc(sizeof(Line));
+					if (l == NULL)
+					{
+						free(text);
+						continue;
+					}
 
-				l->gb = gb_create(text, -1);
-				if (l->gb == NULL)
-				{
-					free(l);
-					free(text);
-					return;
-				}
+					l->gb = gb_create(text, -1);
+					if (l->gb == NULL)
+					{
+						free(l);
+						free(text);
+						continue;
+					}
 
-				ll_insert(terminal->lines, l, terminal->lines->size);
-				terminal->y++;
+					ll_insert(terminal->lines, l, terminal->lines->size);
+					terminal->y++;
+				}
+				ll_free(lst);
 			}
 
 		}

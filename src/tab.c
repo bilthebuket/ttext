@@ -44,7 +44,7 @@ Tab* tab_create(char* fname)
 
 	if (f == NULL)
 	{
-		r->pt = pt_create(NULL, -1);
+		r->pt = pt_create(NULL, -1, false);
 		return r;
 	}
 
@@ -71,11 +71,11 @@ Tab* tab_create(char* fname)
 
 	if (buf[0] == '\0')
 	{
-		r->pt = pt_create(NULL, -1);
+		r->pt = pt_create(NULL, -1, false);
 	}
 	else
 	{
-		r->pt = pt_create(buf, size);
+		r->pt = pt_create(buf, size, true);
 	}
 
 	fclose(f);

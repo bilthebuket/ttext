@@ -59,7 +59,7 @@ char pt_get(PieceTable* pt, int index);
 bool pt_iterator_init(PieceTable* pt, PieceIterator* pi, int index);
 char pt_iterate(PieceIterator* pi);
 char pt_iterate_backwards(PieceIterator* pi);
-PieceTable* pt_create(char* buf, int len);
+PieceTable* pt_create(char* buf, int len, bool do_color_indices);
 void pt_free(PieceTable* pt);
 char* pt_flatten_to_str(PieceTable* pt);
 

@@ -228,7 +228,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	}
 	else
 	{
-		existing_signature = (Signature*) ll_get_elt(existing, 0);
+		existing_signature = (Signature*) ll_rm(existing, 0);
 		if (existing_signature == NULL)
 		{
 			same = false;
@@ -240,6 +240,12 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 				same = false;
 			}
 		}
+
+		while (existing->size > 0)
+		{
+			ll_rm(existing, 0);
+		}
+		ll_free(existing);
 	}
 
 	if (same)
@@ -301,7 +307,7 @@ static void add_signatures(HashMap* map, const char* file)
 	}
 	size = fread(buf, sizeof(char), size, f);
 
-	PieceTable* pt = pt_create(buf, size);
+	PieceTable* pt = pt_create(buf, size, false);
 	if (pt == NULL)
 	{
 		return;
@@ -330,6 +336,8 @@ static void add_signatures(HashMap* map, const char* file)
 			brace_dif--;
 		}
 	}
+
+	pt_free(pt);
 }
 
 static char* concat_directory_path(const char* parent, const char* file)

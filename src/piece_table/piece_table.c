@@ -240,7 +240,7 @@ void piece_update_info(Tree* t)
 	}
 }
 
-PieceTable* pt_create(char* buf, int len)
+PieceTable* pt_create(char* buf, int len, bool do_color_indices)
 {
 	PieceTable* r = malloc(sizeof(PieceTable));
 	if (r != NULL)
@@ -323,7 +323,7 @@ PieceTable* pt_create(char* buf, int len)
 
 		r->color_indices = NULL;
 
-		if (len > 0)
+		if (len > 0 && do_color_indices)
 		{
 			ColorIndex* ci;
 			ci = ci_create(CYAN_TEXT, len, len);
