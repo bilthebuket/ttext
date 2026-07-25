@@ -171,6 +171,13 @@ static void handle_i(EditorState* es)
 	t->tab_num_flags &= ~CHANGES_SAVED;
 	print_message("Insert Mode");
 	pt_undo_insert(t->pt);
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index >= 0)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	}
+
 	es->mode = &insert_mode;
 }
 
@@ -201,6 +208,13 @@ static void handle_a(EditorState* es)
 		move_cursor_to_tab(t);
 	}
 	pt_undo_insert(t->pt);
+
+	line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index >= 0)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	}
+
 	es->mode = &insert_mode;
 }
 
@@ -263,6 +277,13 @@ static void handle_o(EditorState* es)
 
 	t->y++;
 	t->x = indent_line(t, t->y);
+
+	line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index >= 0)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	}
+
 	print_tab(t);
 	move_cursor_to_tab(t);
 	es->mode = &insert_mode;
@@ -284,6 +305,8 @@ static void handle_x(EditorState* es)
 		return;
 	}
 
+	su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+
 	if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 	{
 		t->tab_num_flags &= ~CHANGES_SAVED;
@@ -301,6 +324,9 @@ static void handle_x(EditorState* es)
 		print_line(t, t->y);
 
 		es->flags |= UPDATE_FINDER_FLAG;
+
+		su_handle_deletion(&(t->su), line_index + t->x);
+		su_execute(es->signatures, t->pt, &(t->su), t->fname);
 	}
 }
 

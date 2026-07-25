@@ -144,9 +144,9 @@ LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_e
 			{
 				are_keys_equal = (*key_equals)(key, elt->key);
 			}
-			if (elt_equals != NULL)
+			if (elt_equals != NULL && are_keys_equal)
 			{
-				are_keys_equal &&= (*elt_equals)(elt->value, true);
+				are_keys_equal = (*elt_equals)(elt->value, true);
 			}
 
 			if (are_keys_equal)
@@ -205,9 +205,9 @@ LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_
 			{
 				are_keys_equal = (*key_equals)(key, elt->key);
 			}
-			if (elt_equals != NULL)
+			if (elt_equals != NULL && are_keys_equal)
 			{
-				are_keys_equals &&= (*elt_equals)(elt->value, true);
+				are_keys_equal = (*elt_equals)(elt->value, true);
 			}
 
 			if (are_keys_equal)

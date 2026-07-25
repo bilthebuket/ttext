@@ -102,12 +102,12 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 
 	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
-	function_name[function_name_size - 1] = '\0';
-	i = function_name_size - 2;
+	i = function_name_size - 1;
 	for (; i >= 0 && is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--)
 	{
 		function_name[i] = c;
 	}
+	function_name[i] = '\0';
 
 	if (c != ' ' && c != '\n')
 	{
@@ -156,8 +156,7 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 		// we are flipping from backwards to forwards
 		// first iteratation we are looking at the char to the left of the terminating character (the ';', '}', '{', etc; whatever broke the while loop)
 		// second iteration we are looking at the terminating character
-		// third iteration we are looking at the first character thats actually part of the signature
-		c = pt_iterate(pi);
+		// when the caller of this function then calls pt_iterate again, they will get the first character of the signature
 		c = pt_iterate(pi);
 		c = pt_iterate(pi);
 		index++;
@@ -166,13 +165,7 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 	{
 		c = pt_iterate(pi);
 		c = pt_iterate(pi);
-		c = pt_iterate(pi);
 		index++;
-		while (c != '\n' && c != '\0')
-		{
-			c = pt_iterate(pi);
-			index++;
-		}
 	}
 
 	return index;
@@ -204,13 +197,15 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		return;
 	}
 
-	i++;
+	int i = FUNCTION_NAME_BUFFER_SIZE - 1;
 	int store = i;
-	for (; i < FUNCTION_NAME_BUFFER_SIZE; i++)
+	for (; i >= 0 && function_name[i] != '\0'; i--)
 	{
-		function_name_formatted[i - store] = function_name[i];
+		function_name_formatted[store - i] = function_name[i];
 	}
+	function_name_formatted[store - i] = '\0';
 
+	char c = pt_iterate(&pi);
 	while (c == ' ' || c == '\n')
 	{
 		c = pt_iterate(&pi);
@@ -240,7 +235,7 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 		}
 		else
 		{
-			if (strcmp(file_name, existing_signautre->file_name))
+			if (strcmp(file_name, existing_signature->file_name))
 			{
 				same = false;
 			}
@@ -467,7 +462,7 @@ void print_all_signatures(HashMap* signatures, FILE* f)
 	}
 }
 
-char* in_signature_huh(HashMap* signatures, PieceTable* pt, int index)
+char* in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* store_start_index)
 {
 	if (signatures == NULL || pt == NULL || index < 0)
 	{
@@ -488,10 +483,15 @@ char* in_signature_huh(HashMap* signatures, PieceTable* pt, int index)
 		return NULL;
 	}
 
+	char c = pt_iterate(&pi);
 	while (c != '{' && c != '}' && c != ';')
 	{
 		if (index == start_index)
 		{
+			if (store_start_index != NULL)
+			{
+				*store_start_index = start_index;
+			}
 			return r;
 		}
 		c = pt_iterate(&pi);
@@ -499,7 +499,7 @@ char* in_signature_huh(HashMap* signatures, PieceTable* pt, int index)
 	}
 
 	free(r);
-	return false;
+	return NULL;
 }
 
 // always reset compare_to to NULL when your done doing comparison to avoid hard to follow state
@@ -536,11 +536,11 @@ void remove_signatures(HashMap* signatures, LinkedList* function_names, char* fi
 		LinkedList* lst;
 		if (file_name == NULL)
 		{
-			hm_rm(signatures, function_name, &hash_function, &function_name_equals, NULL, &signature_free);
+			lst = hm_rm(signatures, function_name, &hash_function, &function_name_equals, NULL, &signature_free);
 		}
 		else
 		{
-			hm_rm(signatures, function_name, &hash_function, &function_name_equals, &file_name_equals, &signature_free);
+			lst = hm_rm(signatures, function_name, &hash_function, &function_name_equals, &file_name_equals, &signature_free);
 		}
 
 		if (lst == NULL)
@@ -570,16 +570,16 @@ void remove_signature(HashMap* signatures, char* function_name, char* file_name)
 	LinkedList* lst;
 	if (file_name == NULL)
 	{
-		hm_rm(signatures, function_name, &hash_function, &function_name_equals, NULL, &signature_free);
+		lst = hm_rm(signatures, function_name, &hash_function, &function_name_equals, NULL, &signature_free);
 	}
 	else
 	{
-		hm_rm(signatures, function_name, &hash_function, &function_name_equals, &file_name_equals, &signature_free);
+		lst = hm_rm(signatures, function_name, &hash_function, &function_name_equals, &file_name_equals, &signature_free);
 	}
 
 	if (lst == NULL)
 	{
-		continue;
+		return;
 	}
 
 	while (lst->size > 0)
@@ -591,7 +591,7 @@ void remove_signature(HashMap* signatures, char* function_name, char* file_name)
 	file_name_equals(NULL, false);
 }
 
-void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, int start_index, int end_index)
+void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* file_name, int start_index, int end_index)
 {
 	if (signatures == NULL || pt == NULL || start_index < 0 || end_index < start_index)
 	{
@@ -612,7 +612,7 @@ void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, int star
 		{
 			if (brace_dif == 0)
 			{
-				update_signatures(map, pt, file, i);
+				update_signatures(signatures, pt, file_name, i);
 			}
 			brace_dif++;
 		}
@@ -621,4 +621,96 @@ void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, int star
 			brace_dif--;
 		}
 	}
+}
+
+void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name, int index)
+{
+	if (signatures == NULL || pt == NULL || su == NULL || file_name == NULL || index < 0)
+	{
+		return;
+	}
+
+	int start_index;
+	char* function_name = in_signature_huh(signatures, pt, index, &start_index);
+	if (function_name == NULL)
+	{
+		PieceIterator pi;
+		if (!pt_iterator_init(pt, &pi, index))
+		{
+			return;
+		}
+
+		int end_index = index;
+		char c = pt_iterate(&pi);
+		for (; c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
+
+		su->start_index = index;
+		su->end_index = end_index;
+	}
+	else
+	{
+		PieceIterator pi;
+		if (!pt_iterator_init(pt, &pi, index))
+		{
+			return;
+		}
+
+		int end_index = index;
+		char c = pt_iterate(&pi);
+		for (; c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
+
+		su->start_index = start_index;
+		su->end_index = end_index;
+
+		file_name_equals(function_name, false);
+		LinkedList* lst = hm_rm(signatures, function_name, &hash_function, &function_name_equals, &file_name_equals, &free);
+		file_name_equals(NULL, false);
+
+		if (lst != NULL)
+		{
+			while (lst->size > 0)
+			{
+				signature_free((Signature*) ll_rm(lst, 0));
+			}
+			ll_free(lst);
+		}
+	}
+}
+
+// taking index as a paramter just to keep it consistent with su_handle_deletion
+void su_handle_insertion(SignatureUpdate* su, int index)
+{
+	(void) index;
+
+	if (su == NULL)
+	{
+		return;
+	}
+	
+	su->end_index++;
+}
+
+void su_handle_deletion(SignatureUpdate* su, int index)
+{
+	if (su == NULL || index < 0)
+	{
+		return;
+	}
+
+	if (su->start_index == index)
+	{
+		su->start_index--;
+	}
+
+	su->end_index--;
+}
+
+void su_execute(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name)
+{
+	if (su == NULL)
+	{
+		return;
+	}
+
+	update_signatures_on_boundary(signatures, pt, file_name, su->start_index, su->end_index);
 }
