@@ -27,8 +27,8 @@ static void handle_default(EditorState* es, int ch)
 		return;
 	}
 
+	su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	pt_insert(t->pt, ch, line_index + t->x);
-	su_handle_insertion(&(t->su), line_index + t->x);
 	if (ch == '}')
 	{
 		bool indent = true;
@@ -59,8 +59,8 @@ static void handle_default(EditorState* es, int ch)
 
 			for (int i = 0; i < amount; i++)
 			{
+				su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index);
 				pt_rm(t->pt, line_index);
-				su_handle_deletion(&(t->su), line_index);
 			}
 			t->x -= amount;
 		}
@@ -94,8 +94,8 @@ static void handle_tab(EditorState* es, int ch)
 
 	for (int i = 0; i < TAB_SIZE; i++)
 	{
+		su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x + i);
 		pt_insert(t->pt, ' ', line_index + t->x + i);
-		su_handle_insertion(&(t->su), line_index + t->x + i);
 	}
 	t->x += TAB_SIZE;
 	check_right_update(t);
@@ -124,8 +124,8 @@ static void handle_backspace(EditorState* es, int ch)
 
 	if (t->x > 0)
 	{
+		su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x - 1);
 		pt_rm(t->pt, line_index + t->x - 1);
-		su_handle_deletion(&(t->su), line_index + t->x - 1);
 
 		t->x--;
 		check_left_update(t);
@@ -140,8 +140,8 @@ static void handle_backspace(EditorState* es, int ch)
 		{
 			t->y--;
 			for (t->x = 0; pt_get(t->pt, line_above_index + t->x) != '\n' && pt_get(t->pt, line_above_index + t->x) != '\0'; t->x++) {}
+			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index - 1);
 			pt_rm(t->pt, line_index - 1);
-			su_handle_deletion(&(t->su), line_index - 1);
 
 			check_left_update(t);
 			check_right_update(t);
@@ -205,8 +205,8 @@ static void handle_enter(EditorState* es, int ch)
 		return;
 	}
 
+	su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	pt_insert(t->pt, '\n', line_index + t->x);
-	su_handle_insertion(&(t->su), line_index + t->x);
 	t->y++;
 	t->x = indent_line(t, t->y);
 

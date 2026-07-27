@@ -37,8 +37,8 @@ void remove_signature(HashMap* signatures, char* function_name, char* file_name)
 void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* file_name, int start_index, int end_index);
 
 void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name, int index);
-void su_handle_insertion(SignatureUpdate* su, int index);
-void su_handle_deletion(SignatureUpdate* su, int index);
+void su_handle_insertion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
+void su_handle_deletion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
 void su_execute(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name);
 
 void print_all_signatures(HashMap* signatures, FILE* f);

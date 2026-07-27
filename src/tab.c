@@ -7,6 +7,9 @@
 #include "line.h"
 #include "io_tools.h"
 
+#define UNTITLED_TAB_NAME "untitled.txt"
+#define UNTITLED_TAB_NAME_SIZE 13
+
 Tab* tab_create(char* fname)
 {
 	Tab* r = malloc(sizeof(Tab));
@@ -16,6 +19,23 @@ Tab* tab_create(char* fname)
 		return NULL;
 	}
 	set_tab_to_fill_screen(r);
+
+	if (fname == NULL)
+	{
+		fname = malloc(sizeof(char) * UNTITLED_TAB_NAME_SIZE);
+		if (fname == NULL)
+		{
+			free(r);
+			return NULL;
+		}
+
+		char fname_stack[] = UNTITLED_TAB_NAME;
+		for (int i = 0; i < UNTITLED_TAB_NAME_SIZE; i++)
+		{
+			fname[i] = fname_stack[i];
+		}
+	}
+
 	r->fname = fname;
 	r->tab_num_flags = CHANGES_SAVED;
 	r->x = 0;

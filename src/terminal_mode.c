@@ -665,23 +665,7 @@ static void handle_enter(EditorState* es, int ch)
 		{
 			if (t->fname == NULL)
 			{
-				char* fname = malloc(sizeof(char) * 10);
-				if (fname == NULL)
-				{
-					log_error("malloc failed in terminal_mode\n");
-					return;
-				}
-				fname[0] = 'u';
-				fname[1] = 'n';
-				fname[2] = 't';
-				fname[3] = 'i';
-				fname[4] = 't';
-				fname[5] = '.';
-				fname[6] = 't';
-				fname[7] = 'x';
-				fname[8] = 't';
-				fname[9] = '\0';
-				t->fname = fname;
+				return;
 			}
 
 			FILE* f = fopen(t->fname, "w");

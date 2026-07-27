@@ -310,6 +310,7 @@ static void handle_x(EditorState* es)
 	if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 	{
 		t->tab_num_flags &= ~CHANGES_SAVED;
+		su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 		pt_rm(t->pt, line_index + t->x);
 		backup_increment_and_check(es->active_tab);
 
@@ -325,7 +326,6 @@ static void handle_x(EditorState* es)
 
 		es->flags |= UPDATE_FINDER_FLAG;
 
-		su_handle_deletion(&(t->su), line_index + t->x);
 		su_execute(es->signatures, t->pt, &(t->su), t->fname);
 	}
 }

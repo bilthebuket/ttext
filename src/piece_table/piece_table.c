@@ -747,7 +747,6 @@ char pt_iterate_backwards(PieceIterator* pi)
 	char c = (*p->text)[p->start_index + pi->index];
 	if (pi->index == 0)
 	{
-		pi->index = 0;
 		if (pi->node->left != NULL)
 		{
 			pi->node = pi->node->left;
@@ -766,7 +765,10 @@ char pt_iterate_backwards(PieceIterator* pi)
 			}
 			pi->node = prev;
 		}
-		pi->index = ((Piece*) pi->node->elt)->len - 1;
+		if (pi->node != NULL)
+		{
+			pi->index = ((Piece*) pi->node->elt)->len - 1;
+		}
 	}
 	else
 	{
