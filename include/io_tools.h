@@ -27,7 +27,7 @@ void check_top_update(Tab* t);
 void check_bottom_update(Tab* t);
 
 void convert_tabs_to_spaces(GapBuffer* gb);
-int indent_line(Tab* t, int index);
+int indent_line(EditorState* es, Tab* t, int index);
 
 void move_cursor_to_valid_coordinates(Tab* t);
 

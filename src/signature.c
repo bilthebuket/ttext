@@ -667,6 +667,8 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 		PieceIterator pi;
 		if (!pt_iterator_init(pt, &pi, index))
 		{
+			su->start_index = index;
+			su->end_index = index;
 			return;
 		}
 
@@ -682,6 +684,8 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 		PieceIterator pi;
 		if (!pt_iterator_init(pt, &pi, index))
 		{
+			su->start_index = index;
+			su->end_index = index;
 			return;
 		}
 

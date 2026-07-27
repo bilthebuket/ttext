@@ -321,9 +321,9 @@ void convert_tabs_to_spaces(GapBuffer* gb)
 	}
 }
 
-int indent_line(Tab* t, int index)
+int indent_line(EditorState* es, Tab* t, int index)
 {
-	if (t == NULL)
+	if (es == NULL || t == NULL)
 	{
 		log_error("found NULL tab in indent_line\n");
 		return 0;
@@ -362,6 +362,7 @@ int indent_line(Tab* t, int index)
 		{
 			for (int j = 0; j < num_spaces; j++)
 			{
+				su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + j);
 				pt_insert(t->pt, ' ', line_index + j);
 			}
 

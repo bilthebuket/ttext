@@ -276,7 +276,7 @@ static void handle_o(EditorState* es)
 	pt_insert(t->pt, '\n', line_index + len);
 
 	t->y++;
-	t->x = indent_line(t, t->y);
+	t->x = indent_line(es, t, t->y);
 
 	line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index >= 0)

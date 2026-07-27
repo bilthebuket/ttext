@@ -208,7 +208,7 @@ static void handle_enter(EditorState* es, int ch)
 	su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	pt_insert(t->pt, '\n', line_index + t->x);
 	t->y++;
-	t->x = indent_line(t, t->y);
+	t->x = indent_line(es, t, t->y);
 
 	check_left_update(t);
 	check_bottom_update(t);

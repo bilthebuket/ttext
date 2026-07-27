@@ -19,6 +19,7 @@ int es_init(EditorState* es, int argc, char* argv[])
 	ci_init_arrays();
 
 
+	es->mode = &normal_mode;
 	insert_mode_create();
 	normal_mode_create();
 	if (!terminal_create(es))
@@ -75,7 +76,6 @@ int es_init(EditorState* es, int argc, char* argv[])
 		es->active_tab = (Tab*) ll_get_elt(es->tabs, argc - 2);
 		es->active_tab_index = argc - 2;
 	}
-	es->mode = &normal_mode;
 	es->signatures = initialize_signatures();
 	if (es->signatures == NULL)
 	{
