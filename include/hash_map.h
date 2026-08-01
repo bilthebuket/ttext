@@ -28,6 +28,8 @@ void hm_insert(HashMap* map, void* key, void* value, int (*hash)(void*, int));
 // which would be very annoying for normal use that does not need deep equality.
 // another alternative would be to not do deep equality at all which creates a mess of removing and immediatly re adding elts
 LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool), void (*key_free)(void*));
+// same as hm_rm except it removes the first instance that meets the criteria from removal and returns instead of removing the rest
+void* hm_rm_one(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool), void (*key_free)(void*));
 LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool));
 
 // returns the linked list for a key that the hashmap uses internally

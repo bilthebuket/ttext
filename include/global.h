@@ -52,6 +52,7 @@
 #define FUNCTION_SIGNATURE_BUFFER_SIZE 200
 
 #include "finder.h"
+#include "signature/signature.h"
 
 typedef struct EditorState
 {
@@ -61,7 +62,7 @@ typedef struct EditorState
 	LinkedList* tabs;
 	Tab* active_tab;
 	Finder* finder;
-	HashMap* signatures;
+	Signatures* signatures;
 	sem_t sem;
 	int active_tab_index;
 	int flags;

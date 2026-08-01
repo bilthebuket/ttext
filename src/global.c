@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "io_tools.h"
-#include "signature.h"
+#include "signature/signature.h"
 #include "normal_mode.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"
@@ -98,7 +98,7 @@ void es_uninit(EditorState* es)
 	}
 	ll_free(es->tabs);
 	finder_free(es->finder);
-	hm_free(es->signatures, &free, &signature_free);
+	signatures_free(es->signatures);
 }
 
 // TODO: use bitflags intead of bool array

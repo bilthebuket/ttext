@@ -3,7 +3,7 @@
 
 #include "linked_list.h"
 #include "piece_table/piece_table.h"
-#include "signature.h"
+#include "signature/signature.h"
 
 #define BACKUP_EDIT_THRESHOLD 50
 

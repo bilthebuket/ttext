@@ -169,6 +169,64 @@ LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_e
 	return r;
 }
 
+void* hm_rm_one(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool), void (*key_free)(void*))
+{
+	if (map == NULL || hash == NULL)
+	{
+		return NULL;
+	}
+
+	int index = (*hash)(key, map->arr_size);
+	if (index < 0 || index >= map->arr_size)
+	{
+		return NULL;
+	}
+
+	LinkedList* lst = map->arr[index];
+	if (lst == NULL)
+	{
+		return NULL;
+	}
+
+	int i = 0;
+	while (1)
+	{
+		HashMapElt* elt = (HashMapElt*) ll_get_elt(lst, i);
+		if (elt == NULL)
+		{
+			break;
+		}
+
+		bool are_keys_equal = true;
+		if (key_equals != NULL)
+		{
+			are_keys_equal = (*key_equals)(key, elt->key);
+		}
+		if (elt_equals != NULL && are_keys_equal)
+		{
+			are_keys_equal = (*elt_equals)(elt->value, true);
+		}
+
+		if (are_keys_equal)
+		{
+			void* r = elt->value;
+			ll_rm(lst, i);
+			if (key_free != NULL)
+			{
+				(*key_free)(elt->key);
+			}
+			free(elt);
+			return r;
+		}
+		else
+		{
+			i++;
+		}
+	}
+
+	return NULL;
+}
+
 LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool))
 {
 	if (map == NULL || hash == NULL)

@@ -13,7 +13,7 @@
 #include "io_tools.h"
 #include "line.h"
 #include "finder.h"
-#include "signature.h"
+#include "signature/signature.h"
 
 static Tab* terminal;
 static char* listener_buf = NULL;
@@ -709,7 +709,7 @@ static void handle_enter(EditorState* es, int ch)
 			}
 			buf[end_index - start_index] = '\0';
 
-			LinkedList* lst = hm_get(es->signatures, buf, &hash_function, &function_name_equals, NULL);
+			LinkedList* lst = hm_get(es->signatures->signatures, buf, &hash_function, &function_name_equals, NULL);
 			gb_goto(gb, gb->num_chars - 1);
 			if (lst != NULL)
 			{
