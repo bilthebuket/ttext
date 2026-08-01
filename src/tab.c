@@ -37,7 +37,15 @@ Tab* tab_create(char* fname)
 	}
 
 	r->fname = fname;
+
 	r->tab_num_flags = CHANGES_SAVED;
+	int len = 0;
+	for (; r->fname[len] != '\0'; len++) {}
+	if (r->fname[len - 1] == 'c' && r->fname[len - 2] == '.')
+	{
+		r->tab_num_flags |= PARSE_FOR_SIGNATURES;
+	}
+
 	r->x = 0;
 	r->y = 0;
 	r->xpos = 0;

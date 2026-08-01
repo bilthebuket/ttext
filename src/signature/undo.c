@@ -13,13 +13,10 @@ void signature_undo_insert(Signatures* signatures, SignatureUndo* undo)
 	LinkedList* lst = (LinkedList*) ll_get_elt(signatures->undos, 0);
 	if (lst == NULL)
 	{
-		lst = ll_create();
-		if (lst == NULL)
+		if (undo->operation == SIGNATURE_UNDO_CREATE)
 		{
-			return;
+			signature_undo_free(undo);
 		}
-		ll_insert(signatures->undos, lst, 0);
-		ll_insert(lst, undo, 0);
 	}
 	else
 	{
@@ -43,7 +40,10 @@ void signature_undo_insert(Signatures* signatures, SignatureUndo* undo)
 
 		if (unnecessary)
 		{
-			signature_undo_free(undo);
+			if (undo->operation == SIGNATURE_UNDO_CREATE)
+			{
+				signature_undo_free(undo);
+			}
 		}
 		else
 		{
@@ -85,6 +85,7 @@ void signature_undo_execute(Signatures* signatures)
 			case SIGNATURE_UNDO_REMOVE:
 			{
 				remove_signature(signatures, undo->function_name, undo->signature->signature, undo->signature->file_name);
+				signature_undo_free(undo);
 				break;
 			}
 		}

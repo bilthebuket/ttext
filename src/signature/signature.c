@@ -166,7 +166,7 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 
 	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
-	name_end_index = index - 1;
+	name_end_index = index;
 	for (; i >= 0 && is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--) {}
 	name_start_index = index + 1;
 
@@ -220,11 +220,19 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 		// when the caller of this function then calls pt_iterate again, they will get the first character of the signature
 		c = pt_iterate(pi);
 		c = pt_iterate(pi);
+		c = pt_iterate(pi);
 		index++;
 	}
 	else
 	{
 		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		c = pt_iterate(pi);
+		index++;
+	}
+
+	while (c == ' ' || c == '\n')
+	{
 		c = pt_iterate(pi);
 		index++;
 	}
@@ -288,78 +296,39 @@ void update_signatures(Signatures* signatures, PieceTable* pt, const char* file_
 		return;
 	}
 
-	LinkedList* existing = hm_get(signatures->signatures, function_name, &hash_function, &function_name_equals, NULL);
-	Signature* existing_signature = NULL;
+	// making a copy of file name to prevent scattered references and double frees
+	int len = 0;
+	for (; file_name[len] != '\0'; len++) {}
+	len++;
 
-	bool same = true;
-	if (existing == NULL)
+	char* new_file_name = malloc(sizeof(char) * len);
+	if (new_file_name == NULL)
 	{
-		same = false;
-	}
-	else
-	{
-		existing_signature = (Signature*) ll_rm(existing, 0);
-		if (existing_signature == NULL)
-		{
-			same = false;
-		}
-		else
-		{
-			if (strcmp(file_name, existing_signature->file_name))
-			{
-				same = false;
-			}
-		}
-
-		while (existing->size > 0)
-		{
-			ll_rm(existing, 0);
-		}
-		ll_free(existing);
-	}
-
-	if (same)
-	{
-		free(existing_signature->signature);
+		free(signature);
 		free(function_name);
-		existing_signature->signature = signature;
+		return;
 	}
-	else
+
+	int i = 0;
+	for (; file_name[i] != '\0'; i++)
 	{
-		// making a copy of file name to prevent scattered references and double frees
-		int len = 0;
-		for (; file_name[len] != '\0'; len++) {}
-		len++;
-
-		char* new_file_name = malloc(sizeof(char) * len);
-		if (new_file_name == NULL)
-		{
-			free(signature);
-			free(function_name);
-			return;
-		}
-
-		int i = 0;
-		for (; file_name[i] != '\0'; i++)
-		{
-			new_file_name[i] = file_name[i];
-		}
-		new_file_name[i] = '\0';
-
-		Signature* new = signature_create(signature, new_file_name);
-		if (new == NULL)
-		{
-			free(signature);
-			free(new_file_name);
-			free(function_name);
-			return;
-		}
-
-		hm_insert(signatures->signatures, function_name, new, &hash_function);
-
-		SignatureUndo* su = signature_undo_create(new, function_name, SIGNATURE_UNDO_REMOVE);
-		signature_undo_insert(signatures, su);
+		new_file_name[i] = file_name[i];
 	}
+	new_file_name[i] = '\0';
+
+	Signature* new = signature_create(signature, new_file_name);
+	if (new == NULL)
+	{
+		free(signature);
+		free(new_file_name);
+		free(function_name);
+		return;
+	}
+
+	hm_insert(signatures->signatures, function_name, new, &hash_function);
+
+	SignatureUndo* su = signature_undo_create(new, function_name, SIGNATURE_UNDO_REMOVE);
+	signature_undo_insert(signatures, su);
 }
 
 static void add_signatures(Signatures* map, const char* file)

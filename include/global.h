@@ -20,7 +20,8 @@
 #define ENTER_KEYCODE1 10
 
 #define CHANGES_SAVED (1 << 31)
-#define FLAG_BITS (1 << 31)
+#define PARSE_FOR_SIGNATURES (1 << 30)
+#define FLAG_BITS (3 << 30)
 #define TAB_NUM_BITS ~FLAG_BITS
 
 #define WHITE_TEXT 1

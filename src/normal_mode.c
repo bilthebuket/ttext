@@ -175,7 +175,7 @@ static void handle_i(EditorState* es)
 	signature_undo_new(es->signatures);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index >= 0)
+	if (line_index >= 0 && (t->tab_num_flags & PARSE_FOR_SIGNATURES))
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
@@ -213,7 +213,7 @@ static void handle_a(EditorState* es)
 	signature_undo_new(es->signatures);
 
 	line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index >= 0)
+	if (line_index >= 0 && (t->tab_num_flags & PARSE_FOR_SIGNATURES))
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
@@ -283,7 +283,7 @@ static void handle_o(EditorState* es)
 	t->x = indent_line(es, t, t->y);
 
 	line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index >= 0)
+	if (line_index >= 0 && (t->tab_num_flags & PARSE_FOR_SIGNATURES))
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
@@ -310,12 +310,18 @@ static void handle_x(EditorState* es)
 		return;
 	}
 
-	su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	}
 
 	if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 	{
 		t->tab_num_flags &= ~CHANGES_SAVED;
-		su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
+		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		{
+			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
+		}
 		pt_rm(t->pt, line_index + t->x);
 		backup_increment_and_check(es->active_tab);
 
@@ -331,7 +337,10 @@ static void handle_x(EditorState* es)
 
 		es->flags |= UPDATE_FINDER_FLAG;
 
-		su_execute(es->signatures, t->pt, &(t->su), t->fname);
+		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		{
+			su_execute(es->signatures, t->pt, &(t->su), t->fname);
+		}
 	}
 }
 
@@ -484,7 +493,10 @@ static void handle_n(EditorState* es)
 static void handle_u(EditorState* es)
 {
 	pt_undo_execute(es->active_tab->pt);
-	signature_undo_execute(es->signatures);
+	if (es->active_tab->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		signature_undo_execute(es->signatures);
+	}
 	es->flags |= UPDATE_FINDER_FLAG;
 	move_cursor_to_valid_coordinates(es->active_tab);
 	backup_increment_and_check(es->active_tab);
