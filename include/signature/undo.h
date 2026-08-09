@@ -5,6 +5,7 @@
 #define SIGNATURE_UNDO_REMOVE 2
 
 #include "signature/signature.h"
+#include "linked_list.h"
 
 // s and function_name are the same pointers that are/were used in the hashmap
 // this means that if you have a SIGNATURE_UNDO_REMOVE, you do not need to free s and function_name when its executed
@@ -16,10 +17,11 @@ typedef struct SignatureUndo
 	int operation;
 } SignatureUndo;
 
-void signature_undo_insert(Signatures* signatures, SignatureUndo* undo);
-void signature_undo_execute(Signatures* signatures);
-void signature_undo_new(Signatures* signatures);
+void signature_undo_insert(HashMap* signatures, LinkedList* undos, SignatureUndo* undo);
+void signature_undo_execute(HashMap* signatures, LinkedList* undos);
+void signature_undo_new(LinkedList* undos);
 SignatureUndo* signature_undo_create(Signature* s, char* function_name, int operation);
 void signature_undo_free(SignatureUndo* su);
+void signature_undos_free(LinkedList* undos);
 
 #endif

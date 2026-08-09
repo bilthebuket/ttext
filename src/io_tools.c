@@ -362,7 +362,7 @@ int indent_line(EditorState* es, Tab* t, int index)
 		{
 			for (int j = 0; j < num_spaces; j++)
 			{
-				su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + j);
+				su_handle_insertion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index + j);
 				pt_insert(t->pt, ' ', line_index + j);
 			}
 

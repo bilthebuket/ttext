@@ -63,7 +63,7 @@ typedef struct EditorState
 	LinkedList* tabs;
 	Tab* active_tab;
 	Finder* finder;
-	Signatures* signatures;
+	HashMap* signatures;
 	sem_t sem;
 	int active_tab_index;
 	int flags;

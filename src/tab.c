@@ -6,6 +6,7 @@
 #include "global.h"
 #include "line.h"
 #include "io_tools.h"
+#include "signature/undo.h"
 
 #define UNTITLED_TAB_NAME "untitled.txt"
 #define UNTITLED_TAB_NAME_SIZE 13
@@ -97,6 +98,13 @@ Tab* tab_create(char* fname)
 		return NULL;
 	}
 
+	r->signature_undos = ll_create();
+	if (r->signature_undos == NULL)
+	{
+		tab_free(r);
+		return NULL;
+	}
+
 	if (buf[0] == '\0')
 	{
 		r->pt = pt_create(NULL, -1, false);
@@ -129,6 +137,7 @@ void tab_free(Tab* t)
 			ll_free(t->lines);
 		}
 		pt_free(t->pt);
+		signature_undos_free(t->signature_undos);
 		free(t);
 	}
 }

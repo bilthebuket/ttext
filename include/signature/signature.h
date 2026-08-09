@@ -4,17 +4,11 @@
 #include <stdio.h>
 #include "hash_map.h"
 #include "piece_table/piece_table.h"
+#include "linked_list.h"
 
 #define IN_SIGNATURE_HUH_NUM_RETURN_VALS 2
 #define IN_SIGNATURE_HUH_FUNCTION_NAME 0
 #define IN_SIGNATURE_HUH_SIGNATURE 1
-
-typedef struct Signatures
-{
-	HashMap* signatures;
-	// doubly linked list of SignatureUndos (each element is a linked list of undos to be executed all at once)
-	LinkedList* undos;
-} Signatures;
 
 typedef struct Signature
 {
@@ -29,9 +23,8 @@ typedef struct SignatureUpdate
 	int end_index;
 } SignatureUpdate;
 
-void update_signatures(Signatures* signatures, PieceTable* pt, const char* file_name, int index);
-Signatures* initialize_signatures(void);
-void signatures_free(Signatures* signatures);
+void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, const char* file_name, int index);
+HashMap* initialize_signatures(void);
 
 Signature* signature_create(char* signature, char* file_name);
 
@@ -43,18 +36,18 @@ void signature_free(void* v);
 bool function_name_equals(void* v1, void* v2);
 
 // returns signature's function name if in a signature, or NULL if it is not
-char** in_signature_huh(Signatures* signatures, PieceTable* pt, int index, int* store_start_index);
+char** in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* store_start_index);
 
 // file_name should be a single file name, or NULL to remove all instances of this function name
-void remove_signature(Signatures* signatures, char* function_name, char* signature, char* file_name);
+void remove_signature(HashMap* signatures, LinkedList* undos, char* function_name, char* signature, char* file_name, bool undo);
 
-void update_signatures_on_boundary(Signatures* signatures, PieceTable* pt, char* file_name, int start_index, int end_index);
+void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, int start_index, int end_index);
 
-void su_prepare(Signatures* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name, int index);
-void su_handle_insertion(Signatures* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
-void su_handle_deletion(Signatures* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
-void su_execute(Signatures* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name);
+void su_prepare(HashMap* signatures, LinkedList* undos, PieceTable* pt, SignatureUpdate* su, char* file_name, int index);
+void su_handle_insertion(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
+void su_handle_deletion(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
+void su_execute(HashMap* signatures, LinkedList* undos, PieceTable* pt, SignatureUpdate* su, char* file_name);
 
-void print_all_signatures(Signatures* signatures, FILE* f);
+void print_all_signatures(HashMap* signatures, FILE* f);
 
 #endif

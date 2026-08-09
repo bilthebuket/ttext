@@ -12,6 +12,7 @@ typedef struct Tab
 	LinkedList* lines;
 	PieceTable* pt;
 	char* fname;
+	LinkedList* signature_undos;
 	SignatureUpdate su;
 
 	// cursor position

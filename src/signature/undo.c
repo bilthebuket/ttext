@@ -3,14 +3,18 @@
 #include "signature/signature.h"
 #include "global.h"
 
-void signature_undo_insert(Signatures* signatures, SignatureUndo* undo)
+void signature_undo_insert(HashMap* signatures, LinkedList* undos, SignatureUndo* undo)
 {
-	if (signatures == NULL || undo == NULL)
+	if (signatures == NULL || undos == NULL || undo == NULL)
 	{
+		if (undo->operation == SIGNATURE_UNDO_CREATE)
+		{
+			signature_undo_free(undo);
+		}
 		return;
 	}
 
-	LinkedList* lst = (LinkedList*) ll_get_elt(signatures->undos, 0);
+	LinkedList* lst = (LinkedList*) ll_get_elt(undos, 0);
 	if (lst == NULL)
 	{
 		if (undo->operation == SIGNATURE_UNDO_CREATE)
@@ -47,19 +51,19 @@ void signature_undo_insert(Signatures* signatures, SignatureUndo* undo)
 		}
 		else
 		{
-			ll_insert(signatures->undos, undo, 0);
+			ll_insert(undos, undo, 0);
 		}
 	}
 }
 
-void signature_undo_execute(Signatures* signatures)
+void signature_undo_execute(HashMap* signatures, LinkedList* undos)
 {
-	if (signatures == NULL)
+	if (signatures == NULL || undos == NULL)
 	{
 		return;
 	}
 
-	LinkedList* lst = ll_rm(signatures->undos, 0);
+	LinkedList* lst = ll_rm(undos, 0);
 	if (lst == NULL)
 	{
 		return;
@@ -78,13 +82,13 @@ void signature_undo_execute(Signatures* signatures)
 		{
 			case SIGNATURE_UNDO_CREATE:
 			{
-				hm_insert(signatures->signatures, undo->function_name, undo->signature, &hash_function);
+				hm_insert(signatures, undo->function_name, undo->signature, &hash_function);
 				break;
 			}
 
 			case SIGNATURE_UNDO_REMOVE:
 			{
-				remove_signature(signatures, undo->function_name, undo->signature->signature, undo->signature->file_name);
+				remove_signature(signatures, undos, undo->function_name, undo->signature->signature, undo->signature->file_name, false);
 				signature_undo_free(undo);
 				break;
 			}
@@ -96,9 +100,9 @@ void signature_undo_execute(Signatures* signatures)
 	ll_free(lst);
 }
 
-void signature_undo_new(Signatures* signatures)
+void signature_undo_new(LinkedList* undos)
 {
-	if (signatures == NULL || signatures->undos == NULL)
+	if (undos == NULL)
 	{
 		return;
 	}
@@ -106,7 +110,7 @@ void signature_undo_new(Signatures* signatures)
 	LinkedList* lst = ll_create();
 	if (lst != NULL)
 	{
-		ll_insert(signatures->undos, lst, 0);
+		ll_insert(undos, lst, 0);
 	}
 }
 
@@ -140,4 +144,31 @@ void signature_undo_free(SignatureUndo* su)
 		free(su->function_name);
 	}
 	free(su);
+}
+
+void signature_undos_free(LinkedList* undos)
+{
+	if (undos == NULL)
+	{
+		return;
+	}
+
+	while (undos->size > 0)
+	{
+		LinkedList* lst = (LinkedList*) ll_rm(undos, 0);
+		if (lst == NULL)
+		{
+			continue;
+		}
+
+		while (lst->size > 0)
+		{
+			SignatureUndo* su = (SignatureUndo*) ll_rm(lst, 0);
+			signature_undo_free(su);
+		}
+
+		ll_free(lst);
+	}
+
+	ll_free(undos);
 }
