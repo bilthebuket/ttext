@@ -145,7 +145,7 @@ void ci_handle_insert(PieceTable* pt, int index)
 				pt->color_indices = tree_create(ci);
 				t = pt->color_indices;
 
-				Undo* u = undo_rm_color_index_create(ci->chars_contained + 1);
+				Undo* u = undo_rm_color_index_create(ci->chars_contained);
 				pt_undo_update(pt, u);
 			}
 		}
@@ -191,7 +191,7 @@ void ci_handle_rm(PieceTable* pt, int index)
 				pt->color_indices = tree_create(ci);
 				t = pt->color_indices;
 
-				Undo* u = undo_rm_color_index_create(ci->chars_contained - 1);
+				Undo* u = undo_rm_color_index_create(ci->chars_contained);
 				pt_undo_update(pt, u);
 			}
 		}

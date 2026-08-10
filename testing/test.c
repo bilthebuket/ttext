@@ -116,7 +116,7 @@ void setup_pt(void)
 	fread(text, sizeof(char), size, f);
 	rewind(f);
 	fread(text2, sizeof(char), size, f);
-	pt = pt_create(text2, size);
+	pt = pt_create(text2, size, true);
 	fclose(f);
 }
 
