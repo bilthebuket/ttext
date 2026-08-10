@@ -71,6 +71,13 @@ Tab* tab_create(char* fname)
 		f = NULL;
 	}
 
+	r->signature_undos = ll_create();
+	if (r->signature_undos == NULL)
+	{
+		tab_free(r);
+		return NULL;
+	}
+
 	if (f == NULL)
 	{
 		r->pt = pt_create(NULL, -1, false);
@@ -95,13 +102,6 @@ Tab* tab_create(char* fname)
 		free(buf);
 		fclose(f);
 		free(r);
-		return NULL;
-	}
-
-	r->signature_undos = ll_create();
-	if (r->signature_undos == NULL)
-	{
-		tab_free(r);
 		return NULL;
 	}
 

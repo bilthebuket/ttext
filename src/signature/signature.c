@@ -167,7 +167,15 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
 	name_end_index = index;
-	for (; i >= 0 && is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--) {}
+	function_name[function_name_size - 1] = '\0';
+	i = function_name_size - 2;
+	for (; is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--)
+	{
+		if (i >= 0)
+		{
+			function_name[i] = c;
+		}
+	}
 	name_start_index = index + 1;
 
 	if (c != ' ' && c != '\n')
@@ -271,7 +279,7 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 	return index;
 }
 
-void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, const char* file_name, int index)
+void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, const char* file_name, int index, bool undo)
 {
 	if (signatures == NULL || pt == NULL || file_name == NULL)
 	{
@@ -293,6 +301,8 @@ void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, c
 
 	if (iterate_to_signature_start(pt, &pi, index, function_name, FUNCTION_NAME_BUFFER_SIZE, signature, FUNCTION_SIGNATURE_BUFFER_SIZE) < 0)
 	{
+		free(function_name);
+		free(signature);
 		return;
 	}
 
@@ -327,8 +337,14 @@ void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, c
 
 	hm_insert(signatures, function_name, new, &hash_function);
 
-	SignatureUndo* su = signature_undo_create(new, function_name, SIGNATURE_UNDO_REMOVE);
-	signature_undo_insert(signatures, undos, su);
+	if (undo)
+	{
+		SignatureUndo* su = signature_undo_create(new, function_name, SIGNATURE_UNDO_REMOVE);
+		if (su != NULL)
+		{
+			signature_undo_insert(signatures, undos, su);
+		}
+	}
 }
 
 static void add_signatures(HashMap* map, LinkedList* undos, const char* file)
@@ -369,7 +385,7 @@ static void add_signatures(HashMap* map, LinkedList* undos, const char* file)
 		{
 			if (brace_dif == 0)
 			{
-				update_signatures(map, undos, pt, file, i);
+				update_signatures(map, undos, pt, file, i, false);
 			}
 			brace_dif++;
 		}
@@ -665,7 +681,7 @@ void remove_signature(HashMap* signatures, LinkedList* undos, char* function_nam
 	signature_equals2(NULL, false);
 }
 
-void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, int start_index, int end_index)
+void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, int start_index, int end_index, bool undo)
 {
 	if (signatures == NULL || pt == NULL || file_name == NULL || start_index < 0 || end_index < start_index)
 	{
@@ -686,7 +702,7 @@ void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, Piece
 		{
 			if (brace_dif == 0)
 			{
-				update_signatures(signatures, undos, pt, file_name, i);
+				update_signatures(signatures, undos, pt, file_name, i, undo);
 			}
 			brace_dif++;
 		}
@@ -799,5 +815,5 @@ void su_execute(HashMap* signatures, LinkedList* undos, PieceTable* pt, Signatur
 		return;
 	}
 
-	update_signatures_on_boundary(signatures, undos, pt, file_name, su->start_index, su->end_index);
+	update_signatures_on_boundary(signatures, undos, pt, file_name, su->start_index, su->end_index, true);
 }

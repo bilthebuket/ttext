@@ -842,6 +842,7 @@ bool terminal_create(EditorState* es)
 	{
 		return false;
 	}
+	terminal->signature_undos = NULL;
 	terminal->fname = NULL;
 	terminal->lines = ll_create();
 	if (terminal->lines == NULL)

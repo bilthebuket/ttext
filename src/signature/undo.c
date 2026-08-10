@@ -51,7 +51,7 @@ void signature_undo_insert(HashMap* signatures, LinkedList* undos, SignatureUndo
 		}
 		else
 		{
-			ll_insert(undos, undo, 0);
+			ll_insert(lst, undo, 0);
 		}
 	}
 }
@@ -89,7 +89,6 @@ void signature_undo_execute(HashMap* signatures, LinkedList* undos)
 			case SIGNATURE_UNDO_REMOVE:
 			{
 				remove_signature(signatures, undos, undo->function_name, undo->signature->signature, undo->signature->file_name, false);
-				signature_undo_free(undo);
 				break;
 			}
 		}
@@ -138,10 +137,15 @@ void signature_undo_free(SignatureUndo* su)
 		return;
 	}
 
-	signature_free(su->signature);
-	if (su->function_name != NULL)
+	// signature_undo_removes contain pointers to items in the signatures hash map
+	// so we don't need to free them
+	if (su->operation == SIGNATURE_UNDO_CREATE)
 	{
-		free(su->function_name);
+		signature_free(su->signature);
+		if (su->function_name != NULL)
+		{
+			free(su->function_name);
+		}
 	}
 	free(su);
 }

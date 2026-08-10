@@ -23,7 +23,7 @@ typedef struct SignatureUpdate
 	int end_index;
 } SignatureUpdate;
 
-void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, const char* file_name, int index);
+void update_signatures(HashMap* signatures, LinkedList* undos, PieceTable* pt, const char* file_name, int index, bool undo);
 HashMap* initialize_signatures(void);
 
 Signature* signature_create(char* signature, char* file_name);
@@ -41,7 +41,7 @@ char** in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* sto
 // file_name should be a single file name, or NULL to remove all instances of this function name
 void remove_signature(HashMap* signatures, LinkedList* undos, char* function_name, char* signature, char* file_name, bool undo);
 
-void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, int start_index, int end_index);
+void update_signatures_on_boundary(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, int start_index, int end_index, bool undo);
 
 void su_prepare(HashMap* signatures, LinkedList* undos, PieceTable* pt, SignatureUpdate* su, char* file_name, int index);
 void su_handle_insertion(HashMap* signatures, LinkedList* undos, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
