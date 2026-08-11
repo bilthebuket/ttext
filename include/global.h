@@ -53,7 +53,7 @@
 #define FUNCTION_SIGNATURE_BUFFER_SIZE 200
 
 #include "finder.h"
-#include "signature/signature.h"
+#include "signature.h"
 
 typedef struct EditorState
 {

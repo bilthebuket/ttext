@@ -3,7 +3,7 @@
 
 #include "linked_list.h"
 #include "piece_table/piece_table.h"
-#include "signature/signature.h"
+#include "signature.h"
 
 #define BACKUP_EDIT_THRESHOLD 50
 
@@ -12,7 +12,7 @@ typedef struct Tab
 	LinkedList* lines;
 	PieceTable* pt;
 	char* fname;
-	LinkedList* signature_undos;
+	LinkedList* undos;
 	SignatureUpdate su;
 
 	// cursor position

@@ -13,7 +13,7 @@
 #include "io_tools.h"
 #include "line.h"
 #include "finder.h"
-#include "signature/signature.h"
+#include "signature.h"
 
 static Tab* terminal;
 static char* listener_buf = NULL;
@@ -842,8 +842,8 @@ bool terminal_create(EditorState* es)
 	{
 		return false;
 	}
-	terminal->signature_undos = NULL;
 	terminal->fname = NULL;
+	terminal->undos = NULL;
 	terminal->lines = ll_create();
 	if (terminal->lines == NULL)
 	{

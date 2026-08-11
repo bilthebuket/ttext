@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "io_tools.h"
-#include "signature/signature.h"
+#include "signature.h"
 #include "normal_mode.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"

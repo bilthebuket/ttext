@@ -857,7 +857,7 @@ void pt_free(PieceTable* pt)
 
 	while (1)
 	{
-		Undos* undos = (Undos*) ll_rm(pt->undos, 0);
+		LinkedList* undos = ll_rm(pt->undos, 0);
 
 		if (undos == NULL)
 		{
@@ -866,25 +866,14 @@ void pt_free(PieceTable* pt)
 
 		while (1)
 		{
-			Undo* to_free = (Undo*) ll_rm(undos->pieces, 0);
+			Undo* to_free = (Undo*) ll_rm(undos, 0);
 			if (to_free == NULL)
 			{
 				break;
 			}
 			undo_free(to_free);
 		}
-		while (1)
-		{
-			Undo* to_free = (Undo*) ll_rm(undos->color_indices, 0);
-			if (to_free == NULL)
-			{
-				break;
-			}
-			undo_free(to_free);
-		}
-		ll_free(undos->pieces);
-		ll_free(undos->color_indices);
-		free(undos);
+		ll_free(undos);
 	}
 	ll_free(pt->undos);
 

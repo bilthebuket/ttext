@@ -29,7 +29,7 @@ static void handle_default(EditorState* es, int ch)
 
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
-		su_handle_insertion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index + t->x);
+		su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	}
 	pt_insert(t->pt, ch, line_index + t->x);
 	if (ch == '}')
@@ -64,7 +64,7 @@ static void handle_default(EditorState* es, int ch)
 			{
 				if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 				{
-					su_handle_deletion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index);
+					su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index);
 				}
 				pt_rm(t->pt, line_index);
 			}
@@ -102,7 +102,7 @@ static void handle_tab(EditorState* es, int ch)
 	{
 		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 		{
-			su_handle_insertion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index + t->x + i);
+			su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x + i);
 		}
 		pt_insert(t->pt, ' ', line_index + t->x + i);
 	}
@@ -135,7 +135,7 @@ static void handle_backspace(EditorState* es, int ch)
 	{
 		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 		{
-			su_handle_deletion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index + t->x - 1);
+			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x - 1);
 		}
 		pt_rm(t->pt, line_index + t->x - 1);
 
@@ -154,7 +154,7 @@ static void handle_backspace(EditorState* es, int ch)
 			for (t->x = 0; pt_get(t->pt, line_above_index + t->x) != '\n' && pt_get(t->pt, line_above_index + t->x) != '\0'; t->x++) {}
 			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 			{
-				su_handle_deletion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index - 1);
+				su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index - 1);
 			}
 			pt_rm(t->pt, line_index - 1);
 
@@ -198,7 +198,7 @@ static void handle_escape(EditorState* es, int ch)
 	backup_increment_and_check(es->active_tab);
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
-		su_execute(es->signatures, t->signature_undos, t->pt, &(t->su), t->fname);
+		su_execute(es->signatures, t->pt, &(t->su), t->fname);
 	}
 	es->mode = &normal_mode;
 	es->flags |= UPDATE_FINDER_FLAG;
@@ -225,7 +225,7 @@ static void handle_enter(EditorState* es, int ch)
 
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
-		su_handle_insertion(es->signatures, t->signature_undos, t->pt, t->fname, &(t->su), line_index + t->x);
+		su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	}
 	pt_insert(t->pt, '\n', line_index + t->x);
 	t->y++;
