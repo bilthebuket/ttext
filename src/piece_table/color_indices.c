@@ -79,7 +79,7 @@ void ci_uninit_arrays(void)
 	}
 }
 
-static void update_until_no_update_occurs(PieceTable* pt, ColorIndexFinder f, int len)
+void update_until_no_update_occurs(PieceTable* pt, ColorIndexFinder f, int len)
 {
 	// updating every color index moving to the right until we call pt_update_color_indices and the color doesn't change, meaning we are done
 	while (true)

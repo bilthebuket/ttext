@@ -670,6 +670,45 @@ void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* fi
 	}
 }
 
+void remove_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* file_name, int start_index, int end_index)
+{
+	if (signatures == NULL || pt == NULL || file_name == NULL || start_index < 0 || end_index < start_index)
+	{
+		return;
+	}
+
+	PieceIterator pi;
+	if (!pt_iterator_init(pt, &pi, start_index))
+	{
+		return;
+	}
+
+	char c = pt_iterate(&pi);
+	int brace_dif = 0;
+	for (int i = start_index; c != '\0' && i <= end_index; i++, c = pt_iterate(&pi))
+	{
+		if (c == '{')
+		{
+			if (brace_dif == 0)
+			{
+				char** vals = in_signature_huh(signatures, pt, i - 1, NULL);
+				if (vals != NULL)
+				{
+					remove_signature(signatures, vals[IN_SIGNATURE_HUH_FUNCTION_NAME], vals[IN_SIGNATURE_HUH_SIGNATURE], file_name);
+					free(vals[IN_SIGNATURE_HUH_FUNCTION_NAME]);
+					free(vals[IN_SIGNATURE_HUH_SIGNATURE]);
+					free(vals);
+				}
+			}
+			brace_dif++;
+		}
+		else if (c == '}')
+		{
+			brace_dif--;
+		}
+	}
+}
+
 void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name, int index)
 {
 	if (signatures == NULL || pt == NULL || su == NULL || file_name == NULL || index < 0)

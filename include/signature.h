@@ -42,6 +42,7 @@ char** in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* sto
 void remove_signature(HashMap* signatures, char* function_name, char* signature, char* file_name);
 
 void update_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* file_name, int start_index, int end_index);
+void remove_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* file_name, int start_index, int end_index);
 
 void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name, int index);
 void su_handle_insertion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
