@@ -165,35 +165,43 @@ Test(editor, test_undo_simple2, .init = setup_state, .fini = teardown_state)
 {
 	simulate_insert("int x = 5;");
 	expect_state("int x = 5;");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT});
 
 	goto_coords(0, 0);
 	(*es.mode)(&es, 'x');
 	expect_state("nt x = 5;");
+	ci_expect_state((const int[]) {2, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT});
 
 	goto_coords(2, 0);
 	(*es.mode)(&es, 'x');
 	expect_state("ntx = 5;");
+	ci_expect_state((const int[]) {3, CYAN_TEXT, 3, RED_TEXT});
 
 	goto_coords(0, 0);
 	simulate_insert("const ");
 	expect_state("const ntx = 5;");
+	ci_expect_state((const int[]) {5, BLUE_TEXT, 3, CYAN_TEXT, 3, RED_TEXT});
 
 	goto_coords(1, 0);
 	(*es.mode)(&es, 'x');
-
 	expect_state("cnst ntx = 5;");
+	ci_expect_state((const int[]) {4, BLUE_TEXT, 3, CYAN_TEXT, 3, RED_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("const ntx = 5;");
+	ci_expect_state((const int[]) {5, BLUE_TEXT, 3, CYAN_TEXT, 3, RED_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("ntx = 5;");
+	ci_expect_state((const int[]) {3, CYAN_TEXT, 3, RED_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("nt x = 5;");
+	ci_expect_state((const int[]) {2, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int x = 5;");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT});
 }
 
 Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
@@ -218,6 +226,8 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i+)\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
+				       1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 4, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT, 2, YELLOW_TEXT});
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i++)\n}");
 	(*es.mode)(&es, 'u');

@@ -50,6 +50,10 @@ void ci_init_arrays(void)
 	chars_to_split_on[')'] = true;
 	chars_to_split_on[';'] = true;
 	chars_to_split_on[','] = true;
+	for (int i = '*'; i <= '>'; i++)
+	{
+		chars_to_split_on[i] = true;
+	}
 	for (int i = 0; i < MAX_HASH_VALUE; i++)
 	{
 		control_word_check[i] = NULL;
@@ -369,18 +373,34 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	int i;
 	char c;
+	bool non_red_character_found = false;
 	if (ci->len > 1)
 	{
 		for (i = 0; i < ci->len; i++)
 		{
 			c = pt_iterate(&pi);
+			if (!non_red_character_found && (c < '*' || c > '>') && c != ' ' && c != '\0' && c != '\n')
+			{
+				non_red_character_found = true;
+			}
 			if (chars_to_split_on[(int) c])
 			{
 				if ((c == ' ' || c == '\n') && (i == 0 || i == ci->len - 1))
 				{
 					continue;
 				}
-				split = true;
+				if (!non_red_character_found)
+				{
+					while (c >= '*' && c <= '>' && i < ci->len)
+					{
+						c = pt_iterate(&pi);
+						i++;
+					}
+				}
+				if (i != ci->len)
+				{
+					split = true;
+				}
 				break;
 			}
 		}
@@ -543,7 +563,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 		}
 
-		if (chars_to_split_on[(int) c] || pt_get(pt, f.global_char_index + ci->len) == '(')
+		if ((chars_to_split_on[(int) c] || pt_get(pt, f.global_char_index + ci->len) == '(') && (c < '*' || c > '>'))
 		{
 			ci->color = YELLOW_TEXT;
 			return;
