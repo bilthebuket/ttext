@@ -8,6 +8,7 @@
 #include "line.h"
 #include "terminal_mode.h"
 #include "piece_table/color_indices.h"
+#include "undo.h"
 
 static int height;
 static int width;
@@ -364,6 +365,7 @@ int indent_line(EditorState* es, Tab* t, int index)
 			{
 				su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + j);
 				pt_insert(t->pt, ' ', line_index + j);
+				undo_handle_insert(es);
 			}
 
 			return num_spaces;

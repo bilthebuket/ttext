@@ -8,6 +8,7 @@
 #include "io_tools.h"
 #include "line.h"
 #include "piece_table/piece_table.h"
+#include "undo.h"
 
 static void handle_default(EditorState* es, int ch)
 {
@@ -32,6 +33,7 @@ static void handle_default(EditorState* es, int ch)
 		su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	}
 	pt_insert(t->pt, ch, line_index + t->x);
+	undo_handle_insert(es);
 	if (ch == '}')
 	{
 		bool indent = true;
@@ -67,6 +69,7 @@ static void handle_default(EditorState* es, int ch)
 					su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index);
 				}
 				pt_rm(t->pt, line_index);
+				undo_handle_delete(es);
 			}
 			t->x -= amount;
 		}
@@ -105,6 +108,7 @@ static void handle_tab(EditorState* es, int ch)
 			su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x + i);
 		}
 		pt_insert(t->pt, ' ', line_index + t->x + i);
+		undo_handle_insert(es);
 	}
 	t->x += TAB_SIZE;
 	check_right_update(t);
@@ -138,6 +142,7 @@ static void handle_backspace(EditorState* es, int ch)
 			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x - 1);
 		}
 		pt_rm(t->pt, line_index + t->x - 1);
+		undo_handle_delete(es);
 
 		t->x--;
 		check_left_update(t);
@@ -157,6 +162,7 @@ static void handle_backspace(EditorState* es, int ch)
 				su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index - 1);
 			}
 			pt_rm(t->pt, line_index - 1);
+			undo_handle_delete(es);
 
 			check_left_update(t);
 			check_right_update(t);
@@ -228,6 +234,7 @@ static void handle_enter(EditorState* es, int ch)
 		su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 	}
 	pt_insert(t->pt, '\n', line_index + t->x);
+	undo_handle_insert(es);
 	t->y++;
 	t->x = indent_line(es, t, t->y);
 

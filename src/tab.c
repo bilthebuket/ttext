@@ -6,6 +6,7 @@
 #include "global.h"
 #include "line.h"
 #include "io_tools.h"
+#include "undo.h"
 
 #define UNTITLED_TAB_NAME "untitled.txt"
 #define UNTITLED_TAB_NAME_SIZE 13
@@ -134,6 +135,15 @@ void tab_free(Tab* t)
 				line_free(l);
 			}
 			ll_free(t->lines);
+		}
+		if (t->undos != NULL)
+		{
+			while (t->undos->size > 0)
+			{
+				UndoInfo* ui = ll_rm(t->undos, 0);
+				free(ui);
+			}
+			ll_free(t->undos);
 		}
 		pt_free(t->pt);
 		free(t);

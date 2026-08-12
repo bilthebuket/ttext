@@ -7,6 +7,7 @@
 #include "global.h"
 #include "tree.h"
 #include "piece_table/piece_table.h"
+#include "piece_table/color_indices.h"
 #include <criterion/criterion.h>
 
 EditorState es;
@@ -61,6 +62,41 @@ void print_chars(int num)
 	printf("\n");
 }
 
+void ci_expect_state(const int* colors)
+{
+	bool passed = true;
+
+	int i = 0;
+	char c = pt_get(es.active_tab->pt, 0);
+	int color = colors[1];
+	int num_chars_remaining = colors[0];
+	int colors_covered = 0;
+	for (; c != '\0'; i++, c = pt_get(es.active_tab->pt, i))
+	{
+		if (c != ' ' && c != '\n')
+		{
+			if (pt_get_color(es.active_tab->pt, i) != color)
+			{
+				passed = false;
+				printf("index %d char %c: expected %d | found %d\n", i, c, color, pt_get_color(es.active_tab->pt, i));
+			}
+			num_chars_remaining--;
+			if (num_chars_remaining == 0)
+			{
+				colors_covered++;
+				color = colors[colors_covered * 2 + 1];
+				num_chars_remaining = colors[colors_covered * 2];
+			}
+		}
+	}
+
+	if (!passed)
+	{
+		fflush(stdout);
+		exit(1);
+	}
+}
+
 void expect_state(const char* str)
 {
 	bool passed = true;
@@ -71,14 +107,14 @@ void expect_state(const char* str)
 		cr_expect_eq(str[i], pt_get(es.active_tab->pt, i));
 		if (str[i] != pt_get(es.active_tab->pt, i))
 		{
-			printf("%d | %d\n", (int) str[i], (int) pt_get(es.active_tab->pt, i));
+			printf("index %d, expected %d | found %d\n", i, (int) str[i], (int) pt_get(es.active_tab->pt, i));
 			passed = false;
 		}
 	}
 	cr_expect_eq(str[i], pt_get(es.active_tab->pt, i));
 	if (str[i] != pt_get(es.active_tab->pt, i))
 	{
-		printf("%d | %d\n", (int) str[i], (int) pt_get(es.active_tab->pt, i));
+		printf("index %d, expected %d | found %d\n", i, (int) str[i], (int) pt_get(es.active_tab->pt, i));
 		passed = false;
 	}
 
@@ -122,28 +158,41 @@ Test(editor, test_undo_simple1, .init = setup_state, .fini = teardown_state)
 	(*es.mode)(&es, 'u');
 
 	expect_state("int main(void)\n{\n    \n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 3, YELLOW_TEXT});
 }
 
 Test(editor, test_undo_simple2, .init = setup_state, .fini = teardown_state)
 {
 	simulate_insert("int x = 5;");
+	expect_state("int x = 5;");
 
 	goto_coords(0, 0);
 	(*es.mode)(&es, 'x');
-	goto_coords(0, 2);
+	expect_state("nt x = 5;");
+
+	goto_coords(2, 0);
 	(*es.mode)(&es, 'x');
+	expect_state("ntx = 5;");
 
 	goto_coords(0, 0);
 	simulate_insert("const ");
+	expect_state("const ntx = 5;");
 
-	goto_coords(0, 1);
+	goto_coords(1, 0);
 	(*es.mode)(&es, 'x');
 
-	(*es.mode)(&es, 'u');
-	(*es.mode)(&es, 'u');
-	(*es.mode)(&es, 'u');
-	(*es.mode)(&es, 'u');
+	expect_state("cnst ntx = 5;");
 
+	(*es.mode)(&es, 'u');
+	expect_state("const ntx = 5;");
+
+	(*es.mode)(&es, 'u');
+	expect_state("ntx = 5;");
+
+	(*es.mode)(&es, 'u');
+	expect_state("nt x = 5;");
+
+	(*es.mode)(&es, 'u');
 	expect_state("int x = 5;");
 }
 

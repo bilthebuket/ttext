@@ -37,4 +37,6 @@ void ci_handle_rm(PieceTable* pt, int index);
 
 bool is_control_word(char* s);
 
+void merge_color_indices_on_boundary(PieceTable* pt, int start_index, int end_index);
+
 #endif

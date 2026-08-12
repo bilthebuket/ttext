@@ -8,6 +8,7 @@
 #include "line.h"
 #include "finder.h"
 #include "piece_table/undo.h"
+#include "undo.h"
 
 static void handle_default(EditorState* es)
 {
@@ -170,13 +171,15 @@ static void handle_i(EditorState* es)
 
 	t->tab_num_flags &= ~CHANGES_SAVED;
 	print_message("Insert Mode");
-	pt_undo_insert(t->pt);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index >= 0 && (t->tab_num_flags & PARSE_FOR_SIGNATURES))
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
+
+	pt_undo_insert(t->pt);
+	undo_insert(es, line_index + t->x);
 
 	es->mode = &insert_mode;
 }
@@ -208,6 +211,7 @@ static void handle_a(EditorState* es)
 		move_cursor_to_tab(t);
 	}
 	pt_undo_insert(t->pt);
+	undo_insert(es, line_index + t->x);
 
 	line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index >= 0 && (t->tab_num_flags & PARSE_FOR_SIGNATURES))
@@ -262,9 +266,6 @@ static void handle_o(EditorState* es)
 		return;
 	}
 
-
-	pt_undo_insert(t->pt);
-
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
@@ -273,6 +274,8 @@ static void handle_o(EditorState* es)
 
 	int len;
 	for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
+
+	pt_undo_insert(t->pt);
 	pt_insert(t->pt, '\n', line_index + len);
 
 	t->y++;
@@ -283,6 +286,8 @@ static void handle_o(EditorState* es)
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
+
+	undo_insert(es, line_index + t->x);
 
 	print_tab(t);
 	move_cursor_to_tab(t);
@@ -297,13 +302,14 @@ static void handle_x(EditorState* es)
 		return;
 	}
 
-	pt_undo_insert(t->pt);
-
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
 		return;
 	}
+
+	pt_undo_insert(t->pt);
+	undo_insert(es, line_index + t->x);
 
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
@@ -318,6 +324,7 @@ static void handle_x(EditorState* es)
 			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
 		}
 		pt_rm(t->pt, line_index + t->x);
+		undo_handle_delete(es);
 		backup_increment_and_check(es->active_tab);
 
 		if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
@@ -487,7 +494,9 @@ static void handle_n(EditorState* es)
 
 static void handle_u(EditorState* es)
 {
+	undo_prepare_for_execute(es);
 	pt_undo_execute(es->active_tab->pt);
+	undo_execute(es);
 	es->flags |= UPDATE_FINDER_FLAG;
 	move_cursor_to_valid_coordinates(es->active_tab);
 	backup_increment_and_check(es->active_tab);
