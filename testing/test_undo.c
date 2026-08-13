@@ -228,12 +228,19 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i+)\n}");
 	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
 				       1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 4, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT, 2, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i++)\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
+					1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 4, RED_TEXT, 1, CYAN_TEXT, 2, RED_TEXT, 2, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for()\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 3, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    \n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 3, YELLOW_TEXT});
 
 	goto_coords(0, 2);
 	(*es.mode)(&es, '$');
@@ -262,18 +269,38 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        print()\n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 9, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf()\n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 10, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(s)\n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 1, CYAN_TEXT, 3, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(st)\n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 2, CYAN_TEXT, 3, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(str)\n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 3, CYAN_TEXT, 3, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        \n    }\n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+					1, YELLOW_TEXT, 4, CYAN_TEXT, 4, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    \n}");
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 3, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("");
 }
@@ -287,8 +314,13 @@ Test(editor, test_undo_complex2, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT});
+	printf("yes\n");
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT});
+	printf("yes\n");
 
 	goto_coords(0, 0);
 	(*es.mode)(&es, '$');
@@ -309,6 +341,9 @@ Test(editor, test_undo_complex2, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf();\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT, 1, RED_TEXT,
+					5, BLUE_TEXT, 4, CYAN_TEXT, 12, YELLOW_TEXT, 1, RED_TEXT, 1, YELLOW_TEXT});
+	printf("yes\n");
 
 	goto_coords(10, 4);
 	simulate_append("argv[i]");
@@ -326,32 +361,79 @@ Test(editor, test_undo_complex2, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n        printf(argv[i]);\n        \n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT,
+					4, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT,
+					4, CYAN_TEXT, 1, RED_TEXT, 1, CYAN_TEXT, 2, RED_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, CYAN_TEXT,
+					2, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n        printf(argv[i]);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT,
+					4, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT,
+					4, CYAN_TEXT, 1, RED_TEXT, 1, CYAN_TEXT, 2, RED_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, CYAN_TEXT,
+					2, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    for (int i = 1; i < argc; i++)\n    {\n    printf(argv[i]);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT,
+					4, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT, 1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT,
+					4, CYAN_TEXT, 1, RED_TEXT, 1, CYAN_TEXT, 2, RED_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, CYAN_TEXT,
+					2, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    \n    printf(argv[i]);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT,
+					1, RED_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT, 11, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf(argv[i]);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT,
+					1, RED_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT, 11, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf();\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT,
+					1, RED_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT, 12, YELLOW_TEXT, 1, RED_TEXT, 1, YELLOW_TEXT});
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(int argc, char* argv[])\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, BLUE_TEXT, 4, CYAN_TEXT,
+					1, RED_TEXT, 5, BLUE_TEXT, 4, CYAN_TEXT, 11, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main()\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 14, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT, 1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(d)\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 1, CYAN_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(id)\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 2, CYAN_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(oid)\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 3, CYAN_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(void)\n{\n    printf(test);\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 4, CYAN_TEXT, 1, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>\n\nint main(void)\n{\n    printf();\n}");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT, 3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 10, YELLOW_TEXT,
+					1, RED_TEXT, 1, YELLOW_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("#include <stdio.h>");
+	ci_expect_state((const int[]) {8, MAGENTA_TEXT, 9, CYAN_TEXT});
+
 	(*es.mode)(&es, 'u');
 	expect_state("");
 }
