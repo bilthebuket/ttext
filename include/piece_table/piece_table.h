@@ -51,6 +51,8 @@ typedef struct PieceTable
 	LinkedList* undos;
 	int append_size;
 	int append_len;
+
+	int ci_index;
 } PieceTable;
 
 void pt_insert(PieceTable* pt, char c, int index);

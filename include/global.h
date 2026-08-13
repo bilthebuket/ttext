@@ -52,6 +52,8 @@
 #define FUNCTION_NAME_BUFFER_SIZE 100
 #define FUNCTION_SIGNATURE_BUFFER_SIZE 200
 
+#define CONTROL_WORD_MAX_LENGTH 10
+
 #include "finder.h"
 #include "signature.h"
 

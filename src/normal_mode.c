@@ -179,6 +179,7 @@ static void handle_i(EditorState* es)
 	}
 
 	pt_undo_insert(t->pt);
+	ci_prepare(t->pt, line_index + t->x);
 	undo_insert(es, line_index + t->x);
 
 	es->mode = &insert_mode;
@@ -211,6 +212,7 @@ static void handle_a(EditorState* es)
 		move_cursor_to_tab(t);
 	}
 	pt_undo_insert(t->pt);
+	ci_prepare(t->pt, line_index + t->x);
 	undo_insert(es, line_index + t->x);
 
 	line_index = pt_get_line_index(t->pt, t->y);
@@ -288,6 +290,7 @@ static void handle_o(EditorState* es)
 	}
 
 	undo_insert(es, line_index + t->x);
+	ci_prepare(t->pt, line_index + t->x);
 
 	print_tab(t);
 	move_cursor_to_tab(t);
@@ -310,6 +313,7 @@ static void handle_x(EditorState* es)
 
 	pt_undo_insert(t->pt);
 	undo_insert(es, line_index + t->x);
+	ci_prepare(t->pt, line_index + t->x);
 
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
@@ -325,6 +329,7 @@ static void handle_x(EditorState* es)
 		}
 		pt_rm(t->pt, line_index + t->x);
 		undo_handle_delete(es);
+		ci_handle_rm(t->pt);
 		backup_increment_and_check(es->active_tab);
 
 		if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
@@ -343,6 +348,7 @@ static void handle_x(EditorState* es)
 		{
 			su_execute(es->signatures, t->pt, &(t->su), t->fname);
 		}
+		ci_execute(t->pt);
 	}
 }
 

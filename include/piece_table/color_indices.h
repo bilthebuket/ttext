@@ -30,8 +30,10 @@ ColorIndex* ci_create(int color, int len, int chars_contained);
 int ci_compare(Tree* t, void* elt);
 int ci_finder_compare_characters(Tree* t, void* elt);
 
-void ci_handle_insert(PieceTable* pt, int index);
-void ci_handle_rm(PieceTable* pt, int index);
+void ci_prepare(PieceTable* pt, int index);
+void ci_handle_insert(PieceTable* pt);
+void ci_handle_rm(PieceTable* pt);
+void ci_execute(PieceTable* pt);
 
 bool is_control_word(char* s);
 

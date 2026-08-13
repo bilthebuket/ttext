@@ -218,9 +218,7 @@ static void color_indices_undo_execute(PieceTable* pt, UndoInfo* ui)
 	int end_index;
 	if (get_post_bounds(pt, ui, &start_index, &end_index))
 	{
-		ColorIndexFinder f;
-		f.global_char_index = start_index;
-		update_until_no_update_occurs(pt, f, 0);
+		pt_update_color_indices(pt, start_index);
 	}
 }
 
