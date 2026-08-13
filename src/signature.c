@@ -10,11 +10,6 @@
 #include "hash_map.h"
 #include "hash_map.h"
 
-static bool is_valid_name_character(char c)
-{
-	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '*' || c == '[' || c == ']';
-}
-
 bool signature_equals_loose(void* v1, void* v2)
 {
 	Signature* s1 = (Signature*) v1;

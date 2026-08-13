@@ -9,6 +9,11 @@
 #include "piece_table/color_indices.h"
 #include "global.h"
 
+bool is_valid_name_character(char c)
+{
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '*' || c == '[' || c == ']';
+}
+
 FILE* error_log = NULL;
 
 int es_init(EditorState* es, int argc, char* argv[])

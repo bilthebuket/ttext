@@ -71,6 +71,7 @@ typedef struct EditorState
 
 extern FILE* error_log;
 
+bool is_valid_name_character(char c);
 int es_init(EditorState* es, int argc, char* argv[]);
 void es_uninit(EditorState* es);
 int hash_function(void* v, int max_value);

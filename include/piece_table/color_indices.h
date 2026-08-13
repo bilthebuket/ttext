@@ -30,8 +30,6 @@ ColorIndex* ci_create(int color, int len, int chars_contained);
 int ci_compare(Tree* t, void* elt);
 int ci_finder_compare_characters(Tree* t, void* elt);
 
-void update_until_no_update_occurs(PieceTable* pt, ColorIndexFinder f, int len);
-
 void ci_handle_insert(PieceTable* pt, int index);
 void ci_handle_rm(PieceTable* pt, int index);
 
