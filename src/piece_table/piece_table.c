@@ -497,8 +497,6 @@ void pt_insert(PieceTable* pt, char c, int index)
 			pt->pieces = tree_add_elt(pt->pieces, new_piece, &piece_compare, &piece_update_info);
 		}
 	}
-
-	ci_handle_insert(pt, index);
 }
 
 static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, int index)
@@ -656,8 +654,6 @@ void pt_rm(PieceTable* pt, int index)
 			piece_free(new_two);
 		}
 	}
-
-	ci_handle_rm(pt, index);
 }
 
 char pt_get(PieceTable* pt, int index)
