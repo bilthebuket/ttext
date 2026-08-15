@@ -39,4 +39,7 @@ bool is_control_word(char* s);
 
 void merge_color_indices_on_boundary(PieceTable* pt, int start_index, int end_index);
 
+char ci_get_len(void* v);
+char ci_get_color(void* v);
+
 #endif

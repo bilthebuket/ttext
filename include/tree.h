@@ -35,7 +35,7 @@ void tree_recursive_update_to_root(Tree* t, void (*update_relative_info)(Tree*))
 // returns pointer to tree that replaced the tree that got rotated
 Tree* tree_rotate(Tree* t, void (*update_relative_info)(Tree*));
 
-void print_tree(Tree* t, bool reset, int row, int col);
+void print_tree(Tree* t, bool reset, int row, int col, char (*get_char)(void*));
 void print_info(Tree* t, void (*print_elt)(void*));
 bool tree_find(Tree* t, Tree* to_find);
 

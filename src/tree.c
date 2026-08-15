@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tree.h"
+#include "piece_table/color_indices.h"
 
 #define SIZE 190
 
@@ -552,7 +553,7 @@ void print_info(Tree* t, void (*print_elt)(void*))
 	fprintf(stderr, "\n");
 }
 
-void print_tree(Tree* t, bool reset, int row, int col)
+void print_tree(Tree* t, bool reset, int row, int col, char (*get_char)(void*))
 {
 	static char lines[SIZE][SIZE];
 	static int max_row = 0;
@@ -574,9 +575,9 @@ void print_tree(Tree* t, bool reset, int row, int col)
 	{
 		max_row = row;
 	}
-	lines[row][col + (SIZE / 2)] = (*(int*) t->elt) + 'a';
-	print_tree(t->left, false, row + 1, col - (SIZE / (5 * (row + 1))));
-	print_tree(t->right, false, row + 1, col + (SIZE / (5 * (row + 1))));
+	lines[row][col + (SIZE / 2)] = (*get_char)(t->elt) + 'a';
+	print_tree(t->left, false, row + 1, col - (SIZE / (5 * (row + 1))), get_char);
+	print_tree(t->right, false, row + 1, col + (SIZE / (5 * (row + 1))), get_char);
 	if (row == 0)
 	{
 		for (int i = 0; i <= max_row; i++)
