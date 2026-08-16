@@ -3,7 +3,7 @@
 #include "tree.h"
 #include "piece_table/color_indices.h"
 
-#define SIZE 190
+#define SIZE 255
 
 Tree* tree_create(void* elt)
 {

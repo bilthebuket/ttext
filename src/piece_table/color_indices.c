@@ -132,6 +132,7 @@ void ci_prepare(PieceTable* pt, int index)
 	if (pt != NULL)
 	{
 		pt->ci_index = index;
+		pt->ci_chars_added = 0;
 	}
 }
 
@@ -191,7 +192,7 @@ void ci_handle_insert(PieceTable* pt)
 		}
 	}
 
-	pt->ci_index++;
+	pt->ci_chars_added++;
 }
 
 void ci_handle_rm(PieceTable* pt)
@@ -228,23 +229,30 @@ void ci_handle_rm(PieceTable* pt)
 		tree_recursive_update_to_root(t, &ci_update_info);
 	}
 
-	pt->ci_index--;
+	if (pt->ci_chars_added == 0)
+	{
+		pt->ci_index--;
+	}
+	else
+	{
+		pt->ci_chars_added--;
+	}
 }
 
-void ci_execute(PieceTable* pt)
+bool ci_execute(PieceTable* pt, int* first_line_updated, int* last_line_updated)
 {
 	if (pt == NULL)
 	{
-		return;
+		return false;
 	}
 
 	PieceIterator pi;
-	if (!pt_iterator_init(pt, &pi, pt->ci_index - 1))
+	if (!pt_iterator_init(pt, &pi, pt->ci_index))
 	{
-		return;
+		return false;
 	}
 
-	int start_index = pt->ci_index - 1;
+	int start_index = pt->ci_index;
 	char c = pt_iterate_backwards(&pi);
 	if (control_chars[(int) c] && start_index > 0)
 	{
@@ -258,21 +266,35 @@ void ci_execute(PieceTable* pt)
 	}
 	start_index++;
 
-	if (!pt_iterator_init(pt, &pi, pt->ci_index - 1))
+	if (!pt_iterator_init(pt, &pi, pt->ci_index + pt->ci_chars_added - 1))
 	{
-		return;
+		return false;
 	}
 
-	int end_index = pt->ci_index - 1;
+	int end_index = pt->ci_index + pt->ci_chars_added - 1;
 	c = pt_iterate(&pi);
-	while (!control_chars[(int) c])
+	while (!control_chars[(int) c] && c != '\0')
 	{
 		end_index++;
 		c = pt_iterate(&pi);
 	}
+	if (c == '\0')
+	{
+		end_index--;
+	}
 
 	merge_color_indices_on_boundary(pt, start_index, end_index);
 	pt_update_color_indices(pt, start_index);
+	if (first_line_updated != NULL)
+	{
+		*first_line_updated = pt_get_line_index_inverse(pt, start_index);
+	}
+	if (last_line_updated != NULL)
+	{
+		*last_line_updated = pt_get_line_index_inverse(pt, end_index);
+	}
+
+	return true;
 }
 
 int ci_compare(Tree* t, void* elt)
@@ -443,11 +465,8 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				ci->len -= new->len;
 				tree_recursive_update_to_root(t, &ci_update_info);
 				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
-				ci = new;
-				f.contained = f.global_char_index + i;
-				f.global_char_index = -1;
+				f.global_char_index += new->len;
 				i = 0;
-				t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 				continue;
 			}
 			else
@@ -456,11 +475,11 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 			}
 		}
 
-		if (is_valid_name_character(c))
+		if (is_valid_name_character(c) && !yellow_chars[(int) c])
 		{
 			char buf[CONTROL_WORD_MAX_LENGTH];
 			int j = 0;
-			while (is_valid_name_character(c) && i < ci->len)
+			while (is_valid_name_character(c) && !yellow_chars[(int) c] && i < ci->len)
 			{
 				if (j < CONTROL_WORD_MAX_LENGTH - 1)
 				{
@@ -494,7 +513,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				j = i;
 				PieceIterator pi2;
 				char c2;
-				if (pt_iterator_init(pt, &pi2, j))
+				if (pt_iterator_init(pt, &pi2, f.global_char_index + j))
 				{
 					c2 = pt_iterate(&pi2);
 					while (j < ci->len && (c2 == ' ' || c2 == '\n'))
@@ -506,7 +525,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 					if (c2 == '(')
 					{
 						i = j + 1;
-						pt_iterator_init(pt, &pi, i);
+						pt_iterator_init(pt, &pi, f.global_char_index + i);
 						c = pt_iterate(&pi);
 						new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
 					}
@@ -526,11 +545,8 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				ci->len -= new->len;
 				tree_recursive_update_to_root(t, &ci_update_info);
 				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
-				ci = new;
-				f.contained = f.global_char_index + i + 1;
-				f.global_char_index = -1;
+				f.global_char_index += new->len;
 				i = 0;
-				t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 				continue;
 			}
 			else
@@ -541,7 +557,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 
 		if (yellow_chars[(int) c])
 		{
-			while (yellow_chars[(int) c] && i < ci->len)
+			while ((yellow_chars[(int) c] || c == ' ' || c == '\n') && i < ci->len)
 			{
 				c = pt_iterate(&pi);
 				i++;
@@ -553,11 +569,8 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				ci->len -= new->len;
 				tree_recursive_update_to_root(t, &ci_update_info);
 				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
-				ci = new;
-				f.contained = f.global_char_index + i;
-				f.global_char_index = -1;
+				f.global_char_index += new->len;
 				i = 0;
-				t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 				continue;
 			}
 			else
@@ -626,33 +639,32 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	if (commented)
 	{
-		ColorIndex* new = ci_create(GREEN_TEXT, i - store, f.global_char_index + i);
-		if (new != NULL)
+		if (store > 0)
 		{
-			if (ci->len - i > 0)
+			ColorIndex* new = ci_create(WHITE_TEXT, store, f.global_char_index + store);
+			if (new != NULL)
 			{
-				ColorIndex* new2 = ci_create(CYAN_TEXT, ci->len - i, f.global_char_index + ci->len);
-				if (new2 != NULL)
-				{
-					ci->len = i;
-					tree_recursive_update_to_root(t, &ci_update_info);
-					pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
-					pt->color_indices = tree_add_elt(pt->color_indices, new2, &ci_compare, &ci_update_info);
-					pt_update_color_indices(pt, f.global_char_index + new->len + ci->len);
-				}
-				else
-				{
-					free(new);
-					return;
-				}
+				ci->len -= new->len;
+				f.global_char_index += new->len;
+				tree_recursive_update_to_root(t, &ci_update_info);
+				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+				pt_update_color_indices(pt, f.global_char_index - 1);
 			}
 			else
 			{
-				ci->len = i;
-				tree_recursive_update_to_root(t, &ci_update_info);
-				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
 				return;
 			}
+		}
+
+		ColorIndex* new = ci_create(GREEN_TEXT, i - store, f.global_char_index + (i - store));
+		if (new != NULL)
+		{
+			ci->len -= new->len;
+			f.global_char_index += new->len;
+			tree_recursive_update_to_root(t, &ci_update_info);
+			pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+			pt_update_color_indices(pt, f.global_char_index);
+			return;
 		}
 		else
 		{
@@ -681,39 +693,39 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			c = pt_iterate(&pi);
 			i++;
 		}
-		if (ci->len - i > 0)
+		if (i > 0)
 		{
-			ColorIndex* new = ci_create(MAGENTA_TEXT, ci->len - i, f.global_char_index + ci->len);
+			ColorIndex* new = ci_create(MAGENTA_TEXT, i, f.global_char_index + i);
 			if (new != NULL)
 			{
 				ci->len -= new->len;
+				f.global_char_index += new->len;
 				tree_recursive_update_to_root(t, &ci_update_info);
 				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+				i = 0;
 
-				int store = i;
-				while (c != ' ' && c != '\n' && c != '\0' && i < ci->len + new->len)
+				while (c != '\n' && c != '\0' && i < ci->len)
 				{
 					c = pt_iterate(&pi);
 					i++;
 				}
-				while ((c == ' ' || c == '\n') && i < ci->len + new->len)
+				while (c == '\n' && i < ci->len)
 				{
 					c = pt_iterate(&pi);
 					i++;
 				}
 
-				if (new->len - (i - store) > 0)
+				if (i > 0)
 				{
-					ColorIndex* new2 = ci_create(RED_TEXT, new->len - (i - store), f.global_char_index + ci->len + new->len);
+					ColorIndex* new2 = ci_create(RED_TEXT, i, f.global_char_index + i);
 					if (new2 != NULL)
 					{
-						f.contained = f.global_char_index + ci->len;
-						f.global_char_index = -1;
-						t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
-						new->len -= new2->len;
+						f.global_char_index += new2->len;
+						ci->len -= new2->len;
+						i = 0;
 						tree_recursive_update_to_root(t, &ci_update_info);
 						pt->color_indices = tree_add_elt(pt->color_indices, new2, &ci_compare, &ci_update_info);
-						pt_update_color_indices(pt, f.global_char_index + new->len);
+						pt_update_color_indices(pt, f.global_char_index);
 						return;
 					}
 					else
@@ -724,6 +736,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				else
 				{
 					new->color = CYAN_TEXT;
+					pt_update_color_indices(pt, f.global_char_index);
 					return;
 				}
 			}
@@ -744,8 +757,10 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	while (i < ci->len)
 	{
+		bool need_increment = true;
 		if (operator_chars[(int) c])
 		{
+			need_increment = false;
 			if (c == '*' && !inside_function_call && !right_of_assignment)
 			{
 				c = pt_iterate(&pi);
@@ -787,13 +802,29 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				ColorIndex* new2 = ci_create(RED_TEXT, i - store, f.global_char_index + i);
 				if (new2 != NULL)
 				{
-					ci->len -= new1->len + new2->len;
-					ci->color = CYAN_TEXT;
-					tree_recursive_update_to_root(t, &ci_update_info);
+					bool done = false;
+					if (ci->len - (new1->len + new2->len) > 0)
+					{
+						ci->len -= new1->len + new2->len;
+						f.global_char_index += new1->len + new2->len;
+						ci->color = CYAN_TEXT;
+						tree_recursive_update_to_root(t, &ci_update_info);
+					}
+					else
+					{
+						ColorIndexFinder f2;
+						f2.contained = f.global_char_index + 1;
+						f2.global_char_index = -1;
+						pt->color_indices = tree_rm(pt->color_indices, &f2, &ci_finder_compare_characters, &free, &ci_update_info);
+						ci = NULL;
+						done = true;
+					}
+
 					if (new1->len > 0)
 					{
+						int store = new1->chars_contained - 1;
 						pt->color_indices = tree_add_elt(pt->color_indices, new1, &ci_compare, &ci_update_info);
-						pt_update_color_indices_helper(pt, f.global_char_index + store - 1);
+						pt_update_color_indices_helper(pt, store);
 					}
 					else
 					{
@@ -808,6 +839,11 @@ void pt_update_color_indices(PieceTable* pt, int index)
 						free(new2);
 					}
 					i = 0;
+
+					if (done)
+					{
+						break;
+					}
 				}
 				else
 				{
@@ -823,6 +859,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 		if (!right_of_assignment && !inside_function_call && is_valid_name_character(c))
 		{
+			need_increment = false;
 			while (is_valid_name_character(c) && i < ci->len)
 			{
 				c = pt_iterate(&pi);
@@ -836,35 +873,48 @@ void pt_update_color_indices(PieceTable* pt, int index)
 					c = pt_iterate(&pi);
 					i++;
 				}
+			}
 
-				if (c == '(')
+			if (c == '(')
+			{
+				c = pt_iterate(&pi);
+				i++;
+
+				// checking for function pointer declaration versus function call that uses pointer dereference as first argument
+				if (c == '*')
 				{
 					c = pt_iterate(&pi);
 					i++;
-
-					// checking for function pointer declaration versus function call that uses pointer dereference as first argument
-					if (c == '*')
+					while (is_valid_name_character(c) && i < ci->len)
 					{
 						c = pt_iterate(&pi);
 						i++;
-						while (is_valid_name_character(c) && i < ci->len)
-						{
-							c = pt_iterate(&pi);
-							i++;
-						}
-
-						if (c != ')')
-						{
-							inside_function_call = true;
-						}
 					}
-					else
+
+					if (c != ')')
 					{
 						inside_function_call = true;
 					}
 				}
+				else
+				{
+					inside_function_call = true;
+				}
 			}
 		}
+
+		if (need_increment)
+		{
+			c = pt_iterate(&pi);
+			i++;
+		}
+	}
+
+	// if ci is NULL that means we broke it up and updated the color indices until everything was properly updated
+	// if ci is not NULL we reached the end of ci without updating it
+	if (ci != NULL)
+	{
+		pt_update_color_indices_helper(pt, f.global_char_index);
 	}
 }
 

@@ -53,6 +53,7 @@ typedef struct PieceTable
 	int append_len;
 
 	int ci_index;
+	int ci_chars_added;
 } PieceTable;
 
 void pt_insert(PieceTable* pt, char c, int index);

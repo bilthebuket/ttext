@@ -33,7 +33,7 @@ int ci_finder_compare_characters(Tree* t, void* elt);
 void ci_prepare(PieceTable* pt, int index);
 void ci_handle_insert(PieceTable* pt);
 void ci_handle_rm(PieceTable* pt);
-void ci_execute(PieceTable* pt);
+bool ci_execute(PieceTable* pt, int* first_line_updated, int* last_line_updated);
 
 bool is_control_word(char* s);
 

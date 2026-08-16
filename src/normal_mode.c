@@ -348,7 +348,15 @@ static void handle_x(EditorState* es)
 		{
 			su_execute(es->signatures, t->pt, &(t->su), t->fname);
 		}
-		ci_execute(t->pt);
+		int start_index;
+		int end_index;
+		if (ci_execute(t->pt, &start_index, &end_index))
+		{
+			for (int i = start_index; i <= end_index; i++)
+			{
+				print_line(t, i);
+			}
+		}
 	}
 }
 

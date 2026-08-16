@@ -212,7 +212,15 @@ static void handle_escape(EditorState* es, int ch)
 	{
 		su_execute(es->signatures, t->pt, &(t->su), t->fname);
 	}
-	ci_execute(t->pt);
+	int start_index;
+	int end_index;
+	if (ci_execute(t->pt, &start_index, &end_index))
+	{
+		for (int i = start_index; i <= end_index; i++)
+		{
+			print_line(t, i);
+		}
+	}
 	es->mode = &normal_mode;
 	es->flags |= UPDATE_FINDER_FLAG;
 }
