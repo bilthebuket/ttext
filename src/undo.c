@@ -53,12 +53,12 @@ static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* 
 	}
 
 	char c = pt_iterate_backwards(&pi);
-	if (c == '\n')
+	if (is_control_char(c))
 	{
 		c = pt_iterate_backwards(&pi);
 		*start_index = *start_index - 1;
 	}
-	while (c != '\n' && c != '\0')
+	while (!is_control_char(c) && c != '\0')
 	{
 		c = pt_iterate_backwards(&pi);
 		*start_index = *start_index - 1;
@@ -76,12 +76,15 @@ static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* 
 	}
 
 	c = pt_iterate(&pi);
-	while (c != '\n' && c != '\0')
+	while (!is_control_char(c) && c != '\0')
 	{
 		c = pt_iterate(&pi);
 		*end_index = *end_index + 1;
 	}
-	*end_index = *end_index - 1;
+	if (c == '\0')
+	{
+		*end_index = *end_index - 1;
+	}
 
 	return true;
 }
@@ -163,12 +166,12 @@ static bool get_post_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int*
 	}
 
 	char c = pt_iterate_backwards(&pi);
-	if (c == '\n')
+	if (is_control_char(c))
 	{
 		c = pt_iterate_backwards(&pi);
 		*start_index = *start_index - 1;
 	}
-	while (c != '\n' && c != '\0')
+	while (!is_control_char(c) && c != '\0')
 	{
 		c = pt_iterate_backwards(&pi);
 		*start_index = *start_index - 1;
@@ -182,12 +185,15 @@ static bool get_post_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int*
 	}
 
 	c = pt_iterate(&pi);
-	while (c != '\n' && c != '\0')
+	while (!is_control_char(c) && c != '\0')
 	{
 		c = pt_iterate(&pi);
 		*end_index = *end_index + 1;
 	}
-	*end_index = *end_index - 1;
+	if (c == '\0')
+	{
+		*end_index = *end_index - 1;
+	}
 
 	return true;
 }

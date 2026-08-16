@@ -277,8 +277,10 @@ static void handle_o(EditorState* es)
 	int len;
 	for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
 
+	ci_prepare(t->pt, line_index + len);
 	pt_undo_insert(t->pt);
 	pt_insert(t->pt, '\n', line_index + len);
+	ci_handle_insert(t->pt);
 
 	t->y++;
 	t->x = indent_line(es, t, t->y);
@@ -290,7 +292,6 @@ static void handle_o(EditorState* es)
 	}
 
 	undo_insert(es, line_index + t->x);
-	ci_prepare(t->pt, line_index + t->x);
 
 	print_tab(t);
 	move_cursor_to_tab(t);

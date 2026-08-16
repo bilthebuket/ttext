@@ -16,6 +16,11 @@ static bool control_chars[NUM_CHARS];
 static LinkedList* control_word_check[MAX_HASH_VALUE];
 static char* control_words[] = {"break", "case", "continue", "default", "do", "else", "for", "goto", "if", "return", "switch", "typedef", "while"};
 
+bool is_control_char(char c)
+{
+	return control_chars[(int) c];
+}
+
 bool is_control_word(char* s)
 {
 	LinkedList* lst = control_word_check[hash_function(s, MAX_HASH_VALUE)];
@@ -146,7 +151,7 @@ void ci_handle_insert(PieceTable* pt)
 	ColorIndexFinder f;
 	// not ci_index + 1 because the inserted character does not exist in the ci's yet, thus if there is a ci
 	// for recently inserted characters it will be to the left of the index
-	f.contained = pt->ci_index;
+	f.contained = pt->ci_index + pt->ci_chars_added;
 	f.global_char_index = -1;
 
 	Tree* t;
@@ -185,10 +190,33 @@ void ci_handle_insert(PieceTable* pt)
 	}
 	else
 	{
-		ci = ci_create(WHITE_TEXT, 1, pt->ci_index + 1);
-		if (ci != NULL)
+		ColorIndex* new = ci_create(WHITE_TEXT, 1, pt->ci_index + 1);
+		if (new != NULL)
 		{
-			pt->color_indices = tree_add_elt(pt->color_indices, ci, &ci_compare, &ci_update_info);
+			if (pt->ci_index == f.global_char_index + ci->len)
+			{
+				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+			}
+			else
+			{
+				ColorIndex* new2 = ci_create(ci->color, pt->ci_index - f.global_char_index, pt->ci_index);
+				if (new2 != NULL)
+				{
+					ci->len -= new2->len;
+					tree_recursive_update_to_root(t, &ci_update_info);
+					pt->color_indices = tree_add_elt(pt->color_indices, new2, &ci_compare, &ci_update_info);
+					pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+				}
+				else
+				{
+					free(new);
+					return;
+				}
+			}
+		}
+		else
+		{
+			return;
 		}
 	}
 
@@ -203,7 +231,7 @@ void ci_handle_rm(PieceTable* pt)
 	}
 
 	ColorIndexFinder f;
-	f.contained = pt->ci_index;
+	f.contained = pt->ci_index + pt->ci_chars_added;
 	f.global_char_index = -1;
 
 	Tree* t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
@@ -219,9 +247,9 @@ void ci_handle_rm(PieceTable* pt)
 
 	if (ci->len == 1)
 	{
-		f.contained = pt->ci_index;
+		f.contained = pt->ci_index + pt->ci_chars_added;
 		f.global_char_index = -1;
-		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_compare, &free, &ci_update_info);
+		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
 	}
 	else
 	{
@@ -754,6 +782,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	bool inside_function_call = false;
 	bool right_of_assignment = false;
+	bool function_signature = false;
 
 	while (i < ci->len)
 	{
@@ -857,7 +886,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 		}
 
-		if (!right_of_assignment && !inside_function_call && is_valid_name_character(c))
+		if (!right_of_assignment && !inside_function_call && !function_signature && is_valid_name_character(c))
 		{
 			need_increment = false;
 			while (is_valid_name_character(c) && i < ci->len)
@@ -900,6 +929,10 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				{
 					inside_function_call = true;
 				}
+			}
+			else if (!operator_chars[(int) c])
+			{
+				function_signature = true;
 			}
 		}
 
