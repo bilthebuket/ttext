@@ -279,8 +279,10 @@ static void handle_o(EditorState* es)
 
 	ci_prepare(t->pt, line_index + len);
 	pt_undo_insert(t->pt);
+	undo_insert(es, line_index + len);
 	pt_insert(t->pt, '\n', line_index + len);
 	ci_handle_insert(t->pt);
+	undo_handle_insert(es);
 
 	t->y++;
 	t->x = indent_line(es, t, t->y);
@@ -291,7 +293,6 @@ static void handle_o(EditorState* es)
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
 
-	undo_insert(es, line_index + t->x);
 
 	print_tab(t);
 	move_cursor_to_tab(t);

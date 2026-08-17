@@ -41,7 +41,7 @@ static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* 
 	}
 
 	PieceIterator pi;
-	*start_index = ui->index - ui->num_deleted;
+	*start_index = ui->index - ui->num_deleted - 1;
 	if (*start_index < 0)
 	{
 		*start_index = 0;
@@ -124,9 +124,18 @@ static void color_indices_prepare_for_execute(PieceTable* pt, UndoInfo* ui)
 		if (t != NULL && t->elt != NULL)
 		{
 			ColorIndex* ci = (ColorIndex*) t->elt;
-			ci->len += ui->num_deleted;
-			ci->len -= ui->num_added;
-			tree_recursive_update_to_root(t, &ci_update_info);
+			if (ci->len + ui->num_deleted - ui->num_added > 0)
+			{
+				ci->len += ui->num_deleted;
+				ci->len -= ui->num_added;
+				tree_recursive_update_to_root(t, &ci_update_info);
+			}
+			else
+			{
+				f.contained = start_index + 1;
+				f.global_char_index = -1;
+				pt->color_indices = tree_rm(pt->color_indices, &f, ci_compare, &free, &ci_update_info);
+			}
 		}
 	}
 }
@@ -179,7 +188,7 @@ static bool get_post_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int*
 	*start_index = *start_index + 1;
 
 	*end_index = ui->index;
-	if (!pt_iterator_init(pt, &pi, ui->index))
+	if (!pt_iterator_init(pt, &pi, *end_index))
 	{
 		return false;
 	}
