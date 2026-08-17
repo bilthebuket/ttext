@@ -41,7 +41,7 @@ Tree* tree_helper(Tree* t, void* elt, int (*cmp)(Tree*, void*))
 	}
 }
 
-Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*))
+Tree* tree_insert(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*))
 {
 	if (t == NULL)
 	{
@@ -70,7 +70,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 			t->right->prev = t;
 			return tree_balance(t, cmp, update_relative_info);
 		}
-		return tree_add_elt(t->right, elt, cmp, update_relative_info);
+		return tree_insert(t->right, elt, cmp, update_relative_info);
 	}
 	else if (delta == -1)
 	{
@@ -80,7 +80,7 @@ Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_r
 			t->left->prev = t;
 			return tree_balance(t, cmp, update_relative_info);
 		}
-		return tree_add_elt(t->left, elt, cmp, update_relative_info);
+		return tree_insert(t->left, elt, cmp, update_relative_info);
 	}
 	else
 	{
@@ -229,7 +229,7 @@ Tree* tree_rm(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*free_node)(vo
 	return NULL;
 }
 
-Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*), bool balance)
+Tree* tree_insert_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*), bool balance)
 {
 	if (t == NULL)
 	{
@@ -256,7 +256,7 @@ Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*upda
 				return NULL;
 			}
 		}
-		return tree_add_tree(t->right, to_add, cmp, update_relative_info, balance);
+		return tree_insert_tree(t->right, to_add, cmp, update_relative_info, balance);
 	}
 	else if (delta == -1)
 	{
@@ -273,7 +273,7 @@ Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*upda
 				return NULL;
 			}
 		}
-		return tree_add_tree(t->left, to_add, cmp, update_relative_info, balance);
+		return tree_insert_tree(t->left, to_add, cmp, update_relative_info, balance);
 	}
 	else
 	{

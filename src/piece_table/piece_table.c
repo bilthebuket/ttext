@@ -461,7 +461,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 				{
 					pt_undo_update(pt, u);
 				}
-				pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
+				pt->pieces = tree_insert(pt->pieces, new_one, &piece_compare, &piece_update_info);
 			}
 			else
 			{
@@ -474,7 +474,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 				{
 					pt_undo_update(pt, u);
 				}
-				pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
+				pt->pieces = tree_insert(pt->pieces, new_two, &piece_compare, &piece_update_info);
 			}
 			else
 			{
@@ -494,7 +494,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 			{
 				return;
 			}
-			pt->pieces = tree_add_elt(pt->pieces, new_piece, &piece_compare, &piece_update_info);
+			pt->pieces = tree_insert(pt->pieces, new_piece, &piece_compare, &piece_update_info);
 		}
 	}
 }
@@ -634,7 +634,7 @@ void pt_rm(PieceTable* pt, int index)
 			{
 				pt_undo_update(pt, two);
 			}
-			pt->pieces = tree_add_elt(pt->pieces, new_one, &piece_compare, &piece_update_info);
+			pt->pieces = tree_insert(pt->pieces, new_one, &piece_compare, &piece_update_info);
 		}
 		else
 		{
@@ -647,7 +647,7 @@ void pt_rm(PieceTable* pt, int index)
 			{
 				pt_undo_update(pt, three);
 			}
-			pt->pieces = tree_add_elt(pt->pieces, new_two, &piece_compare, &piece_update_info);
+			pt->pieces = tree_insert(pt->pieces, new_two, &piece_compare, &piece_update_info);
 		}
 		else
 		{

@@ -14,8 +14,8 @@ typedef struct Tree
 
 Tree* tree_helper(Tree* t, void* elt, int (*cmp)(Tree*, void*));
 Tree* tree_create(void* elt);
-Tree* tree_add_elt(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*));
-Tree* tree_add_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*), bool balance);
+Tree* tree_insert(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*));
+Tree* tree_insert_tree(Tree* t, Tree* to_add, int (*cmp)(Tree*, void*), void (*update_relative_info)(Tree*), bool balance);
 Tree* tree_rm(Tree* t, void* elt, int (*cmp)(Tree*, void*), void (*free_node)(void*), void (*update_relative_info)(Tree*));
 void* tree_get(Tree* t, void* elt, int (*cmp)(Tree*, void*));
 void tree_free(Tree* t, void (*free_node)(void*));

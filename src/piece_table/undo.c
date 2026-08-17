@@ -118,7 +118,7 @@ void pt_undo_execute(PieceTable* pt)
 			case UNDO_CREATE:
 			{
 				Piece* p = (Piece*) to_execute->stuff_we_need;
-				pt->pieces = tree_add_elt(pt->pieces, p, &piece_compare, &piece_update_info);
+				pt->pieces = tree_insert(pt->pieces, p, &piece_compare, &piece_update_info);
 				break;
 			}
 

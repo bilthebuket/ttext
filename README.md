@@ -52,6 +52,7 @@
 - :q! -> force quit (dont check if tab has been written to disk)
 - :w -> write tab to disk
 - :find \<string\> -> finds instances of a string (essentailly CTRL+F or /\<string\> in vim)
+- :flookup \<function name\> -> lists all function signatures in working directory with given function name
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
 # Styling Guide

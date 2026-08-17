@@ -195,7 +195,7 @@ void ci_handle_insert(PieceTable* pt)
 		{
 			if (pt->ci_index == f.global_char_index + ci->len)
 			{
-				pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+				pt->color_indices = tree_insert(pt->color_indices, new, &ci_compare, &ci_update_info);
 			}
 			else
 			{
@@ -214,8 +214,8 @@ void ci_handle_insert(PieceTable* pt)
 						pt->color_indices = tree_rm(pt->color_indices, &f, &ci_compare, &free, &ci_update_info);
 					}
 
-					pt->color_indices = tree_add_elt(pt->color_indices, new2, &ci_compare, &ci_update_info);
-					pt->color_indices = tree_add_elt(pt->color_indices, new, &ci_compare, &ci_update_info);
+					pt->color_indices = tree_insert(pt->color_indices, new2, &ci_compare, &ci_update_info);
+					pt->color_indices = tree_insert(pt->color_indices, new, &ci_compare, &ci_update_info);
 				}
 				else
 				{
@@ -463,7 +463,7 @@ static bool ci_add_and_subtract(PieceTable* pt, Tree* already_present_tree, Colo
 	{
 		already_present->len -= to_add->len;
 		tree_recursive_update_to_root(already_present_tree, &ci_update_info);
-		pt->color_indices = tree_add_elt(pt->color_indices, to_add, &ci_compare, &ci_update_info);
+		pt->color_indices = tree_insert(pt->color_indices, to_add, &ci_compare, &ci_update_info);
 		f->global_char_index += to_add->len;
 		return true;
 	}
@@ -471,7 +471,7 @@ static bool ci_add_and_subtract(PieceTable* pt, Tree* already_present_tree, Colo
 	{
 		f->contained = f->global_char_index + 1;
 		pt->color_indices = tree_rm(pt->color_indices, f, &ci_finder_compare_characters, &free, &ci_update_info);
-		pt->color_indices = tree_add_elt(pt->color_indices, to_add, &ci_compare, &ci_update_info);
+		pt->color_indices = tree_insert(pt->color_indices, to_add, &ci_compare, &ci_update_info);
 		return false;
 	}
 }
@@ -896,7 +896,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 					if (new1->len > 0)
 					{
 						int store = new1->chars_contained - 1;
-						pt->color_indices = tree_add_elt(pt->color_indices, new1, &ci_compare, &ci_update_info);
+						pt->color_indices = tree_insert(pt->color_indices, new1, &ci_compare, &ci_update_info);
 						pt_update_color_indices_helper(pt, store);
 					}
 					else
@@ -905,7 +905,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 					}
 					if (new2->len > 0)
 					{
-						pt->color_indices = tree_add_elt(pt->color_indices, new2, &ci_compare, &ci_update_info);
+						pt->color_indices = tree_insert(pt->color_indices, new2, &ci_compare, &ci_update_info);
 					}
 					else
 					{
@@ -1064,7 +1064,7 @@ void merge_color_indices_on_boundary(PieceTable* pt, int start_index, int end_in
 	ci = ci_create(CYAN_TEXT, removed_chars, start_index + removed_chars);
 	if (ci != NULL)
 	{
-		pt->color_indices = tree_add_elt(pt->color_indices, ci, &ci_compare, &ci_update_info);
+		pt->color_indices = tree_insert(pt->color_indices, ci, &ci_compare, &ci_update_info);
 	}
 }
 

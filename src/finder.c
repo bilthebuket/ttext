@@ -89,7 +89,7 @@ void finder_update(Finder* f, PieceTable* pt)
 					new->len -= ((FinderNode*) f->indices_found->elt)->contained;
 				}
 
-				f->indices_found = tree_add_elt(f->indices_found, new, &finder_node_compare, &finder_update_info);
+				f->indices_found = tree_insert(f->indices_found, new, &finder_node_compare, &finder_update_info);
 
 				index_looking_at += len;
 			}
@@ -114,8 +114,8 @@ void finder_update(Finder* f, PieceTable* pt)
 				ff.contained = index_looking_at + 1;
 
 				f->indices_found = tree_rm(f->indices_found, &ff, &finder_finder_compare, &free, &finder_update_info);
-				f->indices_found = tree_add_elt(f->indices_found, new_one, &finder_node_compare, &finder_update_info);
-				f->indices_found = tree_add_elt(f->indices_found, new_two, &finder_node_compare, &finder_update_info);
+				f->indices_found = tree_insert(f->indices_found, new_one, &finder_node_compare, &finder_update_info);
+				f->indices_found = tree_insert(f->indices_found, new_two, &finder_node_compare, &finder_update_info);
 
 				index_looking_at += len;
 			}
