@@ -277,6 +277,178 @@ void ci_handle_rm(PieceTable* pt)
 	}
 }
 
+static char inside_comment_or_quote(PieceTable* pt, int index)
+{
+	PieceIterator pi;
+	if (!pt_iterator_init(pt, &pi, index))
+	{
+		return '\0';
+	}
+
+	bool inside_double_quote = false;
+	bool inside_single_quote = false;
+	bool inside_comment = false;
+
+	char c = pt_iterate_backwards(&pi);
+	while (c != '\n' && c != '\0')
+	{
+		switch (c)
+		{
+			case '"':
+			{
+				inside_double_quote = !inside_double_quote;
+				break;
+			}
+			case '\'':
+			{
+				inside_single_quote = !inside_single_quote;
+				break;
+			}
+			case '/':
+			{
+				c = pt_iterate_backwards(&pi);
+				if (c == '/')
+				{
+					inside_comment = true;
+				}
+				break;
+			}
+		}
+
+		if (inside_comment)
+		{
+			break;
+		}
+
+		c = pt_iterate_backwards(&pi);
+	}
+
+	if (inside_comment)
+	{
+		return '/';
+	}
+	if (inside_double_quote)
+	{
+		return '"';
+	}
+	if (inside_single_quote)
+	{
+		return '\'';
+	}
+	return '\0';
+}
+
+static int iterate_to_bound_of_update_chunk(PieceTable* pt, int index, char (*iterate)(PieceIterator*), int delta)
+{
+	if (pt == NULL || pt->pieces == NULL || iterate == NULL || (delta != -1 && delta != 1))
+	{
+		return -1;
+	}
+	int pt_len = ((Piece*) pt->pieces->elt)->chars_contained;
+
+	if (index < 0)
+	{
+		index = 0;
+	}
+	if (index >= pt_len)
+	{
+		index = pt_len - 1;
+	}
+
+	PieceIterator pi;
+	if (!pt_iterator_init(pt, &pi, index))
+	{
+		return -1;
+	}
+
+	char c = (*iterate)(&pi);
+	if (control_chars[(int) c] && index > 0 && delta == -1)
+	{
+		c = (*iterate)(&pi);
+		index += delta;
+	}
+	while (index >= 0 && index < pt_len)
+	{
+		if (control_chars[(int) c])
+		{
+			char result = inside_comment_or_quote(pt, index);
+			switch (result)
+			{
+				case '\'':
+				{
+					while (index >= 0 && index < pt_len && c != '\'')
+					{
+						c = (*iterate)(&pi);
+						index += delta;
+					}
+					break;
+				}
+
+				case '"':
+				{
+					while (index >= 0 && index < pt_len && c != '"')
+					{
+						c = (*iterate)(&pi);
+						index += delta;
+					}
+					break;
+				}
+
+				case '/':
+				{
+					while (index >= 0 && index < pt_len)
+					{
+						if (c == '/')
+						{
+							c = (*iterate)(&pi);
+							index += delta;
+							if (c == '/')
+							{
+								break;
+							}
+						}
+						else if (c == '\n')
+						{
+							break;
+						}
+						c = (*iterate)(&pi);
+						index += delta;
+					}
+					break;
+				}
+			}
+
+			break;
+		}
+		index += delta;
+		c = (*iterate)(&pi);
+	}
+
+	if (delta == -1)
+	{
+		index++;
+	}
+	else
+	{
+		if (c == '\0')
+		{
+			index--;
+		}
+	}
+
+	return index;
+}
+
+int iterate_to_start_of_update_chunk(PieceTable* pt, int start_index)
+{
+	return iterate_to_bound_of_update_chunk(pt, start_index, &pt_iterate_backwards, -1);
+}
+
+int iterate_to_end_of_update_chunk(PieceTable* pt, int end_index)
+{
+	return iterate_to_bound_of_update_chunk(pt, end_index, &pt_iterate, 1);
+}
+
 bool ci_execute(PieceTable* pt, int* first_line_updated, int* last_line_updated)
 {
 	if (pt == NULL)
@@ -284,46 +456,16 @@ bool ci_execute(PieceTable* pt, int* first_line_updated, int* last_line_updated)
 		return false;
 	}
 
-	PieceIterator pi;
-
-	int start_index = pt->ci_index;
-	if (!pt_iterator_init(pt, &pi, pt->ci_index))
+	int start_index = iterate_to_start_of_update_chunk(pt, pt->ci_index);
+	if (start_index < 0)
 	{
 		return false;
 	}
 
-	char c = pt_iterate_backwards(&pi);
-	if (control_chars[(int) c] && start_index > 0)
-	{
-		c = pt_iterate_backwards(&pi);
-		start_index--;
-	}
-	while (!control_chars[(int) c] && start_index >= 0)
-	{
-		start_index--;
-		c = pt_iterate_backwards(&pi);
-	}
-	start_index++;
-
-	int end_index = pt->ci_index + pt->ci_chars_added - 1;
+	int end_index = iterate_to_end_of_update_chunk(pt, pt->ci_index + pt->ci_chars_added - 1);
 	if (end_index < 0)
 	{
-		end_index = 0;
-	}
-	if (!pt_iterator_init(pt, &pi, end_index))
-	{
 		return false;
-	}
-
-	c = pt_iterate(&pi);
-	while (!control_chars[(int) c] && c != '\0')
-	{
-		end_index++;
-		c = pt_iterate(&pi);
-	}
-	if (c == '\0')
-	{
-		end_index--;
 	}
 
 	merge_color_indices_on_boundary(pt, start_index, end_index);
@@ -558,6 +700,12 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 			}
 			buf[j] = '\0';
 
+			while ((c == ' ' || c == '\n') && i < ci->len)
+			{
+				c = pt_iterate(&pi);
+				i++;
+			}
+
 			ColorIndex* new;
 			if (is_control_word(buf))
 			{
@@ -591,10 +739,56 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 
 					if (c2 == '(')
 					{
-						i = j + 1;
-						pt_iterator_init(pt, &pi, f.global_char_index + i);
-						c = pt_iterate(&pi);
-						new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
+						int store = j;
+						bool function_pointer_declaration = false;
+						c2 = pt_iterate(&pi2);
+						j++;
+						while (j < ci->len && (c2 == ' ' || c2 == '\n'))
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
+						}
+						if (c2 == '*')
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
+							while (is_valid_name_character(c2) && j < ci->len)
+							{
+								c2 = pt_iterate(&pi2);
+								j++;
+							}
+							while ((c2 == ' ' || c2 == '\n') && j < ci->len)
+							{
+								c2 = pt_iterate(&pi2);
+								j++;
+							}
+							if (c2 == ')')
+							{
+								c2 = pt_iterate(&pi2);
+								j++;
+								while ((c2 == ' ' || c2 == '\n') && j < ci->len)
+								{
+									c2 = pt_iterate(&pi2);
+									j++;
+								}
+								if (c2 == '(')
+								{
+									function_pointer_declaration = true;
+								}
+							}
+
+						}
+						if (function_pointer_declaration)
+						{
+							new = ci_create(BLUE_TEXT, i, f.global_char_index + i);
+						}
+						else
+						{
+							i = store + 1;
+							pt_iterator_init(pt, &pi, f.global_char_index + i);
+							c = pt_iterate(&pi);
+							new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
+						}
 					}
 					else
 					{
@@ -688,6 +882,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 	char c = pt_iterate(&pi);
 	int i = 0;
 	bool commented = false;
+	bool quote = false;
 
 	int store;
 	for (; i < ci->len; i++, c = pt_iterate(&pi))
@@ -708,9 +903,24 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				break;
 			}
 		}
+		else if (c == '\'' || c == '"')
+		{
+			quote = true;
+			store = i;
+			char store_char = c;
+			c = pt_iterate(&pi);
+			i++;
+
+			while (c != store_char && c != '\n' && c != '\0')
+			{
+				c = pt_iterate(&pi);
+				i++;
+			}
+			break;
+		}
 	}
 
-	if (commented)
+	if (commented || quote)
 	{
 		if (store > 0)
 		{
@@ -721,7 +931,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				{
 					pt_update_color_indices(pt, f.global_char_index - 1);
 				}
-				return;
 			}
 			else
 			{
@@ -730,6 +939,10 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		}
 
 		ColorIndex* new = ci_create(GREEN_TEXT, i - store, f.global_char_index + (i - store));
+		if (quote)
+		{
+			new->color = RED_TEXT;
+		}
 		if (new != NULL)
 		{
 			if (ci_add_and_subtract(pt, t, ci, new, &f))
@@ -834,10 +1047,12 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		if (operator_chars[(int) c])
 		{
 			need_increment = false;
+			int store = i;
 			if (c == '*' && !inside_function_call && !right_of_assignment)
 			{
 				c = pt_iterate(&pi);
 				i++;
+
 				if (c != '=')
 				{
 					continue;
@@ -845,6 +1060,9 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			}
 			else if (c == '*' && (inside_function_call || right_of_assignment))
 			{
+				c = pt_iterate(&pi);
+				i++;
+
 				while ((c == ' ' || c == '\n') && i < ci->len)
 				{
 					c = pt_iterate(&pi);
@@ -856,7 +1074,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				}
 			}
 
-			int store = i;
 			//bool just_started_assignment = false;
 
 			while (operator_chars[(int) c] && i < ci->len)
@@ -953,12 +1170,31 @@ void pt_update_color_indices(PieceTable* pt, int index)
 				c = pt_iterate(&pi);
 				i++;
 
+				while ((c == ' ' || c == '\n') && i < ci->len)
+				{
+					c = pt_iterate(&pi);
+					i++;
+				}
+
 				// checking for function pointer declaration versus function call that uses pointer dereference as first argument
 				if (c == '*')
 				{
 					c = pt_iterate(&pi);
 					i++;
+
+					while ((c == ' ' || c == '\n') && i < ci->len)
+					{
+						c = pt_iterate(&pi);
+						i++;
+					}
+
 					while (is_valid_name_character(c) && i < ci->len)
+					{
+						c = pt_iterate(&pi);
+						i++;
+					}
+
+					while ((c == ' ' || c == '\n') && i < ci->len)
 					{
 						c = pt_iterate(&pi);
 						i++;
@@ -967,6 +1203,10 @@ void pt_update_color_indices(PieceTable* pt, int index)
 					if (c != ')')
 					{
 						inside_function_call = true;
+					}
+					else
+					{
+						function_signature = true;
 					}
 				}
 				else
@@ -978,6 +1218,13 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			{
 				function_signature = true;
 			}
+		}
+
+		if (control_chars[(int) c])
+		{
+			inside_function_call = false;
+			right_of_assignment = false;
+			function_signature = false;
 		}
 
 		if (need_increment)

@@ -35,6 +35,9 @@ void ci_handle_insert(PieceTable* pt);
 void ci_handle_rm(PieceTable* pt);
 bool ci_execute(PieceTable* pt, int* first_line_updated, int* last_line_updated);
 
+int iterate_to_start_of_update_chunk(PieceTable* pt, int start_index);
+int iterate_to_end_of_update_chunk(PieceTable* pt, int end_index);
+
 bool is_control_word(char* s);
 
 void merge_color_indices_on_boundary(PieceTable* pt, int start_index, int end_index);

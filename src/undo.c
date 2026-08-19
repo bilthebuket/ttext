@@ -35,55 +35,21 @@ void undo_insert(EditorState* es, int index)
 
 static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* end_index)
 {
-	if (pt == NULL || ui == NULL || start_index == NULL || end_index == NULL)
+	if (ui == NULL || start_index == NULL || end_index == NULL)
 	{
 		return false;
 	}
 
-	PieceIterator pi;
-	*start_index = ui->index - ui->num_deleted - 1;
+	*start_index = iterate_to_start_of_update_chunk(pt, ui->index - ui->num_deleted - 1);
 	if (*start_index < 0)
 	{
-		*start_index = 0;
-	}
-
-	if (!pt_iterator_init(pt, &pi, *start_index))
-	{
 		return false;
 	}
 
-	char c = pt_iterate_backwards(&pi);
-	if (is_control_char(c))
-	{
-		c = pt_iterate_backwards(&pi);
-		*start_index = *start_index - 1;
-	}
-	while (!is_control_char(c) && c != '\0')
-	{
-		c = pt_iterate_backwards(&pi);
-		*start_index = *start_index - 1;
-	}
-	*start_index = *start_index + 1;
-
-	*end_index = ui->index + ui->num_added - ui->num_deleted;
+	*end_index = iterate_to_end_of_update_chunk(pt, ui->index + ui->num_added - ui->num_deleted);
 	if (*end_index < 0)
 	{
-		*end_index = 0;
-	}
-	if (!pt_iterator_init(pt, &pi, *end_index))
-	{
 		return false;
-	}
-
-	c = pt_iterate(&pi);
-	while (!is_control_char(c) && c != '\0')
-	{
-		c = pt_iterate(&pi);
-		*end_index = *end_index + 1;
-	}
-	if (c == '\0')
-	{
-		*end_index = *end_index - 1;
 	}
 
 	return true;
@@ -157,51 +123,22 @@ void undo_prepare_for_execute(EditorState* es)
 
 static bool get_post_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* end_index)
 {
-	if (pt == NULL || ui == NULL || start_index == NULL || end_index == NULL)
+	if (ui == NULL || start_index == NULL || end_index == NULL)
 	{
 		return false;
 	}
 
-	PieceIterator pi;
-	*start_index = ui->index - ui->num_deleted;
+	*start_index = iterate_to_start_of_update_chunk(pt, ui->index - ui->num_deleted);
 	if (*start_index < 0)
 	{
-		*start_index = 0;
-	}
-
-	if (!pt_iterator_init(pt, &pi, *start_index))
-	{
 		return false;
 	}
 
-	char c = pt_iterate_backwards(&pi);
-	if (is_control_char(c))
-	{
-		c = pt_iterate_backwards(&pi);
-		*start_index = *start_index - 1;
-	}
-	while (!is_control_char(c) && c != '\0')
-	{
-		c = pt_iterate_backwards(&pi);
-		*start_index = *start_index - 1;
-	}
-	*start_index = *start_index + 1;
 
-	*end_index = ui->index;
-	if (!pt_iterator_init(pt, &pi, *end_index))
+	*end_index = iterate_to_end_of_update_chunk(pt, ui->index);
+	if (*end_index < 0)
 	{
 		return false;
-	}
-
-	c = pt_iterate(&pi);
-	while (!is_control_char(c) && c != '\0')
-	{
-		c = pt_iterate(&pi);
-		*end_index = *end_index + 1;
-	}
-	if (c == '\0')
-	{
-		*end_index = *end_index - 1;
 	}
 
 	return true;

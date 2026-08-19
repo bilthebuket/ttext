@@ -213,17 +213,12 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 			return -1;
 		}
 		index = 0;
-	}
-	else if (c == ';' || c == '}' || c == '{')
-	{
-		// we are flipping from backwards to forwards
-		// first iteratation we are looking at the char to the left of the terminating character (the ';', '}', '{', etc; whatever broke the while loop)
-		// second iteration we are looking at the terminating character
-		// when the caller of this function then calls pt_iterate again, they will get the first character of the signature
-		c = pt_iterate(pi);
-		c = pt_iterate(pi);
-		c = pt_iterate(pi);
-		index++;
+
+		char c2 = pt_get(pt, 0);
+		if (c2 == ' ' || c2 == '\n')
+		{
+			c = pt_iterate(pi);
+		}
 	}
 	else
 	{
@@ -233,10 +228,15 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 		index++;
 	}
 
-	while (c == ' ' || c == '\n')
+	if (c != '\0')
 	{
-		c = pt_iterate(pi);
-		index++;
+		while (c == ' ' || c == '\n')
+		{
+			c = pt_iterate(pi);
+			index++;
+		}
+
+		c = pt_iterate_backwards(pi);
 	}
 
 	signature_start_index = index;

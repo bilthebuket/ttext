@@ -351,7 +351,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		if (pt->append_len + 1 > pt->append_size)
 		{
-			char* new_buf = malloc(sizeof(char) * (pt->append_size + APPEND_SIZE));
+			char* new_buf = malloc(sizeof(char) * (pt->append_size * 2));
 			if (new_buf == NULL)
 			{
 				return;
@@ -395,7 +395,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 		if (pt->append_len + 1 > pt->append_size)
 		{
-			char* new_buf = malloc(sizeof(char) * (pt->append_size + APPEND_SIZE));
+			char* new_buf = malloc(sizeof(char) * (pt->append_size * 2));
 			if (new_buf == NULL)
 			{
 				return;

@@ -81,7 +81,14 @@ int es_init(EditorState* es, int argc, char* argv[])
 		es->active_tab = (Tab*) ll_get_elt(es->tabs, argc - 2);
 		es->active_tab_index = argc - 2;
 	}
-	es->signatures = initialize_signatures();
+	if (argv == NULL)
+	{
+		es->signatures = hm_create();
+	}
+	else
+	{
+		es->signatures = initialize_signatures();
+	}
 	if (es->signatures == NULL)
 	{
 		es_uninit(es);
