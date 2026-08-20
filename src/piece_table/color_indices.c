@@ -618,7 +618,10 @@ static bool ci_add_and_subtract(PieceTable* pt, Tree* already_present_tree, Colo
 	}
 }
 
-// updates a color index that is guranteed to not need to handle operators, comments, or macros
+#define FUNCTION_SIGNATURE 1
+#define ARITHMETIC 2
+
+// updates a color index that is guranteed to not need to handle comments, quotes, or macros
 static void pt_update_color_indices_helper(PieceTable* pt, int index)
 {
 	if (pt == NULL || index < 0 || pt->color_indices == NULL)
@@ -647,6 +650,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 		return;
 	}
 
+	bool function_declaration = false;
 	int i = 0;
 	char c = pt_iterate(&pi);
 	while (i < ci->len)
@@ -668,189 +672,253 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 			ColorIndex* new = ci_create(RED_TEXT, i, f.global_char_index + i);
 			if (new != NULL)
 			{
-				if (ci_add_and_subtract(pt, t, ci, new, &f))
-				{
-					i = 0;
-					continue;
-				}
-				else
+				if (!ci_add_and_subtract(pt, t, ci, new, &f))
 				{
 					break;
 				}
+				i = 0;
 			}
 			else
 			{
-				return;
+				break;
 			}
 		}
-
-		if (is_valid_name_character(c) && !yellow_chars[(int) c])
+		if (yellow_chars[(int) c])
 		{
-			char buf[CONTROL_WORD_MAX_LENGTH];
-			int j = 0;
-			while (is_valid_name_character(c) && !yellow_chars[(int) c] && i < ci->len)
+			while (yellow_chars[(int) c] && i < ci->len)
 			{
-				if (j < CONTROL_WORD_MAX_LENGTH - 1)
+				c = pt_iterate(&pi);
+				i++;
+			}
+
+
+			ColorIndex* new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
+			if (new != NULL)
+			{
+				if (!ci_add_and_subtract(pt, t, ci, new, &f))
 				{
-					buf[j] = c;
-					j++;
+					break;
 				}
-				c = pt_iterate(&pi);
-				i++;
-			}
-			buf[j] = '\0';
-
-			while ((c == ' ' || c == '\n') && i < ci->len)
-			{
-				c = pt_iterate(&pi);
-				i++;
-			}
-
-			ColorIndex* new;
-			if (is_control_word(buf))
-			{
-				new = ci_create(MAGENTA_TEXT, i, f.global_char_index + i);
+				i = 0;
 			}
 			else
 			{
-				if (f.global_char_index > 0)
-				{
-					ColorIndexFinder f2;
-					f2.contained = f.global_char_index;
-					f2.global_char_index = -1;
-					ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
-					if (prev != NULL && prev->color == CYAN_TEXT)
-					{
-						prev->color = BLUE_TEXT;
-					}
-				}
+				break;
+			}
 
-				j = i;
+			// because (x) *y could be x * y if both x and y are the same type, or a typecast of a derefernce of y if 
+			// x is a type and y is a pointer, i am hardcoding any single non astrix prefixed valid name surrounded in parenthesis to be blue.
+			// this is the only solution i can think of besides tracking the types of variables, which will be significantly more code and overhead
+			if (pt_get(pt, f.global_char_index - 1) == '(')
+			{
 				PieceIterator pi2;
-				char c2;
-				if (pt_iterator_init(pt, &pi2, f.global_char_index + j))
+				ColorIndexFinder f2;
+				f2.contained = f.global_char_index - 1;
+				f2.global_char_index = -1;
+				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				if (prev != NULL && pt_iterator_init(pt, &pi2, f.global_char_index - 2))
 				{
-					c2 = pt_iterate(&pi2);
-					while (j < ci->len && (c2 == ' ' || c2 == '\n'))
+					int j = f.global_char_index - 2 - f2.global_char_index;
+					char c2 = pt_iterate_backwards(&pi2);
+					while ((c2 == ' ' || c2 == '\n') && j >= 0)
 					{
-						c2 = pt_iterate(&pi2);
-						j++;
+						c2 = pt_iterate_backwards(&pi2);
+						j--;
 					}
-
-					if (c2 == '(')
+					if (!is_valid_name_character(c2) && j >= 0 && pt_iterator_init(pt, &pi2, f.global_char_index))
 					{
-						int store = j;
-						bool function_pointer_declaration = false;
-						c2 = pt_iterate(&pi2);
-						j++;
-						while (j < ci->len && (c2 == ' ' || c2 == '\n'))
+						j = 0;
+						char c2 = pt_iterate(&pi2);
+						while (is_valid_name_character(c2) && c2 != '*' && c2 != '[' && c2 != ']' && j < ci->len)
 						{
 							c2 = pt_iterate(&pi2);
 							j++;
 						}
-						if (c2 == '*')
+						while ((c2 == '*' || c2 == '[' || c2 == ']') && j < ci->len)
 						{
 							c2 = pt_iterate(&pi2);
 							j++;
-							while (is_valid_name_character(c2) && j < ci->len)
+						}
+						if (c2 == ')')
+						{
+							ColorIndex* new2 = ci_create(BLUE_TEXT, j, f.global_char_index + j);
+							if (!ci_add_and_subtract(pt, t, ci, new2, &f))
 							{
-								c2 = pt_iterate(&pi2);
-								j++;
+								break;
 							}
+							c = c2;
+							piece_iterator_copy(&pi, &pi2);
+							// no need to reset i to 0 because it never changed (we used j)
+						}
+					}
+				}
+			}
+		}
+		if (is_valid_name_character(c) && c != '*')
+		{
+			char buf[CONTROL_WORD_MAX_LENGTH];
+			int buf_index = 0;
+			while (is_valid_name_character(c) && i < ci->len)
+			{
+				if (buf_index < CONTROL_WORD_MAX_LENGTH - 1)
+				{
+					buf[buf_index] = c;
+					buf_index++;
+				}
+				else
+				{
+					// convers the case where a function name is a control word for the first <CONTROL_WORD_MAX_LENGTH - 1> characters
+					buf[0] = '\0';
+				}
+				c = pt_iterate(&pi);
+				i++;
+			}
+			buf[buf_index] = '\0';
+
+			int color;
+
+			if (is_control_word(buf))
+			{
+				color = MAGENTA_TEXT;
+			}
+			else if (function_declaration)
+			{
+				ColorIndexFinder f2;
+				f2.contained = f.global_char_index;
+				f2.global_char_index = -1;
+				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				if (prev != NULL && (prev->color == CYAN_TEXT || prev->color == BLUE_TEXT))
+				{
+					prev->color = BLUE_TEXT;
+					color = CYAN_TEXT;
+				}
+				else
+				{
+					color = BLUE_TEXT;
+				}
+			}
+			else
+			{
+				color = CYAN_TEXT;
+
+				while ((c == ' ' || c == '\n') && i < ci->len)
+				{
+					c = pt_iterate(&pi);
+					i++;
+				}
+				if (c == '(')
+				{
+					color = YELLOW_TEXT;
+
+					PieceIterator pi2;
+					int j = i + 1;
+					if (pt_iterator_init(pt, &pi2, f.global_char_index + j))
+					{
+						char c2 = pt_iterate(&pi2);
+						while (c2 != ')' && !control_chars[(int) c] && j < ci->len)
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
+						}
+						if (c2 == ')')
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
 							while ((c2 == ' ' || c2 == '\n') && j < ci->len)
 							{
 								c2 = pt_iterate(&pi2);
 								j++;
 							}
-							if (c2 == ')')
+							if (c2 == '(')
 							{
-								c2 = pt_iterate(&pi2);
-								j++;
-								while ((c2 == ' ' || c2 == '\n') && j < ci->len)
-								{
-									c2 = pt_iterate(&pi2);
-									j++;
-								}
-								if (c2 == '(')
-								{
-									function_pointer_declaration = true;
-								}
+								color = BLUE_TEXT;
+								function_declaration = true;
 							}
-
-						}
-						if (function_pointer_declaration)
-						{
-							new = ci_create(BLUE_TEXT, i, f.global_char_index + i);
-						}
-						else
-						{
-							i = store + 1;
-							pt_iterator_init(pt, &pi, f.global_char_index + i);
-							c = pt_iterate(&pi);
-							new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
 						}
 					}
-					else
+
+					if (color == YELLOW_TEXT && pt_get_color(pt, f.global_char_index - 1) == BLUE_TEXT)
 					{
-						new = ci_create(CYAN_TEXT, i, f.global_char_index + i);
+						function_declaration = true;
 					}
 				}
-				else
+
+				ColorIndexFinder f2;
+				f2.contained = f.global_char_index;
+				f2.global_char_index = -1;
+				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				ColorIndex* prev_prev = NULL;
+				while (prev_prev != prev && prev != NULL && prev->color == YELLOW_TEXT)
 				{
-					new = ci_create(CYAN_TEXT, i, f.global_char_index + i);
+					f2.contained = f2.global_char_index;
+					f2.global_char_index = -1;
+					prev_prev = prev;
+					prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				}
+
+				if (prev != NULL && prev->color == CYAN_TEXT)
+				{
+					PieceIterator pi2;
+					if (pt_iterator_init(pt, &pi2, f2.global_char_index))
+					{
+						char c2 = pt_iterate(&pi2);
+						int j = 0;
+						while ((c2 == ' ' || c2 == '\n') && j < prev->len)
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
+						}
+						if (pt_get(pt, f2.global_char_index + j - 1) != '*')
+						{
+							prev->color = BLUE_TEXT;
+						}
+					}
 				}
 			}
 
+			ColorIndex* new = ci_create(color, i, f.global_char_index + i);
 			if (new != NULL)
 			{
-				if (ci_add_and_subtract(pt, t, ci, new, &f))
-				{
-					i = 0;
-					continue;
-				}
-				else
+				if (!ci_add_and_subtract(pt, t, ci, new, &f))
 				{
 					break;
 				}
+				i = 0;		
 			}
 			else
 			{
-				return;
+				break;
 			}
 		}
-
-		if (yellow_chars[(int) c])
+		if (control_chars[(int) c])
 		{
-			while ((yellow_chars[(int) c] || c == ' ' || c == '\n') && i < ci->len)
+			function_declaration = false;
+		}
+		if (operator_chars[(int) c])
+		{
+			while (operator_chars[(int) c] && i < ci->len)
 			{
 				c = pt_iterate(&pi);
 				i++;
 			}
 
-			ColorIndex* new = ci_create(YELLOW_TEXT, i, f.global_char_index + i);
+			ColorIndex* new = ci_create(RED_TEXT, i, f.global_char_index + i);
 			if (new != NULL)
 			{
-				if (ci_add_and_subtract(pt, t, ci, new, &f))
-				{
-					i = 0;
-					continue;
-				}
-				else
+				if (!ci_add_and_subtract(pt, t, ci, new, &f))
 				{
 					break;
 				}
+				i = 0;		
 			}
 			else
 			{
-				return;
+				break;
 			}
 		}
 	}
 }
 
-// if index points to an existing color index that is properly formatted, then the color of that color index will be updated
-// if index points to a color index that needs to be broken up (ex: if the color index contains the text "int x", this needs to be split into "int" and "x")
-// then the index will be split into two, which will both be updated using recursion
 void pt_update_color_indices(PieceTable* pt, int index)
 {
 	if (pt == NULL || pt->color_indices == NULL)
@@ -895,7 +963,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			if (c == '/')
 			{
 				commented = true;
-				while (c != '\n' && c != '\0')
+				while (c != '\n' && c != '\0' && i < ci->len)
 				{
 					c = pt_iterate(&pi);
 					i++;
@@ -911,7 +979,12 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			c = pt_iterate(&pi);
 			i++;
 
-			while (c != store_char && c != '\n' && c != '\0')
+			while (c != store_char && c != '\n' && c != '\0' && i < ci->len)
+			{
+				c = pt_iterate(&pi);
+				i++;
+			}
+			if (c == store_char)
 			{
 				c = pt_iterate(&pi);
 				i++;
@@ -1037,205 +1110,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 		}
 	}
 
-	bool inside_function_call = false;
-	bool right_of_assignment = false;
-	bool function_signature = false;
-
-	while (i < ci->len)
-	{
-		bool need_increment = true;
-		if (operator_chars[(int) c])
-		{
-			need_increment = false;
-			int store = i;
-			if (c == '*' && !inside_function_call && !right_of_assignment)
-			{
-				c = pt_iterate(&pi);
-				i++;
-
-				if (c != '=')
-				{
-					continue;
-				}
-			}
-			else if (c == '*' && (inside_function_call || right_of_assignment))
-			{
-				c = pt_iterate(&pi);
-				i++;
-
-				while ((c == ' ' || c == '\n') && i < ci->len)
-				{
-					c = pt_iterate(&pi);
-					i++;
-				}
-				if (!is_valid_name_character(c))
-				{
-					continue;
-				}
-			}
-
-			//bool just_started_assignment = false;
-
-			while (operator_chars[(int) c] && i < ci->len)
-			{
-				if (c == '=')
-				{
-					right_of_assignment = true;
-				}
-				c = pt_iterate(&pi);
-				i++;
-			}
-
-			ColorIndex* new1 = ci_create(CYAN_TEXT, store, f.global_char_index + store);
-			if (new1 != NULL)
-			{
-				ColorIndex* new2 = ci_create(RED_TEXT, i - store, f.global_char_index + i);
-				if (new2 != NULL)
-				{
-					bool done = false;
-					if (ci->len - (new1->len + new2->len) > 0)
-					{
-						ci->len -= new1->len + new2->len;
-						f.global_char_index += new1->len + new2->len;
-						ci->color = CYAN_TEXT;
-						tree_recursive_update_to_root(t, &ci_update_info);
-					}
-					else
-					{
-						ColorIndexFinder f2;
-						f2.contained = f.global_char_index + 1;
-						f2.global_char_index = -1;
-						pt->color_indices = tree_rm(pt->color_indices, &f2, &ci_finder_compare_characters, &free, &ci_update_info);
-						ci = NULL;
-						done = true;
-					}
-
-					if (new1->len > 0)
-					{
-						int store = new1->chars_contained - 1;
-						pt->color_indices = tree_insert(pt->color_indices, new1, &ci_compare, &ci_update_info);
-						pt_update_color_indices_helper(pt, store);
-					}
-					else
-					{
-						free(new1);
-					}
-					if (new2->len > 0)
-					{
-						pt->color_indices = tree_insert(pt->color_indices, new2, &ci_compare, &ci_update_info);
-					}
-					else
-					{
-						free(new2);
-					}
-					i = 0;
-
-					if (done)
-					{
-						break;
-					}
-				}
-				else
-				{
-					free(new1);
-					return;
-				}
-			}
-			else
-			{
-				return;
-			}
-		}
-
-		if (!right_of_assignment && !inside_function_call && !function_signature && is_valid_name_character(c))
-		{
-			need_increment = false;
-			while (is_valid_name_character(c) && i < ci->len)
-			{
-				c = pt_iterate(&pi);
-				i++;
-			}
-
-			if (c == ' ' || c == '\n')
-			{
-				while ((c == ' ' || c == '\n') && i < ci->len)
-				{
-					c = pt_iterate(&pi);
-					i++;
-				}
-			}
-
-			if (c == '(')
-			{
-				c = pt_iterate(&pi);
-				i++;
-
-				while ((c == ' ' || c == '\n') && i < ci->len)
-				{
-					c = pt_iterate(&pi);
-					i++;
-				}
-
-				// checking for function pointer declaration versus function call that uses pointer dereference as first argument
-				if (c == '*')
-				{
-					c = pt_iterate(&pi);
-					i++;
-
-					while ((c == ' ' || c == '\n') && i < ci->len)
-					{
-						c = pt_iterate(&pi);
-						i++;
-					}
-
-					while (is_valid_name_character(c) && i < ci->len)
-					{
-						c = pt_iterate(&pi);
-						i++;
-					}
-
-					while ((c == ' ' || c == '\n') && i < ci->len)
-					{
-						c = pt_iterate(&pi);
-						i++;
-					}
-
-					if (c != ')')
-					{
-						inside_function_call = true;
-					}
-					else
-					{
-						function_signature = true;
-					}
-				}
-				else
-				{
-					inside_function_call = true;
-				}
-			}
-			else if (!operator_chars[(int) c])
-			{
-				function_signature = true;
-			}
-		}
-
-		if (control_chars[(int) c])
-		{
-			inside_function_call = false;
-			right_of_assignment = false;
-			function_signature = false;
-		}
-
-		if (need_increment)
-		{
-			c = pt_iterate(&pi);
-			i++;
-		}
-	}
-
-	// if ci is NULL that means we broke it up and updated the color indices until everything was properly updated
-	// if ci is not NULL we reached the end of ci without updating it
 	if (ci != NULL)
 	{
 		pt_update_color_indices_helper(pt, f.global_char_index);

@@ -85,4 +85,6 @@ void piece_update_info(Tree* t);
 void print_piece(void* v);
 void print_color_index(void* v);
 
+void piece_iterator_copy(PieceIterator* to, PieceIterator* from);
+
 #endif

@@ -901,3 +901,14 @@ char* pt_flatten_to_str(PieceTable* pt)
 	}
 	return buf;
 }
+
+void piece_iterator_copy(PieceIterator* to, PieceIterator* from)
+{
+	if (to == NULL || from == NULL)
+	{
+		return;
+	}
+
+	to->node = from->node;
+	to->index = from->index;
+}

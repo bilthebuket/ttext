@@ -284,21 +284,21 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i+)\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
 				       1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 4, RED_TEXT, 1, CYAN_TEXT, 1, RED_TEXT, 2, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for(int i = 0; i < 10; i++)\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 1, YELLOW_TEXT, 3, BLUE_TEXT,
 					1, CYAN_TEXT, 3, RED_TEXT, 1, CYAN_TEXT, 4, RED_TEXT, 1, CYAN_TEXT, 2, RED_TEXT, 2, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    for()\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 3, YELLOW_TEXT});
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 3, MAGENTA_TEXT, 3, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    \n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 3, YELLOW_TEXT});
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 3, YELLOW_TEXT});
 
 	goto_coords(0, 2);
 	(*es.mode)(&es, '$');
@@ -327,37 +327,37 @@ Test(editor, test_undo_complex1, .init = setup_state, .fini = teardown_state)
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        print()\n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 9, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf()\n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 10, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(s)\n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 1, CYAN_TEXT, 3, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(st)\n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 2, CYAN_TEXT, 3, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        printf(str)\n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 9, YELLOW_TEXT, 3, CYAN_TEXT, 3, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    if(true)\n    {\n        \n    }\n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 2, YELLOW_TEXT, 2, MAGENTA_TEXT,
 					1, YELLOW_TEXT, 4, CYAN_TEXT, 4, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("int main(void)\n{\n    \n}");
-	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, CYAN_TEXT, 3, YELLOW_TEXT});
+	ci_expect_state((const int[]) {3, BLUE_TEXT, 5, YELLOW_TEXT, 4, BLUE_TEXT, 3, YELLOW_TEXT});
 
 	(*es.mode)(&es, 'u');
 	expect_state("");
