@@ -351,18 +351,13 @@ void pt_insert(PieceTable* pt, char c, int index)
 	{
 		if (pt->append_len + 1 > pt->append_size)
 		{
-			char* new_buf = malloc(sizeof(char) * (pt->append_size * 2));
+			char* new_buf = realloc(pt->append, sizeof(char) * (pt->append_size * 2));
 			if (new_buf == NULL)
 			{
 				return;
 			}
-			for (int i = 0; i < pt->append_len; i++)
-			{
-				new_buf[i] = pt->append[i];
-			}
-			free(pt->append);
 			pt->append = new_buf;
-			pt->append_size += APPEND_SIZE;
+			pt->append_size *= 2;
 		}
 
 		pt->append[pt->append_len] = c;
@@ -395,18 +390,13 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 		if (pt->append_len + 1 > pt->append_size)
 		{
-			char* new_buf = malloc(sizeof(char) * (pt->append_size * 2));
+			char* new_buf = realloc(pt->append, sizeof(char) * (pt->append_size * 2));
 			if (new_buf == NULL)
 			{
 				return;
 			}
-			for (int i = 0; i < pt->append_len; i++)
-			{
-				new_buf[i] = pt->append[i];
-			}
-			free(pt->append);
 			pt->append = new_buf;
-			pt->append_size += APPEND_SIZE;
+			pt->append_size *= 2;
 		}
 
 		if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
