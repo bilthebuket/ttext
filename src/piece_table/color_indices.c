@@ -618,6 +618,28 @@ static bool ci_add_and_subtract(PieceTable* pt, Tree* already_present_tree, Colo
 	}
 }
 
+static bool only_contains_parenthesis_or_alphanumeric(PieceTable* pt, int start_index, int len)
+{
+	PieceIterator pi;
+	if (pt_iterator_init(pt, &pi, start_index))
+	{
+		for (int i = 0; i < len; i++)
+		{
+			char c = pt_iterate(&pi);
+			if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')))
+			{
+				return false;
+			}
+			else if (c == '\0')
+			{
+				return true;
+			}
+		}
+	}
+
+	return true;
+}
+
 #define FUNCTION_SIGNATURE 1
 #define ARITHMETIC 2
 
@@ -687,6 +709,10 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 		{
 			while (yellow_chars[(int) c] && i < ci->len)
 			{
+				if (control_chars[(int) c])
+				{
+					function_declaration = false;
+				}
 				c = pt_iterate(&pi);
 				i++;
 			}
@@ -716,20 +742,25 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				f2.contained = f.global_char_index - 1;
 				f2.global_char_index = -1;
 				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
-				if (prev != NULL && pt_iterator_init(pt, &pi2, f.global_char_index - 2))
+				if (prev != NULL)
 				{
-					int j = f.global_char_index - 2 - f2.global_char_index;
-					char c2 = pt_iterate_backwards(&pi2);
-					while ((c2 == ' ' || c2 == '\n') && j >= 0)
+					int j = 0;
+					char c2 = '\0';
+					if (f.global_char_index - 2 > 0 && pt_iterator_init(pt, &pi2, f.global_char_index - 2))
 					{
+						j = f.global_char_index - 2 - f2.global_char_index;
 						c2 = pt_iterate_backwards(&pi2);
-						j--;
+						while ((c2 == ' ' || c2 == '\n') && j >= 0)
+						{
+							c2 = pt_iterate_backwards(&pi2);
+							j--;
+						}
 					}
-					if (!is_valid_name_character(c2) && j >= 0 && pt_iterator_init(pt, &pi2, f.global_char_index))
+					if (!is_valid_name_character(c2) && pt_iterator_init(pt, &pi2, f.global_char_index))
 					{
 						j = 0;
 						char c2 = pt_iterate(&pi2);
-						while (is_valid_name_character(c2) && c2 != '*' && c2 != '[' && c2 != ']' && j < ci->len)
+						while ((is_valid_name_character(c2) || c2 == ' ' || c2 == '\n') && c2 != '*' && c2 != '[' && c2 != ']' && j < ci->len)
 						{
 							c2 = pt_iterate(&pi2);
 							j++;
@@ -754,11 +785,11 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				}
 			}
 		}
-		if (is_valid_name_character(c) && c != '*')
+		if (is_valid_name_character(c) && c != '*' && c != '[' && c != ']')
 		{
 			char buf[CONTROL_WORD_MAX_LENGTH];
 			int buf_index = 0;
-			while (is_valid_name_character(c) && i < ci->len)
+			while (is_valid_name_character(c) && c != '[' && c != ']' && i < ci->len)
 			{
 				if (buf_index < CONTROL_WORD_MAX_LENGTH - 1)
 				{
@@ -795,6 +826,23 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 				else
 				{
 					color = BLUE_TEXT;
+
+					if (prev != NULL)
+					{
+						PieceIterator pi2;
+						if (pt_iterator_init(pt, &pi2, f2.global_char_index + prev->len - 1))
+						{
+							char c2 = pt_iterate_backwards(&pi2);
+							while (c2 == ' ' || c2 == '\n')
+							{
+								c2 = pt_iterate_backwards(&pi2);
+							}
+							if (c2 == '*')
+							{
+								color = CYAN_TEXT;
+							}
+						}
+					}
 				}
 			}
 			else
@@ -806,6 +854,39 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 					c = pt_iterate(&pi);
 					i++;
 				}
+
+				ColorIndexFinder f2;
+				f2.contained = f.global_char_index;
+				f2.global_char_index = -1;
+				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				ColorIndex* prev_prev = NULL;
+				while (prev_prev != prev && prev != NULL && prev->color == YELLOW_TEXT && only_contains_parenthesis_or_alphanumeric(pt, f2.global_char_index, prev->len))
+				{
+					f2.contained = f2.global_char_index;
+					f2.global_char_index = -1;
+					prev_prev = prev;
+					prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
+				}
+
+				if (prev != NULL && prev->color == CYAN_TEXT)
+				{
+					PieceIterator pi2;
+					if (pt_iterator_init(pt, &pi2, f2.global_char_index))
+					{
+						char c2 = pt_iterate(&pi2);
+						int j = 0;
+						while ((c2 == ' ' || c2 == '\n') && j < prev->len)
+						{
+							c2 = pt_iterate(&pi2);
+							j++;
+						}
+						if (pt_get(pt, f2.global_char_index + j - 1) != '*')
+						{
+							prev->color = BLUE_TEXT;
+						}
+					}
+				}
+
 				if (c == '(')
 				{
 					color = YELLOW_TEXT;
@@ -840,38 +921,6 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 					if (color == YELLOW_TEXT && pt_get_color(pt, f.global_char_index - 1) == BLUE_TEXT)
 					{
 						function_declaration = true;
-					}
-				}
-
-				ColorIndexFinder f2;
-				f2.contained = f.global_char_index;
-				f2.global_char_index = -1;
-				ColorIndex* prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
-				ColorIndex* prev_prev = NULL;
-				while (prev_prev != prev && prev != NULL && prev->color == YELLOW_TEXT)
-				{
-					f2.contained = f2.global_char_index;
-					f2.global_char_index = -1;
-					prev_prev = prev;
-					prev = tree_get(pt->color_indices, &f2, &ci_finder_compare_characters);
-				}
-
-				if (prev != NULL && prev->color == CYAN_TEXT)
-				{
-					PieceIterator pi2;
-					if (pt_iterator_init(pt, &pi2, f2.global_char_index))
-					{
-						char c2 = pt_iterate(&pi2);
-						int j = 0;
-						while ((c2 == ' ' || c2 == '\n') && j < prev->len)
-						{
-							c2 = pt_iterate(&pi2);
-							j++;
-						}
-						if (pt_get(pt, f2.global_char_index + j - 1) != '*')
-						{
-							prev->color = BLUE_TEXT;
-						}
 					}
 				}
 			}
