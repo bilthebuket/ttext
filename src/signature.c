@@ -79,7 +79,7 @@ bool function_name_equals(void* v1, void* v2)
 	return !strcmp(name1, name2);
 }
 
-static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int index, char* function_name, int function_name_size, char* signature, int signature_size)
+static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int index, char** store_signature_and_function_name)
 {
 	if (!pt_iterator_init(pt, pi, index))
 	{
@@ -161,23 +161,10 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 	for (; c == ' ' || c == '\n'; c = pt_iterate_backwards(pi), index--) {}
 
 	name_end_index = index;
-	function_name[function_name_size - 1] = '\0';
-	i = function_name_size - 2;
-	for (; is_valid_name_character(c); i--, c = pt_iterate_backwards(pi), index--)
-	{
-		if (i >= 0)
-		{
-			function_name[i] = c;
-		}
-	}
+	for (; is_valid_name_character(c); c = pt_iterate_backwards(pi), index--) {}
 	name_start_index = index + 1;
 
 	if (c != ' ' && c != '\n')
-	{
-		return -1;
-	}
-
-	if (is_control_word(&function_name[i + 1]))
 	{
 		return -1;
 	}
@@ -241,33 +228,55 @@ static int iterate_to_signature_start(PieceTable* pt, PieceIterator* pi, int ind
 
 	signature_start_index = index;
 
-	if (signature != NULL)
+	if (store_signature_and_function_name != NULL)
 	{
 		PieceIterator pi2;
+
+		int signature_len = signature_end_index - signature_start_index + 1;
+		char* signature  = malloc(sizeof(char) * (signature_len + 1));
+		if (signature == NULL)
+		{
+			return -1;
+		}
+
+		int function_name_len = name_end_index - name_start_index + 1;
+		char* function_name = malloc(sizeof(char) * (function_name_len + 1));
+		if (function_name == NULL)
+		{
+			free(signature);
+			return -1;
+		}
+
 		if (pt_iterator_init(pt, &pi2, signature_start_index))
 		{
 			c = pt_iterate(&pi2);
 			i = 0;
-			for (i = 0; i < signature_size - 1 && i < signature_end_index - signature_start_index + 1; i++, c = pt_iterate(&pi2))
+			for (i = 0; i < signature_len; i++, c = pt_iterate(&pi2))
 			{
 				signature[i] = c;
 			}
 			signature[i] = '\0';
 		}
-	}
-	if (function_name != NULL)
-	{
-		PieceIterator pi2;
 		if (pt_iterator_init(pt, &pi2, name_start_index))
 		{
 			c = pt_iterate(&pi2);
 			i = 0;
-			for (i = 0; i < function_name_size - 1 && i < name_end_index - name_start_index + 1; i++, c = pt_iterate(&pi2))
+			for (i = 0; i < function_name_len; i++, c = pt_iterate(&pi2))
 			{
 				function_name[i] = c;
 			}
 			function_name[i] = '\0';
+
+			if (is_control_word(function_name))
+			{
+				free(signature);
+				free(function_name);
+				return -1;
+			}
 		}
+
+		store_signature_and_function_name[SIGNATURE_FUNCTIONS_SIGNATURE] = signature;
+		store_signature_and_function_name[SIGNATURE_FUNCTIONS_FUNCTION_NAME] = function_name;
 	}
 
 	return index;
@@ -281,24 +290,15 @@ void update_signatures(HashMap* signatures, PieceTable* pt, const char* file_nam
 	}
 
 	PieceIterator pi;
-	char* function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
-	if (function_name == NULL)
+	char* function_name_and_signature[SIGNATURE_FUNCTIONS_NUM_RETURN_VALS];
+
+	if (iterate_to_signature_start(pt, &pi, index, function_name_and_signature) < 0)
 	{
-		return;
-	}
-	char* signature = malloc(sizeof(char) * FUNCTION_SIGNATURE_BUFFER_SIZE);
-	if (signature == NULL)
-	{
-		free(function_name);
 		return;
 	}
 
-	if (iterate_to_signature_start(pt, &pi, index, function_name, FUNCTION_NAME_BUFFER_SIZE, signature, FUNCTION_SIGNATURE_BUFFER_SIZE) < 0)
-	{
-		free(function_name);
-		free(signature);
-		return;
-	}
+	char* signature = function_name_and_signature[SIGNATURE_FUNCTIONS_SIGNATURE];
+	char* function_name = function_name_and_signature[SIGNATURE_FUNCTIONS_FUNCTION_NAME];
 
 	// making a copy of file name to prevent scattered references and double frees
 	int len = 0;
@@ -522,37 +522,17 @@ char** in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* sto
 		return false;
 	}
 
-	char** r = malloc(sizeof(char*) * IN_SIGNATURE_HUH_NUM_RETURN_VALS);
+	char** r = malloc(sizeof(char*) * SIGNATURE_FUNCTIONS_NUM_RETURN_VALS);
 	if (r == NULL)
 	{
 		return NULL;
 	}
 
-	char* function_name = malloc(sizeof(char) * FUNCTION_NAME_BUFFER_SIZE);
-	if (function_name == NULL)
-	{
-		free(r);
-		return NULL;
-	}
-
-	char* signature = malloc(sizeof(char) * FUNCTION_SIGNATURE_BUFFER_SIZE);
-	if (signature == NULL)
-	{
-		free(function_name);
-		free(r);
-		return NULL;
-	}
-
-	r[IN_SIGNATURE_HUH_SIGNATURE] = signature;
-	r[IN_SIGNATURE_HUH_FUNCTION_NAME] = function_name;
-
 	PieceIterator pi;
-	int start_index = iterate_to_signature_start(pt, &pi, index, function_name, FUNCTION_NAME_BUFFER_SIZE, signature, FUNCTION_SIGNATURE_BUFFER_SIZE);
+	int start_index = iterate_to_signature_start(pt, &pi, index, r);
 	if (start_index < 0)
 	{
 		free(r);
-		free(function_name);
-		free(signature);
 		return NULL;
 	}
 
@@ -571,9 +551,9 @@ char** in_signature_huh(HashMap* signatures, PieceTable* pt, int index, int* sto
 		start_index++;
 	}
 
+	free(r[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+	free(r[SIGNATURE_FUNCTIONS_SIGNATURE]);
 	free(r);
-	free(function_name);
-	free(signature);
 	return NULL;
 }
 
@@ -689,9 +669,9 @@ void remove_signatures_on_boundary(HashMap* signatures, PieceTable* pt, char* fi
 				char** vals = in_signature_huh(signatures, pt, i - 1, NULL);
 				if (vals != NULL)
 				{
-					remove_signature(signatures, vals[IN_SIGNATURE_HUH_FUNCTION_NAME], vals[IN_SIGNATURE_HUH_SIGNATURE], file_name);
-					free(vals[IN_SIGNATURE_HUH_FUNCTION_NAME]);
-					free(vals[IN_SIGNATURE_HUH_SIGNATURE]);
+					remove_signature(signatures, vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME], vals[SIGNATURE_FUNCTIONS_SIGNATURE], file_name);
+					free(vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+					free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
 					free(vals);
 				}
 			}
@@ -747,9 +727,9 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 		su->start_index = start_index;
 		su->end_index = end_index;
 
-		remove_signature(signatures, vals[IN_SIGNATURE_HUH_FUNCTION_NAME], vals[IN_SIGNATURE_HUH_SIGNATURE], file_name);
-		free(vals[IN_SIGNATURE_HUH_FUNCTION_NAME]);
-		free(vals[IN_SIGNATURE_HUH_SIGNATURE]);
+		remove_signature(signatures, vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME], vals[SIGNATURE_FUNCTIONS_SIGNATURE], file_name);
+		free(vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+		free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
 		free(vals);
 	}
 }
@@ -765,9 +745,9 @@ void su_handle_insertion(HashMap* signatures, PieceTable* pt, char* file_name, S
 	char** vals = in_signature_huh(signatures, pt, index, &start_index);
 	if (vals != NULL)
 	{
-		remove_signature(signatures, vals[IN_SIGNATURE_HUH_FUNCTION_NAME], vals[IN_SIGNATURE_HUH_SIGNATURE], file_name);
-		free(vals[IN_SIGNATURE_HUH_FUNCTION_NAME]);
-		free(vals[IN_SIGNATURE_HUH_SIGNATURE]);
+		remove_signature(signatures, vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME], vals[SIGNATURE_FUNCTIONS_SIGNATURE], file_name);
+		free(vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+		free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
 		free(vals);
 	}
 	
@@ -785,9 +765,9 @@ void su_handle_deletion(HashMap* signatures, PieceTable* pt, char* file_name, Si
 	char** vals = in_signature_huh(signatures, pt, index, &start_index);
 	if (vals != NULL)
 	{
-		remove_signature(signatures, vals[IN_SIGNATURE_HUH_FUNCTION_NAME], vals[IN_SIGNATURE_HUH_SIGNATURE], file_name);
-		free(vals[IN_SIGNATURE_HUH_FUNCTION_NAME]);
-		free(vals[IN_SIGNATURE_HUH_SIGNATURE]);
+		remove_signature(signatures, vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME], vals[SIGNATURE_FUNCTIONS_SIGNATURE], file_name);
+		free(vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+		free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
 		free(vals);
 	}
 

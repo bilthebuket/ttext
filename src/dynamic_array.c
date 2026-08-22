@@ -89,3 +89,15 @@ void da_free(DynamicArray* da)
 	free(da->arr);
 	free(da);
 }
+
+char* da_convert_to_fixed(DynamicArray* da)
+{
+	if (da == NULL)
+	{
+		return NULL;
+	}
+
+	char* r = da->arr;
+	free(da);
+	return r;
+}

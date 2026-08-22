@@ -6,9 +6,9 @@
 #include "piece_table/piece_table.h"
 #include "linked_list.h"
 
-#define IN_SIGNATURE_HUH_NUM_RETURN_VALS 2
-#define IN_SIGNATURE_HUH_FUNCTION_NAME 0
-#define IN_SIGNATURE_HUH_SIGNATURE 1
+#define SIGNATURE_FUNCTIONS_NUM_RETURN_VALS 2
+#define SIGNATURE_FUNCTIONS_FUNCTION_NAME 0
+#define SIGNATURE_FUNCTIONS_SIGNATURE 1
 
 typedef struct Signature
 {
