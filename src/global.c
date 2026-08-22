@@ -18,8 +18,15 @@ FILE* error_log = NULL;
 
 int es_init(EditorState* es, int argc, char* argv[])
 {
+	if (es == NULL)
+	{
+		return 1;
+	}
+
 	es->flags = 0;
 	es->finder = NULL;
+	es->action_repeat = 0;
+	es->dependent_action = '\0';
 	sem_init(&(es->sem), 0, 1);
 	ci_init_arrays();
 

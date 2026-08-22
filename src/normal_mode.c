@@ -10,6 +10,8 @@
 #include "piece_table/undo.h"
 #include "undo.h"
 
+static bool dependent_action_chars[NUM_CHARS];
+
 static void handle_default(EditorState* es)
 {
 	(void) es;
@@ -531,6 +533,7 @@ void normal_mode_create(void)
 	for (int i = 0; i < NUM_CHARS; i++)
 	{
 		execute_char[i] = &handle_default;
+		dependent_action_chars[i] = false;
 	}
 	execute_char['h'] = &handle_h;
 	execute_char['j'] = &handle_j;
@@ -547,6 +550,12 @@ void normal_mode_create(void)
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
 	execute_char['p'] = &handle_p;
+
+	dependent_action_chars['d'] = true;
+	dependent_action_chars['f'] = true;
+	dependent_action_chars['F'] = true;
+	dependent_action_chars['t'] = true;
+	dependent_action_chars['T'] = true;
 }
 
 void normal_mode(EditorState* es, int ch)
@@ -557,6 +566,23 @@ void normal_mode(EditorState* es, int ch)
 	}
 	if (ch >= 0 && ch < NUM_CHARS)
 	{
-		(*execute_char[ch])(es);
+		if (es->dependent_action != '\0')
+		{
+			char store = es->dependent_action;
+			es->dependent_action = ch;
+			(*execute_char[store])(es);
+			es->action_repeat = 0;
+			es->dependent_action = '\0';
+		}
+		else if (dependent_action_chars[ch])
+		{
+			es->dependent_action = ch;
+		}
+		else
+		{
+			(*execute_char[ch])(es);
+			es->action_repeat = 0;
+			es->dependent_action = '\0';
+		}
 	}
 }
