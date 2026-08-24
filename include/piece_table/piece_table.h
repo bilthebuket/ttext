@@ -87,4 +87,6 @@ void print_color_index(void* v);
 
 void piece_iterator_copy(PieceIterator* to, PieceIterator* from);
 
+void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index);
+
 #endif

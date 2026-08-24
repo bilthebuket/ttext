@@ -755,7 +755,7 @@ void su_handle_insertion(HashMap* signatures, PieceTable* pt, char* file_name, S
 }
 
 void su_handle_deletion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index)
-{
+
 	if (su == NULL || index < 0)
 	{
 		return;
@@ -777,6 +777,38 @@ void su_handle_deletion(HashMap* signatures, PieceTable* pt, char* file_name, Si
 	}
 
 	su->end_index--;
+}
+
+void su_handle_mulitple_rm(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int num_deleted, int index)
+{
+	if (su == NULL || index < 0 || num_deleted <= 0)
+	{
+		return;
+	}
+
+	int start_index = index;
+	while (start_index > index - num_deleted)
+	{
+		char** vals = in_signature_huh(signatures, pt, start_index, &start_index);
+		if (vals != NULL)
+		{
+			remove_signature(signatures, vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME], vals[SIGNATURE_FUNCTIONS_SIGNATURE], file_name);
+			free(vals[SIGNATURE_FUNCTIONS_FUNCTION_NAME]);
+			free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
+			free(vals);
+		}
+		else
+		{
+			start_index--;
+		}
+	}
+
+	if (su->start_index >= index - num_deleted + 1)
+	{
+		su->start_index = index - num_deleted + 1;
+	}
+
+	su->end_index -= num_deleted;
 }
 
 void su_execute(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name)

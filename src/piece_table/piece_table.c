@@ -902,3 +902,154 @@ void piece_iterator_copy(PieceIterator* to, PieceIterator* from)
 	to->node = from->node;
 	to->index = from->index;
 }
+
+void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index)
+{
+	if (pt == NULL || pt->pieces == NULL || pt->pieces->elt == NULL || start_index < 0 || end_index < start_index || end_index >= ((Piece*) pt->pieces->elt)->chars_contained)
+	{
+		return;
+	}
+
+	PieceFinder finder;
+	finder.contained = start_index + 1;
+	finder.global_char_index = -1;
+	finder.global_line_index = -1;
+
+	Tree* t = tree_helper(pt->pieces, &finder, &piece_finder_compare_characters);
+	if (t == NULL)
+	{
+		return;
+	}
+	Piece* p = (Piece*) t->elt;
+	if (p == NULL)
+	{
+		return;
+	}
+	if (p->text == NULL)
+	{
+		return;
+	}
+	if (*p->text == NULL)
+	{
+		return;
+	}
+
+	int num_chars_removing = end_index - start_index + 1;
+
+	// if we are removing a character on the edge of a piece we can just adjust the piece
+	// otherwise we must break it into two pieces
+	if (start_index == finder.global_char_index)
+	{
+		if (num_chars_removing >= p->len)
+		{
+			handle_piece_being_removed(pt, p, start_index);
+			num_chars_removing -= p->len;
+		}
+		else
+		{
+			Undo* u = undo_update_create(p, start_index, p->start_index, p->len, p->lines_inside);
+			if (u != NULL)
+			{
+				pt_undo_update(pt, u);
+			}
+
+			for (int i = 0; i < num_chars_removing; i++)
+			{
+				if ((*p->text)[p->start_index + i] == '\n')
+				{
+					p->lines_contained--;
+					p->lines_inside--;
+				}
+			}
+
+			p->chars_contained -= num_chars_removing;
+			p->len -= num_chars_removing;
+			p->start_index += num_chars_removing;
+
+			tree_recursive_update_to_root(t, &piece_update_info);
+			num_chars_removing = 0;
+		}
+	}
+	else if (end_index >= finder.global_char_index + p->len - 1)
+	{
+		Undo* u = undo_update_create(p, start_index, p->start_index, p->len, p->lines_inside);
+		if (u != NULL)
+		{
+			pt_undo_update(pt, u);
+		}
+
+		for (int i = 0; start_index + i < finder.global_char_index + p->len; i++)
+		{
+			if ((*p->text)[p->start_index + start_index - finder.global_char_index + i] == '\n')
+			{
+				p->lines_contained--;
+				p->lines_inside--;
+			}
+		}
+		p->chars_contained -= num_chars_removing;
+		p->len -= num_chars_removing;
+
+		tree_recursive_update_to_root(t, &piece_update_info);
+		num_chars_removing -= finder.global_char_index + p->len - start_index;
+	}
+	else
+	{
+		Piece* new_one = piece_create(p->text, p->start_index, start_index - finder.global_char_index, start_index);
+		if (new_one == NULL)
+		{
+			return;
+		}
+		Piece* new_two = piece_create(p->text, p->start_index + new_one->len + num_chars_removing, p->len - new_one->len - num_chars_removing, start_index + p->len - new_one->len - num_chars_removing);
+		if (new_two == NULL)
+		{
+			piece_free(new_one);
+			return;
+		}
+
+		Piece* to_remove = p;
+
+		finder.contained = start_index + 1;
+		finder.global_char_index = -1;
+		pt->pieces = tree_rm(pt->pieces, &finder, &piece_finder_compare_characters, NULL, &piece_update_info);
+
+		to_remove->chars_contained = finder.global_char_index + to_remove->len;
+		to_remove->lines_contained = to_remove->lines_inside;
+		Undo* one = undo_create_create(to_remove);
+		if (one != NULL)
+		{
+			pt_undo_update(pt, one);
+		}
+
+		if (new_one->len > 0)
+		{
+			Undo* two = undo_rm_create(new_one->chars_contained);
+			if (two != NULL)
+			{
+				pt_undo_update(pt, two);
+			}
+			pt->pieces = tree_insert(pt->pieces, new_one, &piece_compare, &piece_update_info);
+		}
+		else
+		{
+			piece_free(new_one);
+		}
+		if (new_two->len > 0)
+		{
+			Undo* three = undo_rm_create(new_two->chars_contained);
+			if (three != NULL)
+			{
+				pt_undo_update(pt, three);
+			}
+			pt->pieces = tree_insert(pt->pieces, new_two, &piece_compare, &piece_update_info);
+		}
+		else
+		{
+			piece_free(new_two);
+		}
+
+		num_chars_removing = 0;
+	}
+
+	// no need to check if recursive call is unecessary because the function already checks if end_index < start_index
+	pt_rm_on_boundary(pt, start_index, start_index + num_chars_removing - 1);
+}

@@ -228,3 +228,35 @@ void undo_handle_delete(EditorState* es)
 		ui->num_added--;
 	}
 }
+
+void undo_handle_multiple_rm(EditorState* es, int num_deleted)
+{
+	if (es == NULL || es->active_tab == NULL)
+	{
+		return;
+	}
+
+	Tab* t = es->active_tab;
+	UndoInfo* ui = ll_get_elt(t->undos, 0);
+
+	if (ui == NULL)
+	{
+		return;
+	}
+
+	if (ui->num_added > 0)
+	{
+		if (ui->num_added > num_deleted)
+		{
+			ui->num_added -= num_deleted;
+			num_deleted = 0;
+		}
+		else
+		{
+			num_deleted -= ui->num_added;
+			ui->num_added = 0;
+		}
+	}
+
+	ui->num_deleted += num_deleted;
+}

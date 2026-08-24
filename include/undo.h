@@ -15,5 +15,6 @@ void undo_prepare_for_execute(EditorState* es);
 void undo_execute(EditorState* es);
 void undo_handle_insert(EditorState* es);
 void undo_handle_delete(EditorState* es);
+void undo_handle_multiple_rm(EditorState* es, int num_deleted);
 
 #endif

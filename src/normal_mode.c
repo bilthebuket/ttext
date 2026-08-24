@@ -315,50 +315,69 @@ static void handle_x(EditorState* es)
 		return;
 	}
 
-	pt_undo_insert(t->pt);
-	undo_insert(es, line_index + t->x);
-	ci_prepare(t->pt, line_index + t->x);
-
-	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
-	{
-		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
-	}
-
 	if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 	{
-		t->tab_num_flags &= ~CHANGES_SAVED;
-		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		char c;
+		PieceIterator pi;
+		if (pt_iterator_init(pt, &pi, line_index + t->x))
 		{
-			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
-		}
-		pt_rm(t->pt, line_index + t->x);
-		undo_handle_delete(es);
-		ci_handle_rm(t->pt);
-		backup_increment_and_check(es->active_tab);
-
-		if ((pt_get(t->pt, line_index + t->x) == '\0' || pt_get(t->pt, line_index + t->x) == '\n') && t->x > 0)
-		{
-			t->x--;
-			t->saved_x_index = t->x;
-			check_left_update(t);
-			move_cursor_to_tab(t);
-		}
-
-		print_line(t, t->y);
-
-		es->flags |= UPDATE_FINDER_FLAG;
-
-		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
-		{
-			su_execute(es->signatures, t->pt, &(t->su), t->fname);
-		}
-		int start_index;
-		int end_index;
-		if (ci_execute(t->pt, &start_index, &end_index))
-		{
-			for (int i = start_index; i <= end_index; i++)
+			char c = pt_iterate(&pi);
+			int newline_index = line_index + t->x;
+			while (c != '\n' && c != '\0')
 			{
-				print_line(t, i);
+				c = pt_iterate(&pi);
+				newline_index++;
+			}
+
+			if (es->action_repeat > newline_index - line_index)
+			{
+				es->action_repeat = newline_index - line_index;
+			}
+
+			int num_to_move_backwards = es->action_repeat - (newline_index - (line_index + t->x)) + 1;
+
+			pt_undo_insert(t->pt);
+			undo_insert(es, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+			ci_prepare(t->pt, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+
+			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+			{
+				su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+				su_handle_multiple_rm(es->signatures, t->pt, t->fname, &(t->su), es->action_repeat, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+			}
+
+			t->tab_num_flags &= ~CHANGES_SAVED;
+
+			pt_rm_on_boundary(t->pt, line_index + t->x - num_to_move_backwards + 1, line_index + t->x + es->action_repeat - 1);
+			undo_handle_multiple_rm(es, es->action_repeat);
+			ci_handle_multiple_rm(t->pt, es->action_repeat);
+
+			backup_increment_and_check(es->active_tab);
+
+			if (num_to_move_backwards > 0)
+			{
+				t->x -= num_to_move_backwards;
+				t->saved_x_index = t->x;
+				check_left_update(t);
+				move_cursor_to_tab(t);
+			}
+
+			print_line(t, t->y);
+
+			es->flags |= UPDATE_FINDER_FLAG;
+
+			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+			{
+				su_execute(es->signatures, t->pt, &(t->su), t->fname);
+			}
+			int start_index;
+			int end_index;
+			if (ci_execute(t->pt, &start_index, &end_index))
+			{
+				for (int i = start_index; i <= end_index; i++)
+				{
+					print_line(t, i);
+				}
 			}
 		}
 	}
@@ -526,6 +545,12 @@ static void handle_p(EditorState* es)
 	print_pt_to_message_bar(es->active_tab->pt);
 }
 
+static void handle_escape(EditorState* es)
+{
+	es->action_repeat = 0;
+	es->dependent_action = '\0';
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -550,6 +575,7 @@ void normal_mode_create(void)
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
 	execute_char['p'] = &handle_p;
+	execute_char[ESCAPE_KEYCODE] = &handle_escape;
 
 	dependent_action_chars['d'] = true;
 	dependent_action_chars['f'] = true;
@@ -570,7 +596,11 @@ void normal_mode(EditorState* es, int ch)
 		{
 			char store = es->dependent_action;
 			es->dependent_action = ch;
-			(*execute_char[store])(es);
+			if (es->action_repeat == 0)
+			{
+				es->action_repeat = 1;
+			}
+			(*execute_char[(int) store])(es);
 			es->action_repeat = 0;
 			es->dependent_action = '\0';
 		}
@@ -578,8 +608,18 @@ void normal_mode(EditorState* es, int ch)
 		{
 			es->dependent_action = ch;
 		}
+		else if (ch >= '0' && ch <= '9')
+		{
+			int num = ch - '0';
+			es->action_repeat *= 10;
+			es->action_repeat += num;
+		}
 		else
 		{
+			if (es->action_repeat == 0)
+			{
+				es->action_repeat = 1;
+			}
 			(*execute_char[ch])(es);
 			es->action_repeat = 0;
 			es->dependent_action = '\0';

@@ -277,6 +277,63 @@ void ci_handle_rm(PieceTable* pt)
 	}
 }
 
+void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing);
+{
+	if (pt == NULL || pt->pieces == NULL || pt->pieces->elt == NULL || num_chars_removing <= 0)
+	{
+		return;
+	}
+
+	ColorIndexFinder f;
+	f.contained = pt->ci_index + 1;
+	f.global_char_index = -1;
+
+	Tree* t = tree_helper(pt->pieces, &f, &ci_finder_compare_characters);
+	if (t == NULL)
+	{
+		return;
+	}
+
+	ColorIndex* ci = t->elt;
+	if (ci == NULL)
+	{
+		return;
+	}
+
+	int num_chars_removed_this_iteration;
+
+	if (ci->len > num_chars_removing)
+	{
+		ci->len -= num_chars_removing;
+		num_chars_removed_this_iteration = num_chars_removing;
+		tree_recursive_update_to_root(t, &ci_update_info);
+	}
+	else (ci->len <= num_chars_removing)
+	{
+		num_chars_removed_this_iteration = ci->len;
+
+		f.contained = pt->ci_index + 1;
+		f.global_char_index = -1;
+		pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
+	}
+
+	num_chars_removing -= num_chars_removed_this_iteration;
+
+	if (pt->ci_chars_added - num_chars_removed_this_iteration < 0)
+	{
+		num_chars_removed_this_iteration -= pt->ci_chars_added;
+		pt->ci_chars_added = 0;
+		pt->ci_index -= num_chars_removed_this_iteration;
+	}
+	else
+	{
+		pt->ci_chars_added -= num_chars_removed_this_iteration;
+	}
+
+
+	ci_handle_rm_on_boundary(pt, num_chars_removing);
+}
+
 static char inside_comment_or_quote(PieceTable* pt, int index)
 {
 	PieceIterator pi;
