@@ -156,7 +156,7 @@ static void handle_l(EditorState* es)
 	}
 }
 
-static void handle_t(EditorState* es)
+static void handle_exclamation(EditorState* es)
 {
 	print_terminal();
 	move_cursor_to_terminal();
@@ -317,9 +317,8 @@ static void handle_x(EditorState* es)
 
 	if (pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x) != '\0')
 	{
-		char c;
 		PieceIterator pi;
-		if (pt_iterator_init(pt, &pi, line_index + t->x))
+		if (pt_iterator_init(t->pt, &pi, line_index + t->x))
 		{
 			char c = pt_iterate(&pi);
 			int newline_index = line_index + t->x;
@@ -335,20 +334,31 @@ static void handle_x(EditorState* es)
 			}
 
 			int num_to_move_backwards = es->action_repeat - (newline_index - (line_index + t->x)) + 1;
+			if (num_to_move_backwards < 0)
+			{
+				num_to_move_backwards = 0;
+			}
 
 			pt_undo_insert(t->pt);
-			undo_insert(es, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
-			ci_prepare(t->pt, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+			undo_insert(es, line_index + t->x + es->action_repeat - num_to_move_backwards);
+			ci_prepare(t->pt, line_index + t->x + es->action_repeat - num_to_move_backwards);
 
 			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 			{
-				su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
-				su_handle_multiple_rm(es->signatures, t->pt, t->fname, &(t->su), es->action_repeat, line_index + t->x + es->action_repeat - num_to_move_backwards + 1);
+				su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + es->action_repeat - num_to_move_backwards);
+				su_handle_multiple_rm(es->signatures, t->pt, t->fname, &(t->su), es->action_repeat, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
 			}
 
 			t->tab_num_flags &= ~CHANGES_SAVED;
 
-			pt_rm_on_boundary(t->pt, line_index + t->x - num_to_move_backwards + 1, line_index + t->x + es->action_repeat - 1);
+			if (num_to_move_backwards == 0)
+			{
+				pt_rm_on_boundary(t->pt, line_index + t->x, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
+			}
+			else
+			{
+				pt_rm_on_boundary(t->pt, line_index + t->x - num_to_move_backwards + 1, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
+			}
 			undo_handle_multiple_rm(es, es->action_repeat);
 			ci_handle_multiple_rm(t->pt, es->action_repeat);
 
@@ -564,7 +574,7 @@ void normal_mode_create(void)
 	execute_char['j'] = &handle_j;
 	execute_char['k'] = &handle_k;
 	execute_char['l'] = &handle_l;
-	execute_char['t'] = &handle_t;
+	execute_char['!'] = &handle_exclamation;
 	execute_char['i'] = &handle_i;
 	execute_char['a'] = &handle_a;
 	execute_char['0'] = &handle_zero;
@@ -608,7 +618,7 @@ void normal_mode(EditorState* es, int ch)
 		{
 			es->dependent_action = ch;
 		}
-		else if (ch >= '0' && ch <= '9')
+		else if ((ch >= '1' && ch <= '9') || (ch == '0' && es->action_repeat != 0))
 		{
 			int num = ch - '0';
 			es->action_repeat *= 10;

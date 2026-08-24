@@ -48,7 +48,7 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 void su_handle_insertion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
 void su_handle_deletion(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int index);
 void su_execute(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* file_name);
-void su_handle_mulitple_rm(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int num_deleted, int index);
+void su_handle_multiple_rm(HashMap* signatures, PieceTable* pt, char* file_name, SignatureUpdate* su, int num_deleted, int index);
 
 void print_all_signatures(HashMap* signatures, FILE* f);
 

@@ -277,9 +277,9 @@ void ci_handle_rm(PieceTable* pt)
 	}
 }
 
-void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing);
+void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing)
 {
-	if (pt == NULL || pt->pieces == NULL || pt->pieces->elt == NULL || num_chars_removing <= 0)
+	if (pt == NULL || pt->color_indices == NULL || pt->color_indices->elt == NULL || num_chars_removing <= 0)
 	{
 		return;
 	}
@@ -288,7 +288,7 @@ void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing);
 	f.contained = pt->ci_index + 1;
 	f.global_char_index = -1;
 
-	Tree* t = tree_helper(pt->pieces, &f, &ci_finder_compare_characters);
+	Tree* t = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
 	if (t == NULL)
 	{
 		return;
@@ -308,7 +308,7 @@ void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing);
 		num_chars_removed_this_iteration = num_chars_removing;
 		tree_recursive_update_to_root(t, &ci_update_info);
 	}
-	else (ci->len <= num_chars_removing)
+	else
 	{
 		num_chars_removed_this_iteration = ci->len;
 
@@ -331,7 +331,7 @@ void ci_handle_multiple_rm(PieceTable* pt, int num_chars_removing);
 	}
 
 
-	ci_handle_rm_on_boundary(pt, num_chars_removing);
+	ci_handle_multiple_rm(pt, num_chars_removing);
 }
 
 static char inside_comment_or_quote(PieceTable* pt, int index)
