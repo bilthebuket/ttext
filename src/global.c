@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "io_tools.h"
 #include "signature.h"
-#include "normal_mode.h"
+#include "normal_mode/normal_mode.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"
 #include "piece_table/color_indices.h"

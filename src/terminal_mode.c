@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "terminal_mode.h"
-#include "normal_mode.h"
+#include "normal_mode/normal_mode.h"
 #include "global.h"
 #include "io_tools.h"
 #include "line.h"

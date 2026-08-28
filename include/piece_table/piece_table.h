@@ -89,4 +89,6 @@ void piece_iterator_copy(PieceIterator* to, PieceIterator* from);
 
 void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index);
 
+int pt_get_size(PieceTable* pt);
+
 #endif

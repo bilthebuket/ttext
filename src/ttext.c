@@ -8,7 +8,7 @@
 #include "linked_list.h"
 #include "global.h"
 #include "io_tools.h"
-#include "normal_mode.h"
+#include "normal_mode/normal_mode.h"
 #include "terminal_mode.h"
 #include "insert_mode.h"
 #include "line.h"

@@ -1,5 +1,5 @@
-#ifndef NORMAL_MODE_H
-#define NORMAL_MODE_H
+#ifndef NORMAL_MODE_NORMAL_MODE_H
+#define NORMAL_MODE_NORMAL_MODE_H
 
 #include "global.h"
 

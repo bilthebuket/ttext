@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <ncurses.h>
-#include "normal_mode.h"
+#include "normal_mode/normal_mode.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"
 #include "global.h"
@@ -20,28 +20,11 @@ static void handle_default(EditorState* es)
 
 static void handle_h(EditorState* es)
 {
-	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
-	{
-		return;
-	}
+	Coordinate new_coords = get_target_index(es, 'h');
 
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
+	if (new_coords.x != t->x)
 	{
-		return;
-	}
-
-	if (t->x > 0)
-	{
-		if (t->x - es->action_repeat < 0)
-		{
-			t->x = 0;
-		}
-		else
-		{
-			t->x -= es->action_repeat;
-		}
+		t->x = new_coords.x;
 		t->saved_x_index = t->x;
 		check_left_update(t);
 		move_cursor_to_tab(t);
@@ -50,140 +33,59 @@ static void handle_h(EditorState* es)
 
 static void handle_j(EditorState* es)
 {
-	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL || t->pt->pieces == NULL || t->pt->pieces->elt == NULL)
+	Coordinate new_coords = get_target_index(es, 'j');
+
+	if (new_coords.x < t->x)
 	{
-		return;
-	}
-
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
-	{
-		return;
-	}
-
-	int num_lines_in_document = ((Piece*) t->pt->pieces->elt)->lines_contained;
-	if (t->y + es->action_repeat > num_lines_in_document)
-	{
-		es->action_repeat = num_lines_in_document - t->y;
-	}
-	int line_below_index = pt_get_line_index(t->pt, t->y + es->action_repeat);
-
-	// if we are jumping to the last line and its empty then pt_iterator_init will fail, so we need to handle that
-	PieceIterator pi;
-	if (line_below_index > 0 && (pt_iterator_init(t->pt, &pi, line_below_index) || ((Piece*) t->pt->pieces->elt)->chars_contained == line_below_index))
-	{
-		int i = line_below_index;
-		if (((Piece*) t->pt->pieces->elt)->chars_contained != line_below_index)
-		{
-			char c = pt_iterate(&pi);
-			for (; c != '\n' && c != '\0'; c = pt_iterate(&pi), i++) {}
-		}
-
-		if (i - line_below_index - 1 <= t->saved_x_index)
-		{
-			i -= line_below_index + 1;
-		}
-		else
-		{
-			i = t->saved_x_index;
-		}
-		if (i < 0)
-		{
-			t->x = 0;
-		}
-		else
-		{
-			t->x = i;
-		}
-
-		t->y += es->action_repeat;
-		
-		check_bottom_update(t);
+		t->x = new_coords.x;
 		check_left_update(t);
-
-		move_cursor_to_tab(t);
 	}
+	if (new_coords.x > t->x)
+	{
+		t->x = new_coords.x;
+		check_right_update(t);
+	}
+	if (new_coords.y > t->y)
+	{
+		t->y = new_coords.y;
+		check_bottom_update(t);
+	}
+
+	move_cursor_to_tab(t);
 }
 
 static void handle_k(EditorState* es)
 {
-	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
+	Coordinate new_coords = get_target_index(es, 'k');
+
+	if (new_coords.x < t->x)
 	{
-		return;
-	}
-
-	if (t->y - es->action_repeat < 0)
-	{
-		es->action_repeat = t->y;
-	}
-
-	int line_above_index = pt_get_line_index(t->pt, t->y - es->action_repeat);
-	PieceIterator pi;
-
-	if (t->y > 0 && line_above_index >= 0 && pt_iterator_init(t->pt, &pi, line_above_index))
-	{
-		int i = line_above_index;
-		char c = pt_iterate(&pi);
-		for (; c != '\n' && c != '\0'; c = pt_iterate(&pi), i++) {}
-		if (i - line_above_index - 1 <= t->saved_x_index)
-		{
-			i -= line_above_index + 1;
-		}
-		else
-		{
-			i = t->saved_x_index;
-		}
-		if (i < 0)
-		{
-			t->x = 0;
-		}
-		else
-		{
-			t->x = i;
-		}
-
-		t->y -= es->action_repeat;
-
-		check_top_update(t);
+		t->x = new_coords.x;
 		check_left_update(t);
-
-		move_cursor_to_tab(t);
 	}
+	if (new_coords.x > t->x)
+	{
+		t->x = new_coords.x;
+		check_right_update(t);
+	}
+	if (new_coords.y < t->y)
+	{
+		t->y = new_coords.y;
+		check_top_update(t);
+	}
+
+	move_cursor_to_tab(t);
 }
 
 static void handle_l(EditorState* es)
 {
-	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
-	{
-		return;
-	}
+	Coordinate new_coords = get_target_index(es, 'l');
 
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
+	if (new_coords.x != t->x)
 	{
-		return;
-	}
-
-	PieceIterator pi;
-	if (pt_iterator_init(t->pt, &pi, line_index + t->x))
-	{
-		char c = pt_iterate(&pi);
-		int i = 0;
-		for (; c != '\0' && c != '\n' && i < es->action_repeat; i++, c = pt_iterate(&pi), t->x++) {}
-
-		if (i > 0)
-		{
-			if (c == '\n' || c == '\0')
-			{
-				t->x--;
-			}
-			t->saved_x_index = t->x;
-			check_right_update(t);
-			move_cursor_to_tab(t);
-		}
+		t->saved_x_index = t->x;
+		check_right_update(t);
+		move_cursor_to_tab(t);
 	}
 }
 

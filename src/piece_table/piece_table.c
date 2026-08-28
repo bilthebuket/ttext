@@ -1053,3 +1053,13 @@ void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index)
 	// no need to check if recursive call is unecessary because the function already checks if end_index < start_index
 	pt_rm_on_boundary(pt, start_index, start_index + num_chars_removing - 1);
 }
+
+int pt_get_size(PieceTable* pt)
+{
+	if (pt == NULL || pt->pieces == NULL || pt->pieces->elt == NULL)
+	{
+		return -1;
+	}
+
+	return ((Piece*) pt->pieces->elt)->chars_contained;
+}

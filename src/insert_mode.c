@@ -2,7 +2,7 @@
 #include <ncurses.h>
 #include "linked_list.h"
 #include "insert_mode.h"
-#include "normal_mode.h"
+#include "normal_mode/normal_mode.h"
 #include "tab.h"
 #include "global.h"
 #include "io_tools.h"
