@@ -25,10 +25,17 @@
 - i -> enter insert mode
 - a -> move cursor one to the right and enter insert mode
 - o -> make newline below current line and enter insert mode
-- t -> enter terminal mode
+- ! -> enter terminal mode
 - n -> goto next instance of string (after using :find)
 - u -> undo
 - p -> prints the entire state of the piece table to the message line for debugging purposes
+
+typing a number before an action in normal mode will repeat it that number of times. the following actions support this:
+
+- hjkl
+- x
+- n
+- u
 
 ## Insert Mode
 

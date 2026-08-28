@@ -705,7 +705,7 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 
 		int end_index = index;
 		char c = pt_iterate(&pi);
-		for (; c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
+		for (; c != '\0' && c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
 
 		su->start_index = index;
 		su->end_index = end_index;
@@ -722,7 +722,7 @@ void su_prepare(HashMap* signatures, PieceTable* pt, SignatureUpdate* su, char* 
 
 		int end_index = index;
 		char c = pt_iterate(&pi);
-		for (; c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
+		for (; c != '\0' && c != '{' && c != '}' && c != ';'; c = pt_iterate(&pi), end_index++) {}
 
 		su->start_index = start_index;
 		su->end_index = end_index;

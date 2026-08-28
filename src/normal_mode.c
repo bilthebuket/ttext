@@ -34,7 +34,14 @@ static void handle_h(EditorState* es)
 
 	if (t->x > 0)
 	{
-		t->x--;
+		if (t->x - es->action_repeat < 0)
+		{
+			t->x = 0;
+		}
+		else
+		{
+			t->x -= es->action_repeat;
+		}
 		t->saved_x_index = t->x;
 		check_left_update(t);
 		move_cursor_to_tab(t);
@@ -44,7 +51,7 @@ static void handle_h(EditorState* es)
 static void handle_j(EditorState* es)
 {
 	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
+	if (t == NULL || t->pt == NULL || t->pt->pieces == NULL || t->pt->pieces->elt == NULL)
 	{
 		return;
 	}
@@ -55,12 +62,24 @@ static void handle_j(EditorState* es)
 		return;
 	}
 
-	int line_below_index = pt_get_line_index(t->pt, t->y + 1);
-
-	if (line_below_index > 0)
+	int num_lines_in_document = ((Piece*) t->pt->pieces->elt)->lines_contained;
+	if (t->y + es->action_repeat > num_lines_in_document)
 	{
-		int i;
-		for (i = line_below_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++) {}
+		es->action_repeat = num_lines_in_document - t->y;
+	}
+	int line_below_index = pt_get_line_index(t->pt, t->y + es->action_repeat);
+
+	// if we are jumping to the last line and its empty then pt_iterator_init will fail, so we need to handle that
+	PieceIterator pi;
+	if (line_below_index > 0 && (pt_iterator_init(t->pt, &pi, line_below_index) || ((Piece*) t->pt->pieces->elt)->chars_contained == line_below_index))
+	{
+		int i = line_below_index;
+		if (((Piece*) t->pt->pieces->elt)->chars_contained != line_below_index)
+		{
+			char c = pt_iterate(&pi);
+			for (; c != '\n' && c != '\0'; c = pt_iterate(&pi), i++) {}
+		}
+
 		if (i - line_below_index - 1 <= t->saved_x_index)
 		{
 			i -= line_below_index + 1;
@@ -78,7 +97,7 @@ static void handle_j(EditorState* es)
 			t->x = i;
 		}
 
-		t->y++;
+		t->y += es->action_repeat;
 		
 		check_bottom_update(t);
 		check_left_update(t);
@@ -95,18 +114,19 @@ static void handle_k(EditorState* es)
 		return;
 	}
 
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
+	if (t->y - es->action_repeat < 0)
 	{
-		return;
+		es->action_repeat = t->y;
 	}
 
-	if (t->y > 0 && pt_get_line_index(t->pt, t->y - 1) >= 0)
-	{
-		int line_above_index = pt_get_line_index(t->pt, t->y - 1);
+	int line_above_index = pt_get_line_index(t->pt, t->y - es->action_repeat);
+	PieceIterator pi;
 
-		int i;
-		for (i = line_above_index; pt_get(t->pt, i) != '\n' && pt_get(t->pt, i) != '\0'; i++) {}
+	if (t->y > 0 && line_above_index >= 0 && pt_iterator_init(t->pt, &pi, line_above_index))
+	{
+		int i = line_above_index;
+		char c = pt_iterate(&pi);
+		for (; c != '\n' && c != '\0'; c = pt_iterate(&pi), i++) {}
 		if (i - line_above_index - 1 <= t->saved_x_index)
 		{
 			i -= line_above_index + 1;
@@ -124,7 +144,7 @@ static void handle_k(EditorState* es)
 			t->x = i;
 		}
 
-		t->y--;
+		t->y -= es->action_repeat;
 
 		check_top_update(t);
 		check_left_update(t);
@@ -147,12 +167,23 @@ static void handle_l(EditorState* es)
 		return;
 	}
 
-	if (pt_get(t->pt, line_index + t->x) != '\0' && pt_get(t->pt, line_index + t->x) != '\n' && pt_get(t->pt, line_index + t->x + 1) != '\0' && pt_get(t->pt, line_index + t->x + 1) != '\n')
+	PieceIterator pi;
+	if (pt_iterator_init(t->pt, &pi, line_index + t->x))
 	{
-		t->x++;
-		t->saved_x_index = t->x;
-		check_right_update(t);
-		move_cursor_to_tab(t);
+		char c = pt_iterate(&pi);
+		int i = 0;
+		for (; c != '\0' && c != '\n' && i < es->action_repeat; i++, c = pt_iterate(&pi), t->x++) {}
+
+		if (i > 0)
+		{
+			if (c == '\n' || c == '\0')
+			{
+				t->x--;
+			}
+			t->saved_x_index = t->x;
+			check_right_update(t);
+			move_cursor_to_tab(t);
+		}
 	}
 }
 
@@ -535,15 +566,21 @@ static void handle_n(EditorState* es)
 		es->finder = finder_create(es->active_tab->pt, copy);
 		es->flags &= ~UPDATE_FINDER_FLAG;
 	}
-	find_next(es->active_tab, es->finder);
+	for (int i = 0; i < es->action_repeat; i++)
+	{
+		find_next(es->active_tab, es->finder);
+	}
 	move_cursor_to_tab(es->active_tab);
 }
 
 static void handle_u(EditorState* es)
 {
-	undo_prepare_for_execute(es);
-	pt_undo_execute(es->active_tab->pt);
-	undo_execute(es);
+	for (int i = 0; i < es->action_repeat; i++)
+	{
+		undo_prepare_for_execute(es);
+		pt_undo_execute(es->active_tab->pt);
+		undo_execute(es);
+	}
 	es->flags |= UPDATE_FINDER_FLAG;
 	move_cursor_to_valid_coordinates(es->active_tab);
 	backup_increment_and_check(es->active_tab);
