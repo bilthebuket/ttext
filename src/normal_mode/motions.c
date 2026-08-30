@@ -8,7 +8,7 @@ static Coordinate handle_h(EditorState* es)
 	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	Coordinate r;
@@ -18,7 +18,7 @@ static Coordinate handle_h(EditorState* es)
 	int line_index = pt_get_line_index(t->pt, r.y);
 	if (line_index < 0)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	if (r.x > 0)
@@ -41,13 +41,13 @@ static Coordinate handle_j(EditorState* es)
 	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL || t->pt->pieces == NULL || t->pt->pieces->elt == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	Coordinate r;
@@ -100,7 +100,7 @@ static Coordinate handle_k(EditorState* es)
 	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	if (t->y - es->action_repeat < 0)
@@ -148,13 +148,13 @@ static Coordinate handle_l(EditorState* es)
 	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	Coordinate r;
@@ -178,6 +178,282 @@ static Coordinate handle_l(EditorState* es)
 	}
 
 	return r;
+}
+
+static Coordinate handle_dollar_sign(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL || t->pt == NULL)
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	Coordinate r;
+	r.x = t->x;
+	r.y = t->y;
+
+	PieceIterator pi;
+	if (pt_iterator_init(t->pt, &pi, line_index))
+	{
+		int len = 0;
+		char c = pt_iterate(&pi);
+		for (; c != '\n' && c != '\0'; len++) {}
+		r.x = len - 1;
+	}
+
+	return r;
+}
+
+static Coordinate handle_zero(EditorState* es)
+{
+	if (es->active_tab == NULL)
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	return (Coordinate) {.x = 0, .y = es->active_tab->y};
+}
+
+static Coordinate handle_percent_sign(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL || t->pt == NULL)
+	{
+		return;
+	}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return;
+	}
+
+	char c = pt_get(t->pt, line_index + t->x);
+	char looking_for;
+	int delta;
+	if (c == '(' || c == '[' || c == '{')
+	{
+		delta = 1;
+
+		if (c == '(')
+		{
+			looking_for = ')';
+		}
+		else if (c == '[')
+		{
+			looking_for = ']';
+		}
+		else
+		{
+			looking_for = '}';
+		}
+	}
+	else if (c == ')' || c == ']' || c== '}')
+	{
+		delta = -1;
+
+		if (c == ')')
+		{
+			looking_for = '(';
+		}
+		else if (c == ']')
+		{
+			looking_for = '[';
+		}
+		else
+		{
+			looking_for = '{';
+		}
+	}
+	else
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	Coordinate r;
+	r.x = t->x;
+	r.y = t->y;
+
+	bool found = false;
+	int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
+			  // and we need to exclude it from the counter
+	for (int y_index = r.y; y_index >= 0 && pt_get_line_index(t->pt, y_index) != -1; y_index += delta)
+	{
+		int line_we_are_on = pt_get_line_index(t->pt, y_index);
+		int len = 0;
+		PieceIterator pi;
+		if (pt_iterator_init(t->pt, &pi, line_we_are_on))
+		{
+			char c2 = pt_iterate(&pi);
+			for (len = 0; c2 != '\0' && c2 != '\n'; c = pt_iterate(&pi), len++) {}
+		}
+
+		int x_index;
+		if (y_index == r.y)
+		{
+			x_index = r.x;
+		}
+		else if (delta == 1)
+		{
+			x_index = 0;
+		}
+		else
+		{
+			x_index = len - 1;
+		}
+		
+		if (pt_iterator_init(t->pt, &pi, line_we_are_on + x_index))
+		{
+			char c2;
+			if (delta == 1)
+			{
+				c2 = pt_iterate(&pi);
+			}
+			else
+			{
+				c2 = pt_iterate_backwards(&pi);
+			}
+
+			for (; c2 != '\0' && x_index >= 0 && x_index < len; x_index += delta)
+			{
+				if (c2 == looking_for)
+				{
+					if (counter == 0)
+					{
+						found = true;
+						r.x = x_index;
+						r.y = y_index;
+						break;
+					}
+					else
+					{
+						counter--;
+					}
+				}
+				else if (c2 == c)
+				{
+					counter++;
+				}
+
+				if (delta == 1)
+				{
+					c2 = pt_iterate(&pi);
+				}
+				else
+				{
+					c2 = pt_iterate_backwards(&pi);
+				}
+			}
+		}
+		if (found)
+		{
+			break;
+		}
+	}
+
+	return r;
+}
+
+// final_offset -> the final result will be adjusted in the direction of delta by this amount
+static Coordinate character_finder_helper(EditorState* es, int delta, int final_offset)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	int line_index = pt_get_line_index(t->py, t->y);
+	if (line_index < 0)
+	{
+		return (Coordinate) {.x = -1, .y = -1};
+	}
+
+	Coordinate r;
+	r.x = t->x;
+	r.y = t->y;
+
+	PieceIterator pi;
+	if (pt_iterator_init(t->py, &pi, line_index + t->x))
+	{
+		char c;
+		if (delta == 1)
+		{
+			c = pt_iterate(&pi);
+		}
+		else
+		{
+			c = pt_iterate_backwards(&pi);
+		}
+
+		int x = r.x;
+		while (es->action_repeat > 0)
+		{
+			while (c != '\n' && c != '\0' && c != es->dependent_char)
+			{
+				if (delta == 1)
+				{
+					c = pt_iterate(&pi);
+					x++;
+				}
+				else
+				{
+					c = pt_iterate_backwards(&pi);
+					x--;
+				}
+			}
+			if (c == es->dependent_char)
+			{
+				es->action_repeat--;
+				if (delta == 1)
+				{
+					c = pt_iterate(&pi);
+				}
+				else
+				{
+					c = pt_iterate_backwards(&pi);
+				}
+				r.x = x;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	if (r.x != t->x)
+	{
+		r.x += delta * final_offset;
+	}
+
+	return r;
+}
+
+static Coordinate handle_f(EditorState* es)
+{
+	return character_finder_helper(es, 1, 0);
+}
+
+static Coordinate handle_t(EditorState* es)
+{
+	return character_finder_helper(es, 1, -1);
+}
+
+static Coordinate handle_F(EditorState* es)
+{
+	return character_finder_helper(es, -1, 0);
+}
+
+static Coordinate handle_T(EditorState* es)
+{
+	return character_finder_helper(es, -1, -1);
 }
 
 void initialize_normal_mode_motions(void)
@@ -204,7 +480,7 @@ Coordinate get_target_index(EditorState* es, char motion)
 {
 	if ((int) motion < 0 || (int) motion >= NUM_CHARS || do_motion[(int) motion] == NULL)
 	{
-		return -1;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	return (*(do_motion[(int) motion]))(es);

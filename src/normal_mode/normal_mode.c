@@ -20,9 +20,15 @@ static void handle_default(EditorState* es)
 
 static void handle_h(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	Coordinate new_coords = get_target_index(es, 'h');
 
-	if (new_coords.x != t->x)
+	if (new_coords.x >= 0 && new_coords.x != t->x)
 	{
 		t->x = new_coords.x;
 		t->saved_x_index = t->x;
@@ -33,18 +39,30 @@ static void handle_h(EditorState* es)
 
 static void handle_j(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	Coordinate new_coords = get_target_index(es, 'j');
+
+	if (new_coords.x < 0)
+	{
+		return;
+	}
 
 	if (new_coords.x < t->x)
 	{
 		t->x = new_coords.x;
 		check_left_update(t);
 	}
-	if (new_coords.x > t->x)
+	else if (new_coords.x > t->x)
 	{
 		t->x = new_coords.x;
 		check_right_update(t);
 	}
+
 	if (new_coords.y > t->y)
 	{
 		t->y = new_coords.y;
@@ -56,18 +74,30 @@ static void handle_j(EditorState* es)
 
 static void handle_k(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	Coordinate new_coords = get_target_index(es, 'k');
+
+	if (new_coords.x < 0)
+	{
+		return;
+	}
 
 	if (new_coords.x < t->x)
 	{
 		t->x = new_coords.x;
 		check_left_update(t);
 	}
-	if (new_coords.x > t->x)
+	else if (new_coords.x > t->x)
 	{
 		t->x = new_coords.x;
 		check_right_update(t);
 	}
+
 	if (new_coords.y < t->y)
 	{
 		t->y = new_coords.y;
@@ -79,11 +109,17 @@ static void handle_k(EditorState* es)
 
 static void handle_l(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	Coordinate new_coords = get_target_index(es, 'l');
 
-	if (new_coords.x != t->x)
+	if (new_coords.x >= 0 && new_coords.x != t->x)
 	{
-		t->saved_x_index = t->x;
+		es->active_tab->saved_x_index = t->x;
 		check_right_update(t);
 		move_cursor_to_tab(t);
 	}
@@ -162,37 +198,31 @@ static void handle_a(EditorState* es)
 static void handle_zero(EditorState* es)
 {
 	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
+	if (t == NULL)
 	{
 		return;
 	}
 
-	t->x = 0;
-	t->saved_x_index = 0;
-	check_left_update(t);
-	move_cursor_to_tab(t);
+	Coordinate new_coords = get_target_index(es, '0');
+
+	if (new_coords.x >= 0 && t->x != new_coords.x)
+	{
+		t->saved_x_index = new_coords.x;
+		check_left_update(t);
+		move_cursor_to_tab(t);
+	}
 }
 
 static void handle_dollar_sign(EditorState* es)
 {
-	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
-	{
-		return;
-	}
+	Coordinate new_coords = get_target_index(es, '$');
 
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
+	if (new_coords.x != t->x)
 	{
-		return;
+		t->saved_x_index = new_coords.x;
+		check_right_update(t);
+		move_cursor_to_tab(t);
 	}
-
-	int len;
-	for (len = 0; pt_get(t->pt, line_index + len) != '\n' && pt_get(t->pt, line_index + len) != '\0'; len++) {}
-	t->x = len - 1;
-	t->saved_x_index = len - 1;
-	check_right_update(t);
-	move_cursor_to_tab(t);
 }
 
 static void handle_o(EditorState* es)
@@ -329,122 +359,44 @@ static void handle_x(EditorState* es)
 static void handle_percent_sign(EditorState* es)
 {
 	Tab* t = es->active_tab;
-	if (t == NULL || t->pt == NULL)
+	if (t == NULL)
 	{
 		return;
 	}
 
-	int line_index = pt_get_line_index(t->pt, t->y);
-	if (line_index < 0)
+	Coordinate new_coords = get_target_index(es, '%');
+
+	if (new_coords.x < 0)
 	{
 		return;
 	}
 
-	char c = pt_get(t->pt, line_index + t->x);
-	char looking_for;
-	int delta;
-	if (c == '(' || c == '[' || c == '{')
+	if (new_coords.x < t->x)
 	{
-		delta = 1;
-
-		if (c == '(')
-		{
-			looking_for = ')';
-		}
-		else if (c == '[')
-		{
-			looking_for = ']';
-		}
-		else
-		{
-			looking_for = '}';
-		}
+		t->x = new_coords.x;
+		t->saved_x_index = t->x;
+		check_left_update(t);
 	}
-	else if (c == ')' || c == ']' || c== '}')
+	else if (new_coords.x > t->x)
 	{
-		delta = -1;
-
-		if (c == ')')
-		{
-			looking_for = '(';
-		}
-		else if (c == ']')
-		{
-			looking_for = '[';
-		}
-		else
-		{
-			looking_for = '{';
-		}
-	}
-	else
-	{
-		return;
+		t->x = new_coords.x;
+		t->saved_x_index = t->x;
+		check_right_update(t);
 	}
 
-	bool found = false;
-	int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
-			  // and we need to exclude it from the counter
-	for (int y_index = t->y; y_index >= 0 && pt_get_line_index(t->pt, y_index) != -1; y_index += delta)
+	if (new_coords.y < t->y)
 	{
-		int line_we_are_on = pt_get_line_index(t->pt, y_index);
-		int len;
-		for (len = 0; pt_get(t->pt, line_we_are_on + len) != '\0' && pt_get(t->pt, line_we_are_on + len) != '\n'; len++) {}
-
-		int x_index;
-		if (y_index == t->y)
-		{
-			x_index = t->x;
-		}
-		else if (delta == 1)
-		{
-			x_index = 0;
-		}
-		else
-		{
-			x_index = len - 1;
-		}
-		for (; pt_get(t->pt, line_we_are_on + x_index) != '\0' && x_index >= 0 && x_index < len; x_index += delta)
-		{
-			if (pt_get(t->pt, line_we_are_on + x_index) == looking_for)
-			{
-				if (counter == 0)
-				{
-					found = true;
-					t->x = x_index;
-					t->y = y_index;
-
-					if (delta == -1)
-					{
-						check_top_update(t);
-					}
-					else
-					{
-						check_bottom_update(t);
-					}
-					check_left_update(t);
-					check_right_update(t);
-
-					move_cursor_to_tab(t);
-					break;
-				}
-				else
-				{
-					counter--;
-				}
-			}
-			else if (pt_get(t->pt, line_we_are_on + x_index) == c)
-			{
-				counter++;
-			}
-		}
-		if (found)
-		{
-			break;
-		}
+		t->y = new_coords.y;
+		check_top_update(t);
+	}
+	else if (new_coords.y > t->y)
+	{
+		t->y = new_coords.y;
+		check_bottom_update(t);
 	}
 
-	t->saved_x_index = t->x;
+	move_cursor_to_tab(t);
+
 }
 
 static void handle_n(EditorState* es)
@@ -531,6 +483,8 @@ void normal_mode_create(void)
 	dependent_action_chars['F'] = true;
 	dependent_action_chars['t'] = true;
 	dependent_action_chars['T'] = true;
+
+	initialize_normal_mode_motions();
 }
 
 void normal_mode(EditorState* es, int ch)
