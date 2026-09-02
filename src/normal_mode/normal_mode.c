@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include "normal_mode/normal_mode.h"
+#include "normal_mode/motions.h"
 #include "insert_mode.h"
 #include "terminal_mode.h"
 #include "global.h"
@@ -119,7 +120,8 @@ static void handle_l(EditorState* es)
 
 	if (new_coords.x >= 0 && new_coords.x != t->x)
 	{
-		es->active_tab->saved_x_index = t->x;
+		t->x = new_coords.x;
+		t->saved_x_index = t->x;
 		check_right_update(t);
 		move_cursor_to_tab(t);
 	}
@@ -207,6 +209,7 @@ static void handle_zero(EditorState* es)
 
 	if (new_coords.x >= 0 && t->x != new_coords.x)
 	{
+		t->x = new_coords.x;
 		t->saved_x_index = new_coords.x;
 		check_left_update(t);
 		move_cursor_to_tab(t);
@@ -215,10 +218,17 @@ static void handle_zero(EditorState* es)
 
 static void handle_dollar_sign(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	Coordinate new_coords = get_target_index(es, '$');
 
-	if (new_coords.x != t->x)
+	if (new_coords.x > 0 && new_coords.x != t->x)
 	{
+		t->x = new_coords.x;
 		t->saved_x_index = new_coords.x;
 		check_right_update(t);
 		move_cursor_to_tab(t);
@@ -452,6 +462,55 @@ static void handle_escape(EditorState* es)
 	es->dependent_action = '\0';
 }
 
+static void ftFT_helper(EditorState* es, char c)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	Coordinate new_coords = get_target_index(es, c);
+
+	if (new_coords.x >= 0)
+	{
+		if (new_coords.x > t->x)
+		{
+			t->x = new_coords.x;
+			t->saved_x_index = t->x;
+			check_right_update(t);
+		}
+		else if (new_coords.x < t->x)
+		{
+			t->x = new_coords.x;
+			t->saved_x_index = t->x;
+			check_left_update(t);
+		}
+	}
+
+	move_cursor_to_tab(t);
+}
+
+static void handle_f(EditorState* es)
+{
+	ftFT_helper(es, 'f');
+}
+
+static void handle_t(EditorState* es)
+{
+	ftFT_helper(es, 't');
+}
+
+static void handle_F(EditorState* es)
+{
+	ftFT_helper(es, 'F');
+}
+
+static void handle_T(EditorState* es)
+{
+	ftFT_helper(es, 'T');
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -477,6 +536,10 @@ void normal_mode_create(void)
 	execute_char['u'] = &handle_u;
 	execute_char['p'] = &handle_p;
 	execute_char[ESCAPE_KEYCODE] = &handle_escape;
+	execute_char['f'] = &handle_f;
+	execute_char['t'] = &handle_t;
+	execute_char['F'] = &handle_F;
+	execute_char['T'] = &handle_T;
 
 	dependent_action_chars['d'] = true;
 	dependent_action_chars['f'] = true;

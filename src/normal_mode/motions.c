@@ -1,5 +1,8 @@
+#include <stddef.h>
 #include "piece_table/piece_table.h"
 #include "normal_mode/motions.h"
+#include "global.h"
+#include "tab.h"
 
 Coordinate (*do_motion[NUM_CHARS])(EditorState*);
 
@@ -203,7 +206,7 @@ static Coordinate handle_dollar_sign(EditorState* es)
 	{
 		int len = 0;
 		char c = pt_iterate(&pi);
-		for (; c != '\n' && c != '\0'; len++) {}
+		for (; c != '\n' && c != '\0'; len++, c = pt_iterate(&pi)) {}
 		r.x = len - 1;
 	}
 
@@ -225,13 +228,13 @@ static Coordinate handle_percent_sign(EditorState* es)
 	Tab* t = es->active_tab;
 	if (t == NULL || t->pt == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1};
 	}
 
 	char c = pt_get(t->pt, line_index + t->x);
@@ -291,7 +294,7 @@ static Coordinate handle_percent_sign(EditorState* es)
 		if (pt_iterator_init(t->pt, &pi, line_we_are_on))
 		{
 			char c2 = pt_iterate(&pi);
-			for (len = 0; c2 != '\0' && c2 != '\n'; c = pt_iterate(&pi), len++) {}
+			for (len = 0; c2 != '\0' && c2 != '\n'; c2 = pt_iterate(&pi), len++) {}
 		}
 
 		int x_index;
@@ -369,7 +372,7 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 		return (Coordinate) {.x = -1, .y = -1};
 	}
 
-	int line_index = pt_get_line_index(t->py, t->y);
+	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
 		return (Coordinate) {.x = -1, .y = -1};
@@ -380,7 +383,7 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 	r.y = t->y;
 
 	PieceIterator pi;
-	if (pt_iterator_init(t->py, &pi, line_index + t->x))
+	if (pt_iterator_init(t->pt, &pi, line_index + t->x))
 	{
 		char c;
 		if (delta == 1)
@@ -395,7 +398,7 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 		int x = r.x;
 		while (es->action_repeat > 0)
 		{
-			while (c != '\n' && c != '\0' && c != es->dependent_char)
+			while (c != '\n' && c != '\0' && c != es->dependent_action)
 			{
 				if (delta == 1)
 				{
@@ -408,18 +411,20 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 					x--;
 				}
 			}
-			if (c == es->dependent_char)
+			if (c == es->dependent_action)
 			{
 				es->action_repeat--;
+				r.x = x;
 				if (delta == 1)
 				{
 					c = pt_iterate(&pi);
+					x++;
 				}
 				else
 				{
 					c = pt_iterate_backwards(&pi);
+					x--;
 				}
-				r.x = x;
 			}
 			else
 			{
@@ -478,7 +483,7 @@ void initialize_normal_mode_motions(void)
 
 Coordinate get_target_index(EditorState* es, char motion)
 {
-	if ((int) motion < 0 || (int) motion >= NUM_CHARS || do_motion[(int) motion] == NULL)
+	if ((int) motion < 0 || do_motion[(int) motion] == NULL)
 	{
 		return (Coordinate) {.x = -1, .y = -1};
 	}
