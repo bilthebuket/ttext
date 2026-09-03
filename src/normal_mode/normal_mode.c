@@ -11,7 +11,9 @@
 #include "piece_table/undo.h"
 #include "undo.h"
 
-static bool dependent_action_chars[NUM_CHARS];
+static bool action_needs_motion[NUM_CHARS];
+static bool motion_needs_target[NUM_CHARS];
+static bool action_needs_target[NUM_CHARS];
 
 static void handle_default(EditorState* es)
 {
@@ -459,7 +461,9 @@ static void handle_p(EditorState* es)
 static void handle_escape(EditorState* es)
 {
 	es->action_repeat = 0;
-	es->dependent_action = '\0';
+	es->action = '\0';
+	es->motion = '\0';
+	es->target = '\0';
 }
 
 static void ftFT_helper(EditorState* es, char c)
@@ -511,6 +515,43 @@ static void handle_T(EditorState* es)
 	ftFT_helper(es, 'T');
 }
 
+static void handle_d(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	Coordinate to_delete = get_target_index(es, es->motion);
+
+	if (to_delete.x < 0)
+	{
+		return;
+	}
+
+	if (to_delete.x2 < 0)
+	{
+		to_delete.x2 = t->x;
+		to_delete.y2 = t->y;
+	}
+
+	if (to_delete.x2 < to_delete.x)
+	{
+		int temp = to_delete.x;
+		to_delete.x = to_delete.x2;
+		to_delete.x2 = temp;
+	}
+	if (to_delete.y2 < to_delete.y)
+	{
+		int temp = to_delete.y;
+		to_delete.y = to_delete.y2;
+		to_delete.y2 = temp;
+	}
+
+	
+}
+
 static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
@@ -518,8 +559,11 @@ void normal_mode_create(void)
 	for (int i = 0; i < NUM_CHARS; i++)
 	{
 		execute_char[i] = &handle_default;
-		dependent_action_chars[i] = false;
+		action_needs_motion[i] = false;
+		motion_needs_target[i] = false;
+		action_needs_target[i] = false;
 	}
+
 	execute_char['h'] = &handle_h;
 	execute_char['j'] = &handle_j;
 	execute_char['k'] = &handle_k;
@@ -540,12 +584,19 @@ void normal_mode_create(void)
 	execute_char['t'] = &handle_t;
 	execute_char['F'] = &handle_F;
 	execute_char['T'] = &handle_T;
+	execute_char['d'] = &handle_d;
 
-	dependent_action_chars['d'] = true;
-	dependent_action_chars['f'] = true;
-	dependent_action_chars['F'] = true;
-	dependent_action_chars['t'] = true;
-	dependent_action_chars['T'] = true;
+	action_needs_motion['d'] = true;
+
+	motion_needs_target['f'] = true;
+	motion_needs_target['t'] = true;
+	motion_needs_target['F'] = true;
+	motion_needs_target['T'] = true;
+
+	action_needs_target['f'] = true;
+	action_needs_target['t'] = true;
+	action_needs_target['F'] = true;
+	action_needs_target['T'] = true;
 
 	initialize_normal_mode_motions();
 }
@@ -558,27 +609,47 @@ void normal_mode(EditorState* es, int ch)
 	}
 	if (ch >= 0 && ch < NUM_CHARS)
 	{
-		if (es->dependent_action != '\0')
+		if (es->action == '\0')
 		{
-			char store = es->dependent_action;
-			es->dependent_action = ch;
-			if (es->action_repeat == 0)
+			if ((ch >= '1' && ch <= '9') || (ch == '0' && es->action_repeat != 0))
 			{
-				es->action_repeat = 1;
+				int num = ch - '0';
+				es->action_repeat *= 10;
+				es->action_repeat += num;
 			}
-			(*execute_char[(int) store])(es);
-			es->action_repeat = 0;
-			es->dependent_action = '\0';
+			else
+			{
+				es->action = ch;
+				if (!action_needs_target[ch] && !action_needs_motion[ch])
+				{
+					if (es->action_repeat == 0)
+					{
+						es->action_repeat = 1;
+					}
+					(*execute_char[(int) es->action])(es);
+					es->action_repeat = 0;
+					es->action = '\0';
+				}
+			}
 		}
-		else if (dependent_action_chars[ch])
+		else if (es->motion == '\0')
 		{
-			es->dependent_action = ch;
-		}
-		else if ((ch >= '1' && ch <= '9') || (ch == '0' && es->action_repeat != 0))
-		{
-			int num = ch - '0';
-			es->action_repeat *= 10;
-			es->action_repeat += num;
+			if (action_needs_target[(int) es->action])
+			{
+				if (es->action_repeat == 0)
+				{
+					es->action_repeat = 1;
+				}
+				es->target = ch;
+				(*execute_char[(int) es->action])(es);
+				es->action_repeat = 0;
+				es->action = '\0';
+				es->target = '\0';
+			}
+			else
+			{
+				es->motion = ch;
+			}
 		}
 		else
 		{
@@ -586,9 +657,12 @@ void normal_mode(EditorState* es, int ch)
 			{
 				es->action_repeat = 1;
 			}
-			(*execute_char[ch])(es);
+			es->target = ch;
+			(*execute_char[(int) es->action])(es);
 			es->action_repeat = 0;
-			es->dependent_action = '\0';
+			es->action = '\0';
+			es->motion = '\0';
+			es->target = '\0';
 		}
 	}
 }

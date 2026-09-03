@@ -26,7 +26,9 @@ int es_init(EditorState* es, int argc, char* argv[])
 	es->flags = 0;
 	es->finder = NULL;
 	es->action_repeat = 0;
-	es->dependent_action = '\0';
+	es->action = '\0';
+	es->motion = '\0';
+	es->target = '\0';
 	sem_init(&(es->sem), 0, 1);
 	ci_init_arrays();
 

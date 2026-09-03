@@ -17,6 +17,8 @@ static Coordinate handle_h(EditorState* es)
 	Coordinate r;
 	r.y = t->y;
 	r.x = t->x;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	int line_index = pt_get_line_index(t->pt, r.y);
 	if (line_index < 0)
@@ -56,6 +58,8 @@ static Coordinate handle_j(EditorState* es)
 	Coordinate r;
 	r.x = t->x;
 	r.y = t->y;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	int num_lines_in_document = ((Piece*) t->pt->pieces->elt)->lines_contained;
 	if (r.y + es->action_repeat > num_lines_in_document)
@@ -114,6 +118,8 @@ static Coordinate handle_k(EditorState* es)
 	Coordinate r;
 	r.x = t->x;
 	r.y = t->y;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	int line_above_index = pt_get_line_index(t->pt, r.y - es->action_repeat);
 	PieceIterator pi;
@@ -163,6 +169,8 @@ static Coordinate handle_l(EditorState* es)
 	Coordinate r;
 	r.y = t->y;
 	r.x = t->x;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	PieceIterator pi;
 	if (pt_iterator_init(t->pt, &pi, line_index + r.x))
@@ -200,6 +208,8 @@ static Coordinate handle_dollar_sign(EditorState* es)
 	Coordinate r;
 	r.x = t->x;
 	r.y = t->y;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	PieceIterator pi;
 	if (pt_iterator_init(t->pt, &pi, line_index))
@@ -282,6 +292,8 @@ static Coordinate handle_percent_sign(EditorState* es)
 	Coordinate r;
 	r.x = t->x;
 	r.y = t->y;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	bool found = false;
 	int counter = -1; // starting at negative one because the first character we see is the one the user pressed '%' on
@@ -381,24 +393,31 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 	Coordinate r;
 	r.x = t->x;
 	r.y = t->y;
+	r.x2 = -1;
+	r.y2 = -1;
 
 	PieceIterator pi;
 	if (pt_iterator_init(t->pt, &pi, line_index + t->x))
 	{
 		char c;
+		int x = r.x;
+		// skipping a character because if we do f( and the cursor is currently on a '(' we want to find the next one
 		if (delta == 1)
 		{
 			c = pt_iterate(&pi);
+			c = pt_iterate(&pi);
+			x++;
 		}
 		else
 		{
 			c = pt_iterate_backwards(&pi);
+			c = pt_iterate_backwards(&pi);
+			x--;
 		}
 
-		int x = r.x;
 		while (es->action_repeat > 0)
 		{
-			while (c != '\n' && c != '\0' && c != es->dependent_action)
+			while (c != '\n' && c != '\0' && c != es->target)
 			{
 				if (delta == 1)
 				{
@@ -411,7 +430,7 @@ static Coordinate character_finder_helper(EditorState* es, int delta, int final_
 					x--;
 				}
 			}
-			if (c == es->dependent_action)
+			if (c == es->target)
 			{
 				es->action_repeat--;
 				r.x = x;

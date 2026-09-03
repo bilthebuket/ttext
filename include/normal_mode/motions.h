@@ -7,6 +7,8 @@ typedef struct Coordinate
 {
 	int x;
 	int y;
+	int x2;
+	int y2;
 } Coordinate;
 
 // returns the same coordinates that active_tab is already at if theres a failure

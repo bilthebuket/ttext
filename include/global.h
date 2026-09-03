@@ -58,20 +58,21 @@
 
 typedef struct EditorState
 {
-	void (*mode)(struct EditorState*, int);
+	sem_t sem;
 
+	void (*mode)(struct EditorState*, int);
 	// maintained in ascending order of z_index (last element in list is on top of screen)
 	LinkedList* tabs;
 	Tab* active_tab;
 	Finder* finder;
 	HashMap* signatures;
-	sem_t sem;
 	int active_tab_index;
 	int flags;
 
 	int action_repeat;
-	// an action like d or f that needs another character to determine what char(s) we are applying the action to
-	char dependent_action;
+	char action;
+	char motion;
+	char target;
 } EditorState;
 
 extern FILE* error_log;
