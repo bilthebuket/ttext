@@ -1143,22 +1143,34 @@ void pt_update_color_indices(PieceTable* pt, int index)
 
 	c = pt_iterate(&pi);
 	i = 0;
-	for (; i < ci->len && (c == ' ' || c == '\n'); c = pt_iterate(&pi), i++) {}
-
-	if (c == '#')
+	for (; i < ci->len; c = pt_iterate(&pi), i++)
 	{
-		while (c != ' ' && c != '\n' && c != '\0' && i < ci->len)
+		if (c == '#')
 		{
-			c = pt_iterate(&pi);
-			i++;
-		}
-		while (c == ' ' && i < ci->len)
-		{
-			c = pt_iterate(&pi);
-			i++;
-		}
-		if (i > 0)
-		{
+			if (i > 0)
+			{
+				ColorIndex* before = ci_create(CYAN_TEXT, i, f.global_char_index + i);
+				if (before != NULL)
+				{
+					int before_index = f.global_char_index + i - 1;
+					if (ci_add_and_subtract(pt, t, ci, before, &f))
+					{
+						pt_update_color_indices_helper(pt, before_index);
+					}
+				}
+			}
+
+			while (c != ' ' && c != '\n' && c != '\0' && i < ci->len)
+			{
+				c = pt_iterate(&pi);
+				i++;
+			}
+			while (c == ' ' && i < ci->len)
+			{
+				c = pt_iterate(&pi);
+				i++;
+			}
+
 			ColorIndex* new = ci_create(MAGENTA_TEXT, i, f.global_char_index + i);
 			if (new != NULL)
 			{
@@ -1208,11 +1220,6 @@ void pt_update_color_indices(PieceTable* pt, int index)
 			{
 				return;
 			}
-		}
-		else
-		{
-			ci->color = MAGENTA_TEXT;
-			return;
 		}
 	}
 

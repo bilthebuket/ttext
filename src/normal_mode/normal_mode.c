@@ -276,6 +276,112 @@ static void handle_o(EditorState* es)
 	es->mode = &insert_mode;
 }
 
+static void handle_rm_on_boundary(EditorState* es, int start_index, int end_index)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	pt_undo_insert(t->pt);
+	undo_insert(es, end_index + 1);
+	ci_prepare(t->pt, end_index + 1);
+
+	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, end_index + 1);
+		su_handle_multiple_rm(es->signatures, t->pt, t->fname, &(t->su), end_index - start_index + 1, end_index);
+	}
+
+	t->tab_num_flags &= ~CHANGES_SAVED;
+
+	pt_rm_on_boundary(t->pt, start_index, end_index);
+	undo_handle_multiple_rm(es, end_index - start_index + 1);
+	ci_handle_multiple_rm(t->pt, end_index - start_index + 1);
+
+	backup_increment_and_check(es->active_tab);
+
+	es->flags |= UPDATE_FINDER_FLAG;
+
+	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		su_execute(es->signatures, t->pt, &(t->su), t->fname);
+	}
+	if (ci_execute(t->pt, &start_index, &end_index))
+	{
+		for (int i = start_index; i <= end_index; i++)
+		{
+			print_line(t, i);
+		}
+	}
+}
+
+static void handle_d(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	Coordinate to_delete = get_target_index(es, es->motion);
+
+	if (to_delete.x < 0)
+	{
+		return;
+	}
+
+	if (to_delete.x2 < 0)
+	{
+		to_delete.x2 = t->x;
+		to_delete.y2 = t->y;
+	}
+
+	if (to_delete.x2 < to_delete.x)
+	{
+		int temp = to_delete.x;
+		to_delete.x = to_delete.x2;
+		to_delete.x2 = temp;
+	}
+	if (to_delete.y2 < to_delete.y)
+	{
+		int temp = to_delete.y;
+		to_delete.y = to_delete.y2;
+		to_delete.y2 = temp;
+	}
+
+	int start_index = pt_get_line_index(t->pt, to_delete.y);
+	if (start_index < 0)
+	{
+		return;
+	}
+	start_index += to_delete.x;
+
+	int end_index = pt_get_line_index(t->pt, to_delete.y2);
+	if (end_index < 0)
+	{
+		return;
+	}
+	end_index += to_delete.y2;
+
+	handle_rm_on_boundary(es, start_index, end_index);
+	if (to_delete.x - 1 >= 0)
+	{
+		t->x = to_delete.x - 1;
+	}
+	else
+	{
+		t->x = 0;
+	}
+	t->y = to_delete.y;
+
+	t->saved_x_index = t->x;
+	check_left_update(t);
+	check_top_update(t);
+	move_cursor_to_tab(t);
+}
+
 static void handle_x(EditorState* es)
 {
 	Tab* t = es->active_tab;
@@ -314,30 +420,14 @@ static void handle_x(EditorState* es)
 				num_to_move_backwards = 0;
 			}
 
-			pt_undo_insert(t->pt);
-			undo_insert(es, line_index + t->x + es->action_repeat - num_to_move_backwards);
-			ci_prepare(t->pt, line_index + t->x + es->action_repeat - num_to_move_backwards);
-
-			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
-			{
-				su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + es->action_repeat - num_to_move_backwards);
-				su_handle_multiple_rm(es->signatures, t->pt, t->fname, &(t->su), es->action_repeat, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
-			}
-
-			t->tab_num_flags &= ~CHANGES_SAVED;
-
 			if (num_to_move_backwards == 0)
 			{
-				pt_rm_on_boundary(t->pt, line_index + t->x, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
+				handle_rm_on_boundary(es, line_index + t->x, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
 			}
 			else
 			{
-				pt_rm_on_boundary(t->pt, line_index + t->x - num_to_move_backwards + 1, line_index + t->x + es->action_repeat - num_to_move_backwards - 1);
+				handle_rm_on_boundary(es, line_index + t->x - num_to_move_backwards + 1, line_index + t->x + es->action_repeat - num_to_move_backwards);
 			}
-			undo_handle_multiple_rm(es, es->action_repeat);
-			ci_handle_multiple_rm(t->pt, es->action_repeat);
-
-			backup_increment_and_check(es->active_tab);
 
 			if (num_to_move_backwards > 0)
 			{
@@ -345,24 +435,6 @@ static void handle_x(EditorState* es)
 				t->saved_x_index = t->x;
 				check_left_update(t);
 				move_cursor_to_tab(t);
-			}
-
-			print_line(t, t->y);
-
-			es->flags |= UPDATE_FINDER_FLAG;
-
-			if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
-			{
-				su_execute(es->signatures, t->pt, &(t->su), t->fname);
-			}
-			int start_index;
-			int end_index;
-			if (ci_execute(t->pt, &start_index, &end_index))
-			{
-				for (int i = start_index; i <= end_index; i++)
-				{
-					print_line(t, i);
-				}
 			}
 		}
 	}
@@ -513,43 +585,6 @@ static void handle_F(EditorState* es)
 static void handle_T(EditorState* es)
 {
 	ftFT_helper(es, 'T');
-}
-
-static void handle_d(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate to_delete = get_target_index(es, es->motion);
-
-	if (to_delete.x < 0)
-	{
-		return;
-	}
-
-	if (to_delete.x2 < 0)
-	{
-		to_delete.x2 = t->x;
-		to_delete.y2 = t->y;
-	}
-
-	if (to_delete.x2 < to_delete.x)
-	{
-		int temp = to_delete.x;
-		to_delete.x = to_delete.x2;
-		to_delete.x2 = temp;
-	}
-	if (to_delete.y2 < to_delete.y)
-	{
-		int temp = to_delete.y;
-		to_delete.y = to_delete.y2;
-		to_delete.y2 = temp;
-	}
-
-	
 }
 
 static void (*execute_char[NUM_CHARS])(EditorState*);
