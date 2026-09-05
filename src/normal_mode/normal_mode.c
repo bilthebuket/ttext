@@ -363,7 +363,7 @@ static void handle_d(EditorState* es)
 	{
 		return;
 	}
-	end_index += to_delete.y2;
+	end_index += to_delete.x2;
 
 	handle_rm_on_boundary(es, start_index, end_index);
 	if (to_delete.x - 1 >= 0)
@@ -409,15 +409,19 @@ static void handle_x(EditorState* es)
 				newline_index++;
 			}
 
-			if (es->action_repeat > newline_index - line_index)
+			int num_to_move_backwards;
+			if (es->action_repeat >= newline_index - line_index)
 			{
 				es->action_repeat = newline_index - line_index;
+				num_to_move_backwards = t->x;
 			}
-
-			int num_to_move_backwards = es->action_repeat - (newline_index - (line_index + t->x)) + 1;
-			if (num_to_move_backwards < 0)
+			else
 			{
-				num_to_move_backwards = 0;
+				num_to_move_backwards = es->action_repeat - (newline_index - (line_index + t->x)) + 1;
+				if (num_to_move_backwards < 0)
+				{
+					num_to_move_backwards = 0;
+				}
 			}
 
 			if (num_to_move_backwards == 0)

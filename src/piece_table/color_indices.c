@@ -734,6 +734,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 	char c = pt_iterate(&pi);
 	while (i < ci->len)
 	{
+		bool needs_update = true;
 		while ((c == ' ' || c == '\n') && i < ci->len)
 		{
 			c = pt_iterate(&pi);
@@ -742,6 +743,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 
 		if (c >= '0' && c <= '9')
 		{
+			needs_update = false;
 			while (c >= '0' && c <= '9' && i < ci->len)
 			{
 				c = pt_iterate(&pi);
@@ -764,6 +766,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 		}
 		if (yellow_chars[(int) c])
 		{
+			needs_update = false;
 			while (yellow_chars[(int) c] && i < ci->len)
 			{
 				if (control_chars[(int) c])
@@ -844,6 +847,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 		}
 		if (is_valid_name_character(c) && c != '*' && c != '[' && c != ']')
 		{
+			needs_update = false;
 			char buf[CONTROL_WORD_MAX_LENGTH];
 			int buf_index = 0;
 			while (is_valid_name_character(c) && c != '[' && c != ']' && i < ci->len)
@@ -998,10 +1002,12 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 		}
 		if (control_chars[(int) c])
 		{
+			needs_update = false;
 			function_declaration = false;
 		}
 		if (operator_chars[(int) c])
 		{
+			needs_update = false;
 			while (operator_chars[(int) c] && i < ci->len)
 			{
 				c = pt_iterate(&pi);
@@ -1021,6 +1027,12 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 			{
 				break;
 			}
+		}
+
+		if (needs_update)
+		{
+			c = pt_iterate(&pi);
+			i++;
 		}
 	}
 }
