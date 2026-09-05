@@ -1167,6 +1167,7 @@ void pt_update_color_indices(PieceTable* pt, int index)
 					int before_index = f.global_char_index + i - 1;
 					if (ci_add_and_subtract(pt, t, ci, before, &f))
 					{
+						i = 0;
 						pt_update_color_indices_helper(pt, before_index);
 					}
 				}
@@ -1322,4 +1323,62 @@ char ci_get_len(void* v)
 char ci_get_color(void* v)
 {
 	return (char) ((ColorIndex*) v)->color;
+}
+
+bool ci_iterator_init(PieceTable* pt, PieceIterator* ci, int index)
+{
+	if (pt == NULL || ci == NULL || index < 0)
+	{
+		return false;
+	}
+
+	ColorIndexFinder f;
+	f.contained = index + 1;
+	f.global_char_index = -1;
+	ci->node = tree_helper(pt->color_indices, &f, &ci_finder_compare_characters);
+	if (ci->node == NULL)
+	{
+		return false;
+	}
+	ci->index = index - f.global_char_index;
+	return true;
+}
+
+int ci_iterate(PieceIterator* ci)
+{
+	if (ci == NULL || ci->node == NULL)
+	{
+		return -1;
+	}
+
+	ColorIndex* c = (ColorIndex*) ci->node->elt;
+	int color = c->color;
+	if (ci->index == c->len - 1)
+	{
+		ci->index = 0;
+		if (ci->node->right != NULL)
+		{
+			ci->node = ci->node->right;
+			while (ci->node->left != NULL)
+			{
+				ci->node = ci->node->left;
+			}
+		}
+		else
+		{
+			Tree* prev = ci->node->prev;
+			while (prev != NULL && prev->right == ci->node)
+			{
+				ci->node = prev;
+				prev = prev->prev;
+			}
+			ci->node = prev;
+		}
+	}
+	else
+	{
+		ci->index++;
+	}
+
+	return color;
 }

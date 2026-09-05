@@ -1063,3 +1063,13 @@ int pt_get_size(PieceTable* pt)
 
 	return ((Piece*) pt->pieces->elt)->chars_contained;
 }
+
+int pt_get_num_lines(PieceTable* pt)
+{
+	if (pt == NULL || pt->pieces == NULL || pt->pieces->elt == NULL)
+	{
+		return -1;
+	}
+
+	return ((Piece*) pt->pieces->elt)->lines_contained + 1;
+}

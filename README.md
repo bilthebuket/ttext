@@ -60,6 +60,7 @@ typing a number before an action in normal mode will repeat it that number of ti
 - :w -> write tab to disk
 - :find \<string\> -> finds instances of a string (essentailly CTRL+F or /\<string\> in vim)
 - :flookup \<function name\> -> lists all function signatures in working directory with given function name
+- :snake -> play snake with your text file
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
 # Styling Guide

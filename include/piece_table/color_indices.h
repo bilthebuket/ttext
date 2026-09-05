@@ -48,4 +48,7 @@ char ci_get_color(void* v);
 
 bool is_control_char(char c);
 
+bool ci_iterator_init(PieceTable* pt, PieceIterator* ci, int index);
+int ci_iterate(PieceIterator* ci);
+
 #endif
