@@ -29,6 +29,8 @@
 - n -> goto next instance of string (after using :find)
 - u -> undo
 - p -> prints the entire state of the piece table to the message line for debugging purposes
+- fFtT \<char\> -> jump to character on current line
+- d \<motion\> -> delete all characters spanned by motion (ex. df, will delete all characters between the cursor and the first instance of a comma on the current line, inclusive)
 
 typing a number before an action in normal mode will repeat it that number of times. the following actions support this:
 
@@ -36,6 +38,8 @@ typing a number before an action in normal mode will repeat it that number of ti
 - x
 - n
 - u
+- fFtT
+- d
 
 ## Insert Mode
 
