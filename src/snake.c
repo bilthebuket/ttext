@@ -9,7 +9,6 @@
 
 static void process_line(PieceIterator* pi, PieceIterator* ci, unsigned char* game, int game_length, int line_size)
 {
-	srand(time(NULL));
 	char c = pt_iterate(pi);
 	int color = ci_iterate(ci);
 	int index_to_place_chars = 0;
@@ -51,7 +50,7 @@ static void update_index_in_direction(int* index, int direction, int width)
 	{
 		case PLAYER_LEFT:
 		{
-			(*index)--;;
+			(*index)--;
 			break;
 		}
 
@@ -75,6 +74,34 @@ static void update_index_in_direction(int* index, int direction, int width)
 	}
 }
 
+static void print_char(unsigned char* game, int row, int col, int x, int y, int width)
+{
+	switch (game[(row * width + col) * BYTES_PER_CELL])
+	{
+		default:
+		{
+			attron(COLOR_PAIR(game[(row * width + col) * BYTES_PER_CELL + 1]));
+			mvaddch(y + row, x + col, game[(row * width + col) * BYTES_PER_CELL]);
+			attroff(COLOR_PAIR(game[(row * width + col) * BYTES_PER_CELL + 1]));
+			break;
+		}
+
+		case '\0':
+		{
+			mvaddch(y + row, x + col, ' ');
+			break;
+		}
+
+		case PLAYER_CHAR:
+		{
+			attron(A_STANDOUT);
+			mvaddch(y + row, x + col, ' ');
+			attroff(A_STANDOUT);
+			break;
+		}
+	}
+}
+
 // x and y are the coordinates of the top left corner of the tab on the screen
 static void print_state(unsigned char* game, int height, int width, int x, int y)
 {
@@ -82,30 +109,7 @@ static void print_state(unsigned char* game, int height, int width, int x, int y
 	{
 		for (int j = 0; j < width; j++)
 		{
-			switch (game[(i * width + j) * BYTES_PER_CELL])
-			{
-				default:
-				{
-					attron(COLOR_PAIR(game[(i * width + j) * BYTES_PER_CELL + 1]));
-					mvaddch(y + i, x + j, game[(i * width + j) * BYTES_PER_CELL]);
-					attroff(COLOR_PAIR(game[(i * width + j) * BYTES_PER_CELL + 1]));
-					break;
-				}
-
-				case '\0':
-				{
-					mvaddch(y + i, x + j, ' ');
-					break;
-				}
-
-				case PLAYER_CHAR:
-				{
-					attron(A_STANDOUT);
-					mvaddch(y + i, x + j, ' ');
-					attroff(A_STANDOUT);
-					break;
-				}
-			}
+			print_char(game, i, j, x, y, width);
 		}
 	}
 
@@ -118,6 +122,8 @@ void snake_execute(Tab* t)
 	{
 		return;
 	}
+
+	srand(time(NULL));
 
 	// contains the entire map, each x,y coordinate on the screen maps to a
 	// pair of two unsigned chars. if the first char is less than NUM_CHARS, its
@@ -178,7 +184,27 @@ void snake_execute(Tab* t)
 	curs_set(0);
 	print_state(game, t->height, t->width, t->xpos, t->ypos);
 	print_message("press any key to start, press escape at any time during the game to quit");
-	getch();
+
+	int initial_char = getch();
+	// give the player the option to choose their starting movement direction
+	switch (initial_char)
+	{
+		case 'h':
+		{
+			game[player_index * BYTES_PER_CELL + 1] = PLAYER_LEFT;
+			break;
+		}
+		case 'j':
+		{
+			game[player_index * BYTES_PER_CELL + 1] = PLAYER_DOWN;
+			break;
+		}
+		case 'l':
+		{
+			game[player_index * BYTES_PER_CELL + 1] = PLAYER_RIGHT;
+			break;
+		}
+	}
 
 	nodelay(stdscr, TRUE);
 
@@ -226,8 +252,13 @@ void snake_execute(Tab* t)
 		}
 
 		int index_of_facing_char = player_index;
-		update_index_in_direction(&index_of_facing_char, game[player_index * BYTES_PER_CELL + 1], t->width);
-		if (index_of_facing_char < 0 || index_of_facing_char >= t->height * t->width)
+		int direction = game[player_index * BYTES_PER_CELL + 1];
+		update_index_in_direction(&index_of_facing_char, direction, t->width);
+		if
+		(
+			index_of_facing_char < 0 || index_of_facing_char >= t->height * t->width || 
+			(index_of_facing_char / t->width != player_index / t->width && (direction == PLAYER_LEFT || direction == PLAYER_RIGHT))
+		)
 		{
 			break;
 		}
@@ -236,12 +267,23 @@ void snake_execute(Tab* t)
 		{
 			if (game[index_of_facing_char * BYTES_PER_CELL] == PLAYER_CHAR)
 			{
-				break;
+				if (index_of_facing_char == player_tail_index)
+				{
+					int direction = game[player_tail_index * BYTES_PER_CELL + 1];
+					game[index_of_facing_char * BYTES_PER_CELL + 1] = game[player_index * BYTES_PER_CELL + 1];
+					player_index = index_of_facing_char;
+					update_index_in_direction(&player_tail_index, direction, t->width);
+				}
+				else
+				{
+					break;
+				}
 			}
 			else
 			{
 				game[index_of_facing_char * BYTES_PER_CELL] = PLAYER_CHAR;
 				game[index_of_facing_char * BYTES_PER_CELL + 1] = game[player_index * BYTES_PER_CELL + 1];
+				print_char(game, index_of_facing_char / t->width, index_of_facing_char % t->width, t->xpos, t->ypos, t->width);
 				player_index = index_of_facing_char;
 			}
 		}
@@ -249,15 +291,17 @@ void snake_execute(Tab* t)
 		{
 			game[index_of_facing_char * BYTES_PER_CELL] = PLAYER_CHAR;
 			game[index_of_facing_char * BYTES_PER_CELL + 1] = game[player_index * BYTES_PER_CELL + 1];
+			print_char(game, index_of_facing_char / t->width, index_of_facing_char % t->width, t->xpos, t->ypos, t->width);
 			player_index = index_of_facing_char;
 
 			int direction = game[player_tail_index * BYTES_PER_CELL + 1];
 			game[player_tail_index * BYTES_PER_CELL] = '\0';
 			game[player_tail_index * BYTES_PER_CELL + 1] = '\0';
+			print_char(game, player_tail_index / t->width, player_tail_index % t->width, t->xpos, t->ypos, t->width);
 			update_index_in_direction(&player_tail_index, direction, t->width);
 		}
 
-		print_state(game, t->height, t->width, t->xpos, t->ypos);
+		refresh();
 		napms(SNAKE_SLEEP_TIME);
 	}
 
