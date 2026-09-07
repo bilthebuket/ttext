@@ -53,6 +53,8 @@ Tab* tab_create(char* fname)
 	r->ypos = 0;
 	r->top_line_index = 0;
 	r->left_column_index = 0;
+	r->highlight_x = -1;
+	r->highlight_y = -1;
 	r->lines = NULL;
 	r->saved_x_index = 0;
 	r->edits_since_last_backup = 0;

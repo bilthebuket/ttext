@@ -29,6 +29,9 @@ typedef struct Tab
 	int top_line_index;
 	int left_column_index;
 
+	int highlight_x;
+	int highlight_y;
+
 	int saved_x_index;
 	int tab_num_flags;
 	int edits_since_last_backup;

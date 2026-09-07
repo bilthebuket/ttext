@@ -14,6 +14,7 @@
 static bool action_needs_motion[NUM_CHARS];
 static bool motion_needs_target[NUM_CHARS];
 static bool action_needs_target[NUM_CHARS];
+static void (*execute_char[NUM_CHARS])(EditorState*);
 
 static void handle_default(EditorState* es)
 {
@@ -21,7 +22,7 @@ static void handle_default(EditorState* es)
 	return;
 }
 
-static void handle_h(EditorState* es)
+void motion_helper(EditorState* es)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -29,104 +30,38 @@ static void handle_h(EditorState* es)
 		return;
 	}
 
-	Coordinate new_coords = get_target_index(es, 'h');
+	Coordinate new_coords = get_target_index(es, es->action);
 
-	if (new_coords.x >= 0 && new_coords.x != t->x)
+	if (new_coords.x >= 0)
 	{
-		t->x = new_coords.x;
-		t->saved_x_index = t->x;
-		check_left_update(t);
-		move_cursor_to_tab(t);
+		if (new_coords.x > t->x)
+		{
+			t->x = new_coords.x;
+			t->saved_x_index = t->x;
+			check_right_update(t);
+		}
+		else if (new_coords.x < t->x)
+		{
+			t->x = new_coords.x;
+			t->saved_x_index = t->x;
+			check_left_update(t);
+		}
 	}
-}
-
-static void handle_j(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
+	if (new_coords.y >= 0)
 	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, 'j');
-
-	if (new_coords.x < 0)
-	{
-		return;
-	}
-
-	if (new_coords.x < t->x)
-	{
-		t->x = new_coords.x;
-		check_left_update(t);
-	}
-	else if (new_coords.x > t->x)
-	{
-		t->x = new_coords.x;
-		check_right_update(t);
-	}
-
-	if (new_coords.y > t->y)
-	{
-		t->y = new_coords.y;
-		check_bottom_update(t);
+		if (new_coords.y > t->y)
+		{
+			t->y = new_coords.y;
+			check_bottom_update(t);
+		}
+		else if (new_coords.y < t->y)
+		{
+			t->y = new_coords.y;
+			check_top_update(t);
+		}
 	}
 
 	move_cursor_to_tab(t);
-}
-
-static void handle_k(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, 'k');
-
-	if (new_coords.x < 0)
-	{
-		return;
-	}
-
-	if (new_coords.x < t->x)
-	{
-		t->x = new_coords.x;
-		check_left_update(t);
-	}
-	else if (new_coords.x > t->x)
-	{
-		t->x = new_coords.x;
-		check_right_update(t);
-	}
-
-	if (new_coords.y < t->y)
-	{
-		t->y = new_coords.y;
-		check_top_update(t);
-	}
-
-	move_cursor_to_tab(t);
-}
-
-static void handle_l(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, 'l');
-
-	if (new_coords.x >= 0 && new_coords.x != t->x)
-	{
-		t->x = new_coords.x;
-		t->saved_x_index = t->x;
-		check_right_update(t);
-		move_cursor_to_tab(t);
-	}
 }
 
 static void handle_exclamation(EditorState* es)
@@ -199,44 +134,6 @@ static void handle_a(EditorState* es)
 	es->mode = &insert_mode;
 }
 
-static void handle_zero(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, '0');
-
-	if (new_coords.x >= 0 && t->x != new_coords.x)
-	{
-		t->x = new_coords.x;
-		t->saved_x_index = new_coords.x;
-		check_left_update(t);
-		move_cursor_to_tab(t);
-	}
-}
-
-static void handle_dollar_sign(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, '$');
-
-	if (new_coords.x > 0 && new_coords.x != t->x)
-	{
-		t->x = new_coords.x;
-		t->saved_x_index = new_coords.x;
-		check_right_update(t);
-		move_cursor_to_tab(t);
-	}
-}
-
 static void handle_o(EditorState* es)
 {
 	Tab* t = es->active_tab;
@@ -276,7 +173,7 @@ static void handle_o(EditorState* es)
 	es->mode = &insert_mode;
 }
 
-static void handle_rm_on_boundary(EditorState* es, int start_index, int end_index)
+void handle_rm_on_boundary(EditorState* es, int start_index, int end_index)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -444,49 +341,6 @@ static void handle_x(EditorState* es)
 	}
 }
 
-static void handle_percent_sign(EditorState* es)
-{
-	Tab* t = es->active_tab;
-	if (t == NULL)
-	{
-		return;
-	}
-
-	Coordinate new_coords = get_target_index(es, '%');
-
-	if (new_coords.x < 0)
-	{
-		return;
-	}
-
-	if (new_coords.x < t->x)
-	{
-		t->x = new_coords.x;
-		t->saved_x_index = t->x;
-		check_left_update(t);
-	}
-	else if (new_coords.x > t->x)
-	{
-		t->x = new_coords.x;
-		t->saved_x_index = t->x;
-		check_right_update(t);
-	}
-
-	if (new_coords.y < t->y)
-	{
-		t->y = new_coords.y;
-		check_top_update(t);
-	}
-	else if (new_coords.y > t->y)
-	{
-		t->y = new_coords.y;
-		check_bottom_update(t);
-	}
-
-	move_cursor_to_tab(t);
-
-}
-
 static void handle_n(EditorState* es)
 {
 	if (es->flags & UPDATE_FINDER_FLAG)
@@ -542,74 +396,15 @@ static void handle_escape(EditorState* es)
 	es->target = '\0';
 }
 
-static void motion_helper(EditorState* es, char c)
+
+bool is_motion(char c);
 {
-	Tab* t = es->active_tab;
-	if (t == NULL)
+	if ((int) c >= 0 && (int) c < NUM_CHARS)
 	{
-		return;
+		return execute_char[(int) c] == &motion_helper;
 	}
-
-	Coordinate new_coords = get_target_index(es, c);
-
-	if (new_coords.x >= 0)
-	{
-		if (new_coords.x > t->x)
-		{
-			t->x = new_coords.x;
-			t->saved_x_index = t->x;
-			check_right_update(t);
-		}
-		else if (new_coords.x < t->x)
-		{
-			t->x = new_coords.x;
-			t->saved_x_index = t->x;
-			check_left_update(t);
-		}
-	}
-	if (new_coords.y >= 0)
-	{
-		if (new_coords.y > t->y)
-		{
-			t->y = new_coords.y;
-			check_bottom_update(t);
-		}
-		else if (new_coords.y < t->y)
-		{
-			t->y = new_coords.y;
-			check_top_update(t);
-		}
-	}
-
-	move_cursor_to_tab(t);
+	return false;
 }
-
-static void handle_f(EditorState* es)
-{
-	motion_helper(es, 'f');
-}
-
-static void handle_t(EditorState* es)
-{
-	motion_helper(es, 't');
-}
-
-static void handle_F(EditorState* es)
-{
-	motion_helper(es, 'F');
-}
-
-static void handle_T(EditorState* es)
-{
-	motion_helper(es, 'T');
-}
-
-static void handle_w(EditorState* es)
-{
-	motion_helper(es, 'w');
-}
-
-static void (*execute_char[NUM_CHARS])(EditorState*);
 
 void normal_mode_create(void)
 {
@@ -621,28 +416,28 @@ void normal_mode_create(void)
 		action_needs_target[i] = false;
 	}
 
-	execute_char['h'] = &handle_h;
-	execute_char['j'] = &handle_j;
-	execute_char['k'] = &handle_k;
-	execute_char['l'] = &handle_l;
+	execute_char['h'] = &motion_helper;
+	execute_char['j'] = &motion_helper;
+	execute_char['k'] = &motion_helper;
+	execute_char['l'] = &motion_helper;
 	execute_char['!'] = &handle_exclamation;
 	execute_char['i'] = &handle_i;
 	execute_char['a'] = &handle_a;
-	execute_char['0'] = &handle_zero;
-	execute_char['$'] = &handle_dollar_sign;
+	execute_char['0'] = &motion_helper;
+	execute_char['$'] = &motion_helper;
 	execute_char['o'] = &handle_o;
 	execute_char['x'] = &handle_x;
-	execute_char['%'] = &handle_percent_sign;
+	execute_char['%'] = &motion_helper;
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
 	execute_char['p'] = &handle_p;
 	execute_char[ESCAPE_KEYCODE] = &handle_escape;
-	execute_char['f'] = &handle_f;
-	execute_char['t'] = &handle_t;
-	execute_char['F'] = &handle_F;
-	execute_char['T'] = &handle_T;
+	execute_char['f'] = &motion_helper;
+	execute_char['t'] = &motion_helper;
+	execute_char['F'] = &motion_helper;
+	execute_char['T'] = &motion_helper;
 	execute_char['d'] = &handle_d;
-	execute_char['w'] = &handle_w;
+	execute_char['w'] = &motion_helper;
 
 	action_needs_motion['d'] = true;
 
