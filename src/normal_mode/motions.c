@@ -480,6 +480,83 @@ static Coordinate handle_T(EditorState* es)
 	return character_finder_helper(es, -1, -1);
 }
 
+static Coordinate handle_w(EditorState* es)
+{
+	Coordinate r;
+	r.x = -1;
+	r.y = -1;
+	r.x2 = -1;
+	r.y2 = -1;
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return r;
+	}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return r;
+	}
+
+	PieceIterator pi;
+	if (!pt_iterator_init(t->pt, &pi, line_index + t->x))
+	{
+		return r;
+	}
+
+	r.y = t->y;
+	r.x = t->x;
+	Coordinate last;
+	last.x = t->x;
+	last.y = t->y;
+	last.x2 = -1;
+	last.y2 = -1;
+	char c = pt_iterate(&pi);
+	for (int i = 0; i < es->action_repeat; i++)
+	{
+		if (is_valid_name_character(c))
+		{
+			while (is_valid_name_character(c))
+			{
+				c = pt_iterate(&pi);
+				last.x = r.x;
+				r.x++;
+			}
+		}
+		else
+		{
+			while (!is_valid_name_character(c) && c != '\0' && c != ' ' && c != '\n')
+			{
+				c = pt_iterate(&pi);
+				last.x = r.x;
+				r.x++;
+			}
+		}
+
+		while (c == ' ')
+		{
+			last.x = r.x;
+			r.x++;
+			c = pt_iterate(&pi);
+		}
+	}
+
+	if (last.x == t->x && last.y == t->y)
+	{
+		if (c == '\n')
+		{
+			r.y++;
+			r.x = 0;
+		}
+		return r;
+	}
+	else
+	{
+		return last;
+	}
+}
+
 void initialize_normal_mode_motions(void)
 {
 	for (int i = 0; i < NUM_CHARS; i++)
@@ -498,6 +575,7 @@ void initialize_normal_mode_motions(void)
 	do_motion['$'] = &handle_dollar_sign;
 	do_motion['0'] = &handle_zero;
 	do_motion['%'] = &handle_percent_sign;
+	do_motion['w'] = &handle_w;
 }
 
 Coordinate get_target_index(EditorState* es, char motion)

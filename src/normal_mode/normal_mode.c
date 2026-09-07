@@ -542,7 +542,7 @@ static void handle_escape(EditorState* es)
 	es->target = '\0';
 }
 
-static void ftFT_helper(EditorState* es, char c)
+static void motion_helper(EditorState* es, char c)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -567,28 +567,46 @@ static void ftFT_helper(EditorState* es, char c)
 			check_left_update(t);
 		}
 	}
+	if (new_coords.y >= 0)
+	{
+		if (new_coords.y > t->y)
+		{
+			t->y = new_coords.y;
+			check_bottom_update(t);
+		}
+		else if (new_coords.y < t->y)
+		{
+			t->y = new_coords.y;
+			check_top_update(t);
+		}
+	}
 
 	move_cursor_to_tab(t);
 }
 
 static void handle_f(EditorState* es)
 {
-	ftFT_helper(es, 'f');
+	motion_helper(es, 'f');
 }
 
 static void handle_t(EditorState* es)
 {
-	ftFT_helper(es, 't');
+	motion_helper(es, 't');
 }
 
 static void handle_F(EditorState* es)
 {
-	ftFT_helper(es, 'F');
+	motion_helper(es, 'F');
 }
 
 static void handle_T(EditorState* es)
 {
-	ftFT_helper(es, 'T');
+	motion_helper(es, 'T');
+}
+
+static void handle_w(EditorState* es)
+{
+	motion_helper(es, 'w');
 }
 
 static void (*execute_char[NUM_CHARS])(EditorState*);
@@ -624,6 +642,7 @@ void normal_mode_create(void)
 	execute_char['F'] = &handle_F;
 	execute_char['T'] = &handle_T;
 	execute_char['d'] = &handle_d;
+	execute_char['w'] = &handle_w;
 
 	action_needs_motion['d'] = true;
 
@@ -688,6 +707,17 @@ void normal_mode(EditorState* es, int ch)
 			else
 			{
 				es->motion = ch;
+				if (!motion_needs_target[(int) es->motion])
+				{
+					if (es->action_repeat == 0)
+					{
+						es->action_repeat = 1;
+					}
+					(*execute_char[(int) es->action])(es);
+					es->action_repeat = 0;
+					es->action = '\0';
+					es->motion = '\0';
+				}
 			}
 		}
 		else

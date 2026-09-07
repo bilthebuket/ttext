@@ -31,15 +31,9 @@
 - p -> prints the entire state of the piece table to the message line for debugging purposes
 - fFtT \<char\> -> jump to character on current line
 - d \<motion\> -> delete all characters spanned by motion (ex. df, will delete all characters between the cursor and the first instance of a comma on the current line, inclusive)
+- w -> jumps forwards by one word
 
-typing a number before an action in normal mode will repeat it that number of times. the following actions support this:
-
-- hjkl
-- x
-- n
-- u
-- fFtT
-- d
+typing a number before an action in normal mode will repeat it that number of times. does not apply to all actions (only the ones that make sense).
 
 ## Insert Mode
 
