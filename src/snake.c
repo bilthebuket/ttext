@@ -139,18 +139,21 @@ void snake_execute(Tab* t)
 	int line_index = pt_get_line_index(t->pt, t->top_line_index);
 	if (line_index < 0)
 	{
+		free(game);
 		return;
 	}
 
 	PieceIterator pi;
 	if (!pt_iterator_init(t->pt, &pi, line_index))
 	{
+		free(game);
 		return;
 	}
 
 	PieceIterator ci;
 	if (!ci_iterator_init(t->pt, &ci, line_index))
 	{
+		free(game);
 		return;
 	}
 
@@ -305,6 +308,7 @@ void snake_execute(Tab* t)
 		napms(SNAKE_SLEEP_TIME);
 	}
 
+	free(game);
 	print_tab(t);
 	nodelay(stdscr, FALSE);
 	curs_set(1);
