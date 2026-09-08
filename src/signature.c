@@ -425,7 +425,25 @@ static void initialize_signatures_helper(HashMap* map, const char* directory)
 	while ((entry = readdir(dir)) != NULL)
 	{
 		const char* name = entry->d_name;
-		char* path = concat_directory_path(directory, name);
+		char* path;
+		if (!strcmp(directory, "."))
+		{
+			int len = 0;
+			for (; path[len] != '\0'; len++) {}
+			len++;
+			path = malloc(sizeof(char) * len);
+			if (path != NULL)
+			{
+				for (int i = 0; i < len; i++)
+				{
+					path[i] = name[i];
+				}
+			}
+		}
+		else
+		{
+			path = concat_directory_path(directory, name);
+		}
 		if (path != NULL)
 		{
 			int len = 0;
@@ -797,10 +815,7 @@ void su_handle_multiple_rm(HashMap* signatures, PieceTable* pt, char* file_name,
 			free(vals[SIGNATURE_FUNCTIONS_SIGNATURE]);
 			free(vals);
 		}
-		else
-		{
-			start_index--;
-		}
+		start_index--;
 	}
 
 	if (su->start_index >= index - num_deleted + 1)

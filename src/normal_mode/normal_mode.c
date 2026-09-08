@@ -10,6 +10,7 @@
 #include "finder.h"
 #include "piece_table/undo.h"
 #include "undo.h"
+#include "highlight_mode.h"
 
 static bool action_needs_motion[NUM_CHARS];
 static bool motion_needs_target[NUM_CHARS];
@@ -22,7 +23,7 @@ static void handle_default(EditorState* es)
 	return;
 }
 
-void motion_helper(EditorState* es)
+static void motion_helper(EditorState* es, bool update_saved_x)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -37,13 +38,19 @@ void motion_helper(EditorState* es)
 		if (new_coords.x > t->x)
 		{
 			t->x = new_coords.x;
-			t->saved_x_index = t->x;
+			if (update_saved_x)
+			{
+				t->saved_x_index = t->x;
+			}
 			check_right_update(t);
 		}
 		else if (new_coords.x < t->x)
 		{
 			t->x = new_coords.x;
-			t->saved_x_index = t->x;
+			if (update_saved_x)
+			{
+				t->saved_x_index = t->x;
+			}
 			check_left_update(t);
 		}
 	}
@@ -62,6 +69,16 @@ void motion_helper(EditorState* es)
 	}
 
 	move_cursor_to_tab(t);
+}
+
+static void motion_helper_dont_update_saved_x(EditorState* es)
+{
+	motion_helper(es, false);
+}
+
+static void motion_helper_update_saved_x(EditorState* es)
+{
+	motion_helper(es, true);
 }
 
 static void handle_exclamation(EditorState* es)
@@ -396,12 +413,25 @@ static void handle_escape(EditorState* es)
 	es->target = '\0';
 }
 
-
-bool is_motion(char c);
+static void handle_v(EditorState* es)
 {
-	if ((int) c >= 0 && (int) c < NUM_CHARS)
+	Tab* t = es->active_tab;
+	if (t == NULL)
 	{
-		return execute_char[(int) c] == &motion_helper;
+		return;
+	}
+
+	t->highlight_x = t->x;
+	t->highlight_y = t->y;
+	print_message("Highlight Mode");
+	es->mode = &highlight_mode;
+}
+
+bool is_motion(char c)
+{
+	if ((int) c >= 0)
+	{
+		return execute_char[(int) c] == &motion_helper_update_saved_x || execute_char[(int) c] == &motion_helper_dont_update_saved_x;
 	}
 	return false;
 }
@@ -416,28 +446,29 @@ void normal_mode_create(void)
 		action_needs_target[i] = false;
 	}
 
-	execute_char['h'] = &motion_helper;
-	execute_char['j'] = &motion_helper;
-	execute_char['k'] = &motion_helper;
-	execute_char['l'] = &motion_helper;
+	execute_char['h'] = &motion_helper_update_saved_x;
+	execute_char['j'] = &motion_helper_dont_update_saved_x;
+	execute_char['k'] = &motion_helper_dont_update_saved_x;
+	execute_char['l'] = &motion_helper_update_saved_x;
 	execute_char['!'] = &handle_exclamation;
 	execute_char['i'] = &handle_i;
 	execute_char['a'] = &handle_a;
-	execute_char['0'] = &motion_helper;
-	execute_char['$'] = &motion_helper;
+	execute_char['0'] = &motion_helper_update_saved_x;
+	execute_char['$'] = &motion_helper_update_saved_x;
 	execute_char['o'] = &handle_o;
 	execute_char['x'] = &handle_x;
-	execute_char['%'] = &motion_helper;
+	execute_char['%'] = &motion_helper_update_saved_x;
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
 	execute_char['p'] = &handle_p;
 	execute_char[ESCAPE_KEYCODE] = &handle_escape;
-	execute_char['f'] = &motion_helper;
-	execute_char['t'] = &motion_helper;
-	execute_char['F'] = &motion_helper;
-	execute_char['T'] = &motion_helper;
+	execute_char['f'] = &motion_helper_update_saved_x;
+	execute_char['t'] = &motion_helper_update_saved_x;
+	execute_char['F'] = &motion_helper_update_saved_x;
+	execute_char['T'] = &motion_helper_update_saved_x;
 	execute_char['d'] = &handle_d;
-	execute_char['w'] = &motion_helper;
+	execute_char['w'] = &motion_helper_update_saved_x;
+	execute_char['v'] = &handle_v;
 
 	action_needs_motion['d'] = true;
 

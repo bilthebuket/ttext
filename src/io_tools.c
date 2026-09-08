@@ -122,6 +122,28 @@ void print_line(Tab* t, int line_index)
 		}
 	}
 
+	int highlight_on_x = -1;
+	int highlight_on_y = -1;
+	int highlight_off_x = -1;
+	int highlight_off_y = -1;
+	if (t->highlight_x >= 0 && t->highlight_y >= 0)
+	{
+		if (t->highlight_y > t->y || (t->highlight_y == t->y && t->highlight_x > t->x))
+		{
+			highlight_on_x = t->x;
+			highlight_on_y = t->y;
+			highlight_off_x = t->highlight_x;
+			highlight_off_y = t->highlight_y;
+		}
+		else
+		{
+			highlight_on_x = t->highlight_x;
+			highlight_on_y = t->highlight_y;
+			highlight_off_x = t->x;
+			highlight_off_y = t->y;
+		}
+	}
+
 	if (t->pt != NULL)
 	{
 		int char_index = pt_get_line_index(t->pt, line_index);
@@ -141,15 +163,31 @@ void print_line(Tab* t, int line_index)
 			if (c == '\n' || c == '\0')
 			{
 				endofline = true;
+				attroff(A_STANDOUT);
 				mvaddch(t->ypos + line_index - t->top_line_index, i, ' ');
 			}
 			else
 			{
+				if ((line_index > highlight_on_y && line_index < highlight_off_y) ||
+				(highlight_on_y != highlight_off_y && 
+				((line_index == highlight_on_y && t->left_column_index + i - t->xpos >= highlight_on_x) ||
+				(line_index == highlight_off_y && t->left_column_index + i - t->xpos <= highlight_off_x))) ||
+				(highlight_on_y == highlight_off_y && highlight_on_y == line_index &&
+				 	t->left_column_index + i - t->xpos >= highlight_on_x && t->left_column_index + i - t->xpos <= highlight_off_x
+			        ))
+				{
+					attron(A_STANDOUT);
+				}
+				else
+				{
+					attroff(A_STANDOUT);
+				}
 				//TODO: make iterator for colors like the one for pieces
 				attron(COLOR_PAIR(pt_get_color(t->pt, char_index + t->left_column_index + i - t->xpos)));
 				mvaddch(t->ypos + line_index - t->top_line_index, i, c);
 			}
 		}
+		attroff(A_STANDOUT);
 	}
 	else
 	{
