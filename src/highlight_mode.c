@@ -2,6 +2,9 @@
 #include "normal_mode/normal_mode.h"
 #include "global.h"
 #include "io_tools.h"
+#include "undo.h"
+#include "piece_table/color_indices.h"
+#include "piece_table/undo.h"
 
 static void return_to_normal_mode(EditorState* es)
 {
@@ -72,6 +75,11 @@ void highlight_mode(EditorState* es, int ch)
 		if (t == NULL)
 		{
 			return;
+		}
+
+		if (es->action_repeat == 0)
+		{
+			es->action_repeat = 1;
 		}
 
 		switch (ch)
@@ -150,9 +158,9 @@ void highlight_mode(EditorState* es, int ch)
 						char c = pt_iterate(&pi);
 						int j = 0;
 						for (; j < es->action_repeat * TAB_SIZE && c == ' '; j++, c = pt_iterate(&pi)) {}
-						if (j - 1 >= line_index)
+						if (j > 0)
 						{
-							handle_rm_on_boundary(es, line_index, j - 1);
+							handle_rm_on_boundary(es, line_index, line_index + j - 1);
 						}
 					}
 				}
@@ -186,11 +194,33 @@ void highlight_mode(EditorState* es, int ch)
 					{
 						continue;
 					}
+
+					if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+					{
+						su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index);
+					}
+
+					pt_undo_insert(t->pt);
+					ci_prepare(t->pt, line_index);
+					undo_insert(es, line_index);
 					
 					for (int j = 0; j < es->action_repeat * TAB_SIZE; j++)
 					{
 						pt_insert(t->pt, ' ', line_index);
+						if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+						{
+							su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index);
+						}
+						undo_handle_insert(es);
+						ci_handle_insert(t->pt);
 					}
+					if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+					{
+						su_execute(es->signatures, t->pt, &(t->su), t->fname);
+					}
+					int start_index;
+					int end_index;
+					ci_execute(t->pt, &start_index, &end_index);
 					print_line(t, i);
 				}
 

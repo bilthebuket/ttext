@@ -97,6 +97,7 @@ static void handle_i(EditorState* es)
 	}
 
 	t->tab_num_flags &= ~CHANGES_SAVED;
+	es->flags |= UPDATE_FINDER_FLAG;
 	print_message("Insert Mode");
 
 	int line_index = pt_get_line_index(t->pt, t->y);
@@ -127,6 +128,7 @@ static void handle_a(EditorState* es)
 	}
 
 	t->tab_num_flags &= ~CHANGES_SAVED;
+	es->flags |= UPDATE_FINDER_FLAG;
 	print_message("Insert Mode");
 	if (pt_get(t->pt, line_index + t->x) != '\0' && pt_get(t->pt, line_index + t->x) != '\n')
 	{
