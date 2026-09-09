@@ -102,6 +102,16 @@ void highlight_mode(EditorState* es, int ch)
 					end_index = store;
 				}
 
+				// handles case where we are deleting the last line of the file and its empty
+				if (pt_get(t->pt, end_index) == '\0')
+				{
+					end_index--;
+					if (pt_get(t->pt, end_index) == '\0')
+					{
+						return;
+					}
+				}
+
 				handle_rm_on_boundary(es, start_index, end_index);
 
 				move_cursor_to_valid_coordinates(t);
