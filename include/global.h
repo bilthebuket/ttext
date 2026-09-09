@@ -53,6 +53,8 @@
 
 #define CONTROL_WORD_MAX_LENGTH 10
 
+#define CLIPBOARD_MAX_SIZE 10
+
 #include "finder.h"
 #include "signature.h"
 
@@ -64,6 +66,7 @@ typedef struct EditorState
 	// maintained in ascending order of z_index (last element in list is on top of screen)
 	LinkedList* tabs;
 	Tab* active_tab;
+	LinkedList* clipboard;
 	Finder* finder;
 	HashMap* signatures;
 	int active_tab_index;
@@ -81,5 +84,6 @@ bool is_valid_name_character(char c);
 int es_init(EditorState* es, int argc, char* argv[]);
 void es_uninit(EditorState* es);
 int hash_function(void* v, int max_value);
+void clipboard_insert(LinkedList* clipboard, char* str);
 
 #endif

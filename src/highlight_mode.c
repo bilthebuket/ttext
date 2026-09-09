@@ -5,6 +5,7 @@
 #include "undo.h"
 #include "piece_table/color_indices.h"
 #include "piece_table/undo.h"
+#include "linked_list.h"
 
 static void return_to_normal_mode(EditorState* es)
 {
@@ -20,6 +21,45 @@ static void return_to_normal_mode(EditorState* es)
 		print_tab(es->active_tab);
 	}
 	print_message("Normal Mode");
+}
+
+static void get_start_end_index(Tab* t, int* start_index, int* end_index)
+{
+	*start_index = pt_get_line_index(t->pt, t->highlight_y);
+	if (*start_index < 0)
+	{
+		return_to_normal_mode(es);
+		return;
+	}
+
+	*end_index = pt_get_line_index(t->pt, t->y);
+	if (*end_index < 0)
+	{
+		return_to_normal_mode(es);
+		return;
+	}
+
+	*start_index += t->highlight_x;
+	*end_index += t->x;
+
+	if (*start_index > *end_index)
+	{
+		int store = *start_index;
+		*start_index = *end_index;
+		*end_index = store;
+	}
+
+	// handles case where we are deleting the last line of the file and its empty
+	if (pt_get(t->pt, end_index) == '\0')
+	{
+		*end_index--;
+		if (pt_get(t->pt, end_index) == '\0')
+		{
+			*start_index = -1;
+			*end_index = -1;
+			return;
+		}
+	}
 }
 
 void highlight_mode(EditorState* es, int ch)
@@ -86,38 +126,12 @@ void highlight_mode(EditorState* es, int ch)
 		{
 			case 'd':
 			{
-				int start_index = pt_get_line_index(t->pt, t->highlight_y);
-				if (start_index < 0)
+				int start_index = -1;
+				int end_index = -1;
+				get_start_end_index(t, &start_index, &end_index);
+				if (start_index < 0 || end_index < 0)
 				{
-					return_to_normal_mode(es);
 					return;
-				}
-
-				int end_index = pt_get_line_index(t->pt, t->y);
-				if (end_index < 0)
-				{
-					return_to_normal_mode(es);
-					return;
-				}
-
-				start_index += t->highlight_x;
-				end_index += t->x;
-
-				if (start_index > end_index)
-				{
-					int store = start_index;
-					start_index = end_index;
-					end_index = store;
-				}
-
-				// handles case where we are deleting the last line of the file and its empty
-				if (pt_get(t->pt, end_index) == '\0')
-				{
-					end_index--;
-					if (pt_get(t->pt, end_index) == '\0')
-					{
-						return;
-					}
 				}
 
 				handle_rm_on_boundary(es, start_index, end_index);
@@ -232,6 +246,84 @@ void highlight_mode(EditorState* es, int ch)
 			{
 				return_to_normal_mode(es);
 				break;
+			}
+			case 'y':
+			{
+				int start_index;
+				int end_index;
+				get_start_end_index(t, &start_index, &end_index);
+				if (start_index < 0 || end_index < 0)
+				{
+					return;
+				}
+
+				char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+				if (to_copy == NULL)
+				{
+					return;
+				}
+
+				PieceIterator pi;
+				if (pt_iterator_init(t->pt, &pi, start_index))
+				{
+					char c = pt_iterate(&pi);
+					for (int i = start_index; i <= end_index; i++)
+					{
+						to_copy[i - start_index] = c;
+					}
+					to_copy[end_index + 1] = '\0';
+					clipboard_insert(es->clipboard, to_copy);
+
+					return_to_normal_mode(es);
+					break;
+				}
+				else
+				{
+					free(to_copy);
+					return;
+				}
+			}
+			case 'Y':
+			{
+				int start_index;
+				int end_index;
+				get_start_end_index(t, &start_index, &end_index);
+				if (start_index < 0 || end_index < 0)
+				{
+					return;
+				}
+
+				char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+				if (to_copy == NULL)
+				{
+					return;
+				}
+
+				PieceIterator pi;
+				if (pt_iterator_init(t->pt, &pi, start_index))
+				{
+					char c = pt_iterate(&pi);
+					for (int i = start_index; i <= end_index; i++)
+					{
+						to_copy[i - start_index] = c;
+					}
+					to_copy[end_index + 1] = '\0';
+					clipboard_insert(es->clipboard, to_copy);
+
+					handle_rm_on_boundary(es, start_index, end_index);
+
+					move_cursor_to_valid_coordinates(t);
+					check_left_update(t);
+					check_top_update(t);
+					t->saved_x_index = t->x;
+					return_to_normal_mode(es);
+					break;
+				}
+				else
+				{
+					free(to_copy);
+					return;
+				}
 			}
 		}
 	}

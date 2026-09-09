@@ -207,3 +207,38 @@ void ll_free(LinkedList* lst)
 	}
 	free(lst);
 }
+
+void ll_free_good(LinkedList* lst, void (*free_node)(void*))
+{
+	if (lst == NULL)
+	{
+		return;
+	}
+	if (lst->size > 0)
+	{
+		Node* ptr = lst->first;
+		if (ptr != NULL)
+		{
+			if (lst->size > 1)
+			{
+				for (int i = 0; i < lst->size - 1; i++)
+				{
+					ptr = ptr->next;
+					if (free_node != NULL)
+					{
+						(*free_node)(ptr->prev->elt);
+					}
+					free(ptr->prev);
+				}
+			}
+
+			if (free_node != NULL)
+			{
+				(*free_node)(ptr->elt);
+			}
+			free(ptr);
+		}
+	}
+	free(lst);
+
+}

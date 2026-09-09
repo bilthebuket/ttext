@@ -23,5 +23,6 @@ void* ll_get_elt(LinkedList* lst, int index);
 void ll_insert(LinkedList* lst, void* elt, int index);
 void* ll_rm(LinkedList* lst, int index);
 void ll_free(LinkedList* lst);
+void ll_free_good(LinkedList* lst, void (*free_node)(void*));
 
 #endif

@@ -103,6 +103,12 @@ int es_init(EditorState* es, int argc, char* argv[])
 		es_uninit(es);
 		return 1;
 	}
+	es->clipboard = ll_create();
+	if (es->clipboard == NULL)
+	{
+		es_uninit(es);
+		return 1;
+	}
 
 	return 0;
 }
@@ -120,6 +126,7 @@ void es_uninit(EditorState* es)
 	ll_free(es->tabs);
 	finder_free(es->finder);
 	hm_free(es->signatures, &free, &signature_free);
+	ll_free_good(es->clipboard, &free);
 }
 
 // TODO: use bitflags intead of bool array
@@ -138,4 +145,22 @@ int hash_function(void* v, int max_value)
 		val += ((int) s[i]) * prime_numbers[i % NUM_PRIME_NUMBERS];
 	}
 	return (int) (val % max_value);
+}
+
+void clipboard_insert(LinkedList* clipboard, char* str)
+{
+	if (str == NULL)
+	{
+		return;
+	}
+
+	ll_insert(clipboard, str, 0);
+	if (clipboard->size == CLIPBOARD_MAX_SIZE + 1)
+	{
+		char* str = ll_rm(clipboard, CLIPBOARD_MAX_SIZE);
+		if (str != NULL)
+		{
+			free(str);
+		}
+	}
 }
