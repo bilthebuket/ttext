@@ -341,29 +341,41 @@ PieceTable* pt_create(char* buf, int len, bool do_color_indices)
 	return r;
 }
 
-void pt_insert(PieceTable* pt, char c, int index)
+static void insertion_helper(PieceTable* pt, const char* to_insert, int index)
 {
-	if (pt == NULL)
+	if (pt == NULL || to_insert == NULL)
 	{
 		return;
 	}
+
+	int len = 0;
+	for (; to_insert[len] != '\0'; len++) {}
+
 	if (pt->pieces == NULL)
 	{
-		if (pt->append_len + 1 > pt->append_size)
+		if (pt->append_len + len > pt->append_size)
 		{
-			char* new_buf = realloc(pt->append, sizeof(char) * (pt->append_size * 2));
+			int new_size = pt->append_size * 2;
+			if (pt->append_len + len > new_size)
+			{
+				new_size = pt->append_len + len;
+			}
+			char* new_buf = realloc(pt->append, sizeof(char) * new_size);
 			if (new_buf == NULL)
 			{
 				return;
 			}
 			pt->append = new_buf;
-			pt->append_size *= 2;
+			pt->append_size = new_size;
 		}
 
-		pt->append[pt->append_len] = c;
-		Piece* new_piece = piece_create(&pt->append, pt->append_len, 1, 1);
+		for (int i = 0; i < len; i++)
+		{
+			pt->append[pt->append_len + i] = to_insert[i];
+		}
+		Piece* new_piece = piece_create(&pt->append, pt->append_len, len, len);
 		pt->pieces = tree_create(new_piece);
-		pt->append_len++;
+		pt->append_len += len;
 
 		Undo* u = undo_rm_create(0);
 		if (u != NULL)
@@ -388,15 +400,20 @@ void pt_insert(PieceTable* pt, char c, int index)
 			return;
 		}
 
-		if (pt->append_len + 1 > pt->append_size)
+		if (pt->append_len + len > pt->append_size)
 		{
-			char* new_buf = realloc(pt->append, sizeof(char) * (pt->append_size * 2));
+			int new_size = pt->append_size * 2;
+			if (pt->append_len + len > new_size)
+			{
+				new_size = pt->append_len + len;
+			}
+			char* new_buf = realloc(pt->append, sizeof(char) * new_size);
 			if (new_buf == NULL)
 			{
 				return;
 			}
 			pt->append = new_buf;
-			pt->append_size *= 2;
+			pt->append_size = new_size;
 		}
 
 		if (*p->text == pt->append && p->start_index + p->len == pt->append_len && index == finder.global_char_index + p->len)
@@ -407,15 +424,20 @@ void pt_insert(PieceTable* pt, char c, int index)
 				pt_undo_update(pt, u);
 			}
 
-			pt->append[pt->append_len] = c;
-			pt->append_len++;
-			p->len++;
-			p->chars_contained++;
-			if (c == '\n')
+			int num_newline_chars = 0;
+			for (int i = 0; i < len; i++)
 			{
-				p->lines_contained++;
-				p->lines_inside++;
+				pt->append[pt->append_len + i] = to_insert[i];
+				if (to_insert[i] == '\n')
+				{
+					num_newline_chars++;
+				}
 			}
+			pt->append_len += len;
+			p->len += len;
+			p->chars_contained += len;
+			p->lines_contained += num_newline_chars;
+			p->lines_inside += num_newline_chars;
 			tree_recursive_update_to_root(t, &piece_update_info);
 		}
 		else
@@ -471,15 +493,21 @@ void pt_insert(PieceTable* pt, char c, int index)
 				piece_free(new_two);
 			}
 
-			pt->append[pt->append_len] = c;
-			pt->append_len++;
+
 
 			u = undo_rm_create(index + 1);
 			if (u != NULL)
 			{
 				pt_undo_update(pt, u);
 			}
-			Piece* new_piece = piece_create(&pt->append, pt->append_len - 1, 1, index + 1);
+
+			Piece* new_piece = piece_create(&pt->append, pt->append_len - 1, len, index + len);
+			for (int i = 0; i < len; i++)
+			{
+				pt->append[pt->append_len + i] = to_insert[i];
+			}
+			pt->append_len += len;
+
 			if (new_piece == NULL)
 			{
 				return;
@@ -487,6 +515,20 @@ void pt_insert(PieceTable* pt, char c, int index)
 			pt->pieces = tree_insert(pt->pieces, new_piece, &piece_compare, &piece_update_info);
 		}
 	}
+
+}
+
+void pt_insert(PieceTable* pt, char c, int index)
+{
+	char buf[2];
+	buf[0] = c;
+	buf[1] = '\0';
+	insertion_helper(pt, buf, index);
+}
+
+void pt_handle_multiple_insert(PieceTable* pt, const char* to_add, int index)
+{
+	insertion_helper(pt, to_add, int index);
 }
 
 static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, int index)
@@ -890,11 +932,6 @@ char* pt_flatten_to_str(PieceTable* pt)
 		}
 	}
 	return buf;
-}
-
-void pt_handle_multiple_insert(PieceTable* pt, char* to_add, int index)
-{
-
 }
 
 void piece_iterator_copy(PieceIterator* to, PieceIterator* from)

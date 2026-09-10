@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "highlight_mode.h"
 #include "normal_mode/normal_mode.h"
 #include "global.h"

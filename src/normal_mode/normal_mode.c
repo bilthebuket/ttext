@@ -233,7 +233,7 @@ void handle_rm_on_boundary(EditorState* es, int start_index, int end_index)
 	}
 }
 
-static void handle_d(EditorState* es)
+static void get_bounds_action_motion(EditorState* es, int* start_index, int* end_index)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -245,6 +245,8 @@ static void handle_d(EditorState* es)
 
 	if (to_delete.x < 0)
 	{
+		*start_index = -1;
+		*end_index = -1;
 		return;
 	}
 
@@ -267,19 +269,40 @@ static void handle_d(EditorState* es)
 		to_delete.y2 = temp;
 	}
 
-	int start_index = pt_get_line_index(t->pt, to_delete.y);
-	if (start_index < 0)
+	*start_index = pt_get_line_index(t->pt, to_delete.y);
+	if (*start_index < 0)
 	{
+		*start_index = -1;
+		*end_index = -1;
 		return;
 	}
-	start_index += to_delete.x;
+	*start_index += to_delete.x;
 
-	int end_index = pt_get_line_index(t->pt, to_delete.y2);
-	if (end_index < 0)
+	*end_index = pt_get_line_index(t->pt, to_delete.y2);
+	if (*end_index < 0)
+	{
+		*start_index = -1;
+		*end_index = -1;
+		return;
+	}
+	*end_index += to_delete.x2;
+}
+
+static void handle_d(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
 	{
 		return;
 	}
-	end_index += to_delete.x2;
+
+	int start_index;
+	int end_index;
+	get_bounds_action_motion(es, &start_index, &end_index);
+	if (start_index < 0 || end_index < 0)
+	{
+		return;
+	}
 
 	handle_rm_on_boundary(es, start_index, end_index);
 	if (to_delete.x - 1 >= 0)
@@ -296,6 +319,84 @@ static void handle_d(EditorState* es)
 	check_left_update(t);
 	check_top_update(t);
 	move_cursor_to_tab(t);
+}
+
+static void handle_y(EditorState* es)
+{
+	int start_index;
+	int end_index;
+	get_bounds_action_motion(t, &start_index, &end_index);
+	if (start_index < 0 || end_index < 0)
+	{
+		return;
+	}
+
+	char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+	if (to_copy == NULL)
+	{
+		return;
+	}
+
+	PieceIterator pi;
+	if (pt_iterator_init(t->pt, &pi, start_index))
+	{
+		char c = pt_iterate(&pi);
+		for (int i = start_index; i <= end_index; i++)
+		{
+			to_copy[i - start_index] = c;
+		}
+		to_copy[end_index + 1] = '\0';
+		clipboard_insert(es->clipboard, to_copy);
+
+		return_to_normal_mode(es);
+	}
+	else
+	{
+		free(to_copy);
+	}
+}
+
+static void handle_Y(EditorState* es)
+{
+	int start_index;
+	int end_index;
+	get_bounds_action_motion(t, &start_index, &end_index);
+	if (start_index < 0 || end_index < 0)
+	{
+		return;
+	}
+
+	char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+	if (to_copy == NULL)
+	{
+		return;
+	}
+
+	PieceIterator pi;
+	if (pt_iterator_init(t->pt, &pi, start_index))
+	{
+		char c = pt_iterate(&pi);
+		for (int i = start_index; i <= end_index; i++)
+		{
+			to_copy[i - start_index] = c;
+		}
+		to_copy[end_index + 1] = '\0';
+		clipboard_insert(es->clipboard, to_copy);
+
+		handle_rm_on_boundary(es, start_index, end_index);
+
+		move_cursor_to_valid_coordinates(t);
+		check_left_update(t);
+		check_top_update(t);
+		t->saved_x_index = t->x;
+		return_to_normal_mode(es);
+		break;
+	}
+	else
+	{
+		free(to_copy);
+		return;
+	}
 }
 
 static void handle_x(EditorState* es)
@@ -559,6 +660,8 @@ void normal_mode_create(void)
 	execute_char['v'] = &handle_v;
 
 	action_needs_motion['d'] = true;
+	action_needs_motion['y'] = true;
+	action_needs_target['Y'] = true;
 
 	motion_needs_target['f'] = true;
 	motion_needs_target['t'] = true;
