@@ -892,6 +892,11 @@ char* pt_flatten_to_str(PieceTable* pt)
 	return buf;
 }
 
+void pt_handle_multiple_insert(PieceTable* pt, char* to_add, int index)
+{
+
+}
+
 void piece_iterator_copy(PieceIterator* to, PieceIterator* from)
 {
 	if (to == NULL || from == NULL)

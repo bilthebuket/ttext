@@ -65,6 +65,7 @@ char pt_iterate_backwards(PieceIterator* pi);
 PieceTable* pt_create(char* buf, int len, bool do_color_indices);
 void pt_free(PieceTable* pt);
 char* pt_flatten_to_str(PieceTable* pt);
+void pt_handle_multiple_insert(PieceTable* pt, char* to_add, int index);
 
 // gets the index of the first character in the line in the piece table of index line_index
 int pt_get_line_index(PieceTable* pt, int line_index);

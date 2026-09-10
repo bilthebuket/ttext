@@ -404,7 +404,93 @@ static void handle_u(EditorState* es)
 
 static void handle_p(EditorState* es)
 {
-	print_pt_to_message_bar(es->active_tab->pt);
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	int target_clipboard = es->target - '0';
+	if (target_clipboard == 0)
+	{
+		target_clipboard = 9;
+	}
+	else
+	{
+		target_clipboard--;
+	}
+
+	if (!(target_clipboard >= 0 && target_clipboard <= 9))
+	{
+		return;
+	}
+
+	char* to_add = ll_get_elt(es->clipboard, target_clipboard);
+	if (to_add == NULL)
+	{
+		return;
+	}
+
+	int len = 0;
+	for (; to_add[len] != '\0'; len++) {}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return;
+	}
+
+	if (!(t->x == 0 && pt_get(t->pt, line_index) == '\n'))
+	{
+		t->x++;
+	}
+
+	t->tab_num_flags &= ~CHANGES_SAVED;
+	es->flags |= UPDATE_FINDER_FLAG;
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
+	}
+
+	pt_undo_insert(t->pt);
+	ci_prepare(t->pt, line_index + t->x);
+	undo_insert(es, line_index + t->x);
+
+	pt_handle_multiple_insert(t->pt, to_add, line_index + t->x);
+	for (int i = 0; i < len; i++, t->x++)
+	{
+		ci_handle_insert(t->pt);
+		undo_handle_insert(es);
+		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		{
+			su_handle_insertion(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + i);
+		}
+	}
+
+	if (t->x > 0)
+	{
+		t->x--;
+	}
+	t->saved_x_index = t->x;
+	check_left_update(t);
+	check_right_update(t);
+	move_cursor_to_tab(t);
+	backup_increment_and_check(es->active_tab);
+	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+	{
+		su_execute(es->signatures, t->pt, &(t->su), t->fname);
+	}
+	int start_index;
+	int end_index;
+	if (ci_execute(t->pt, &start_index, &end_index))
+	{
+		for (int i = start_index; i <= end_index; i++)
+		{
+			print_line(t, i);
+		}
+	}
 }
 
 static void handle_escape(EditorState* es)
@@ -483,6 +569,7 @@ void normal_mode_create(void)
 	action_needs_target['t'] = true;
 	action_needs_target['F'] = true;
 	action_needs_target['T'] = true;
+	action_needs_target['p'] = true;
 
 	initialize_normal_mode_motions();
 }

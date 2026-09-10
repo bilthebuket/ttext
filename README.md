@@ -28,10 +28,13 @@
 - ! -> enter terminal mode
 - n -> goto next instance of string (after using :find)
 - u -> undo
-- p -> prints the entire state of the piece table to the message line for debugging purposes
+- p \<number\> -> pastes from clipboard of corresponding number
 - fFtT \<char\> -> jump to character on current line
 - d \<motion\> -> delete all characters spanned by motion (ex. df, will delete all characters between the cursor and the first instance of a comma on the current line, inclusive)
+- \<action\> d -> applies the action to the line the cursor in one (ex. dd deletes the line the cursor is on)
 - w -> jumps forwards by one word
+- v -> enter highlight mode
+- y/Y \<motion\> -> copy/cut text covered by motion
 
 typing a number before an action in normal mode will repeat it that number of times. does not apply to all actions (only the ones that make sense).
 
@@ -60,6 +63,15 @@ typing a number before an action in normal mode will repeat it that number of ti
 - :flookup \<function name\> -> lists all function signatures in working directory with given function name
 - :snake -> play snake with your text file
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
+
+## Highlight Mode
+
+all motions and action repeat from normal mode work in highlight mode
+
+- \> and \< -> shift highlighted line's indentation left/right
+- d -> delete highlighted text
+- escape -> return to normal mode
+- y/Y -> copy/cut highlighted text
 
 # Styling Guide
 

@@ -557,6 +557,42 @@ static Coordinate handle_w(EditorState* es)
 	}
 }
 
+static Coordinate handle_d(EditorState* es)
+{
+	Coordinate r;
+	r.x = -1;
+	r.y = -1;
+	r.x2 = -1;
+	r.y2 = -1;
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return r;
+	}
+
+	PieceIterator pi;
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return r;
+	}
+
+	if (!pt_iterator_init(t->pt, &pi, line_index))
+	{
+		return r;
+	}
+
+	int x = 0;
+	for (char c = pt_iterate(&pi); c != '\n'; c = pt_iterate(&pi), x++) {}
+
+	r.x = 0;
+	r.y = t->y;
+	r.x2 = x;
+	r.y2 = t->y;
+
+	return r;
+}
+
 void initialize_normal_mode_motions(void)
 {
 	for (int i = 0; i < NUM_CHARS; i++)
@@ -576,6 +612,7 @@ void initialize_normal_mode_motions(void)
 	do_motion['0'] = &handle_zero;
 	do_motion['%'] = &handle_percent_sign;
 	do_motion['w'] = &handle_w;
+	do_motion['d'] = &handle_d;
 }
 
 Coordinate get_target_index(EditorState* es, char motion)
