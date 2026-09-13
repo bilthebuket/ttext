@@ -501,11 +501,11 @@ static void insertion_helper(PieceTable* pt, const char* to_insert, int index)
 				pt_undo_update(pt, u);
 			}
 
-			Piece* new_piece = piece_create(&pt->append, pt->append_len - 1, len, index + len);
 			for (int i = 0; i < len; i++)
 			{
 				pt->append[pt->append_len + i] = to_insert[i];
 			}
+			Piece* new_piece = piece_create(&pt->append, pt->append_len, len, index + len);
 			pt->append_len += len;
 
 			if (new_piece == NULL)
@@ -528,7 +528,7 @@ void pt_insert(PieceTable* pt, char c, int index)
 
 void pt_handle_multiple_insert(PieceTable* pt, const char* to_add, int index)
 {
-	insertion_helper(pt, to_add, int index);
+	insertion_helper(pt, to_add, index);
 }
 
 static inline void handle_piece_being_removed(PieceTable* pt, Piece* to_undo, int index)

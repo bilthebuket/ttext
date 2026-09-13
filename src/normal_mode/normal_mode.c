@@ -186,9 +186,11 @@ static void handle_o(EditorState* es)
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
 
-
 	print_tab(t);
 	move_cursor_to_tab(t);
+	t->tab_num_flags &= ~CHANGES_SAVED;
+	es->flags |= UPDATE_FINDER_FLAG;
+	print_message("Insert Mode");
 	es->mode = &insert_mode;
 }
 
@@ -224,68 +226,65 @@ void handle_rm_on_boundary(EditorState* es, int start_index, int end_index)
 	{
 		su_execute(es->signatures, t->pt, &(t->su), t->fname);
 	}
-	if (ci_execute(t->pt, &start_index, &end_index))
-	{
-		for (int i = start_index; i <= end_index; i++)
-		{
-			print_line(t, i);
-		}
-	}
+	ci_execute(t->pt, &start_index, &end_index);
+	print_tab(t);
 }
 
-static void get_bounds_action_motion(EditorState* es, int* start_index, int* end_index)
+static Coordinate get_bounds_action_motion(EditorState* es, int* start_index, int* end_index)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
 	{
-		return;
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
 
-	Coordinate to_delete = get_target_index(es, es->motion);
+	Coordinate bounds = get_target_index(es, es->motion);
 
-	if (to_delete.x < 0)
+	if (bounds.x < 0)
 	{
 		*start_index = -1;
 		*end_index = -1;
-		return;
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
 
-	if (to_delete.x2 < 0)
+	if (bounds.x2 < 0)
 	{
-		to_delete.x2 = t->x;
-		to_delete.y2 = t->y;
+		bounds.x2 = t->x;
+		bounds.y2 = t->y;
 	}
 
-	if (to_delete.x2 < to_delete.x)
+	if (bounds.x2 < bounds.x)
 	{
-		int temp = to_delete.x;
-		to_delete.x = to_delete.x2;
-		to_delete.x2 = temp;
+		int temp = bounds.x;
+		bounds.x = bounds.x2;
+		bounds.x2 = temp;
 	}
-	if (to_delete.y2 < to_delete.y)
+	if (bounds.y2 < bounds.y)
 	{
-		int temp = to_delete.y;
-		to_delete.y = to_delete.y2;
-		to_delete.y2 = temp;
+		int temp = bounds.y;
+		bounds.y = bounds.y2;
+		bounds.y2 = temp;
 	}
 
-	*start_index = pt_get_line_index(t->pt, to_delete.y);
+	*start_index = pt_get_line_index(t->pt, bounds.y);
 	if (*start_index < 0)
 	{
 		*start_index = -1;
 		*end_index = -1;
-		return;
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
-	*start_index += to_delete.x;
+	*start_index += bounds.x;
 
-	*end_index = pt_get_line_index(t->pt, to_delete.y2);
+	*end_index = pt_get_line_index(t->pt, bounds.y2);
 	if (*end_index < 0)
 	{
 		*start_index = -1;
 		*end_index = -1;
-		return;
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
-	*end_index += to_delete.x2;
+	*end_index += bounds.x2;
+
+	return bounds;
 }
 
 static void handle_d(EditorState* es)
@@ -298,7 +297,7 @@ static void handle_d(EditorState* es)
 
 	int start_index;
 	int end_index;
-	get_bounds_action_motion(es, &start_index, &end_index);
+	Coordinate to_delete = get_bounds_action_motion(es, &start_index, &end_index);
 	if (start_index < 0 || end_index < 0)
 	{
 		return;
@@ -323,9 +322,15 @@ static void handle_d(EditorState* es)
 
 static void handle_y(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	int start_index;
 	int end_index;
-	get_bounds_action_motion(t, &start_index, &end_index);
+	get_bounds_action_motion(es, &start_index, &end_index);
 	if (start_index < 0 || end_index < 0)
 	{
 		return;
@@ -341,14 +346,12 @@ static void handle_y(EditorState* es)
 	if (pt_iterator_init(t->pt, &pi, start_index))
 	{
 		char c = pt_iterate(&pi);
-		for (int i = start_index; i <= end_index; i++)
+		for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
 		{
 			to_copy[i - start_index] = c;
 		}
 		to_copy[end_index + 1] = '\0';
 		clipboard_insert(es->clipboard, to_copy);
-
-		return_to_normal_mode(es);
 	}
 	else
 	{
@@ -358,9 +361,15 @@ static void handle_y(EditorState* es)
 
 static void handle_Y(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	int start_index;
 	int end_index;
-	get_bounds_action_motion(t, &start_index, &end_index);
+	Coordinate to_delete = get_bounds_action_motion(es, &start_index, &end_index);
 	if (start_index < 0 || end_index < 0)
 	{
 		return;
@@ -376,7 +385,7 @@ static void handle_Y(EditorState* es)
 	if (pt_iterator_init(t->pt, &pi, start_index))
 	{
 		char c = pt_iterate(&pi);
-		for (int i = start_index; i <= end_index; i++)
+		for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
 		{
 			to_copy[i - start_index] = c;
 		}
@@ -385,12 +394,20 @@ static void handle_Y(EditorState* es)
 
 		handle_rm_on_boundary(es, start_index, end_index);
 
+		if (to_delete.x - 1 >= 0)
+		{
+			t->x = to_delete.x - 1;
+		}
+		else
+		{
+			t->x = 0;
+		}
+		t->y = to_delete.y;
+
 		move_cursor_to_valid_coordinates(t);
 		check_left_update(t);
 		check_top_update(t);
 		t->saved_x_index = t->x;
-		return_to_normal_mode(es);
-		break;
 	}
 	else
 	{
@@ -491,16 +508,23 @@ static void handle_n(EditorState* es)
 
 static void handle_u(EditorState* es)
 {
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
 	for (int i = 0; i < es->action_repeat; i++)
 	{
 		undo_prepare_for_execute(es);
-		pt_undo_execute(es->active_tab->pt);
+		pt_undo_execute(t->pt);
 		undo_execute(es);
 	}
 	es->flags |= UPDATE_FINDER_FLAG;
-	move_cursor_to_valid_coordinates(es->active_tab);
-	backup_increment_and_check(es->active_tab);
-	print_tab(es->active_tab);
+	move_cursor_to_valid_coordinates(t);
+	t->saved_x_index = t->x;
+	backup_increment_and_check(t);
+	print_tab(t);
 }
 
 static void handle_p(EditorState* es)
@@ -549,7 +573,6 @@ static void handle_p(EditorState* es)
 	t->tab_num_flags &= ~CHANGES_SAVED;
 	es->flags |= UPDATE_FINDER_FLAG;
 
-	int line_index = pt_get_line_index(t->pt, t->y);
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
@@ -566,18 +589,14 @@ static void handle_p(EditorState* es)
 		undo_handle_insert(es);
 		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 		{
-			su_handle_insertion(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x + i);
+			su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x + i);
 		}
 	}
 
-	if (t->x > 0)
-	{
-		t->x--;
-	}
+	move_cursor_to_valid_coordinates(t);
 	t->saved_x_index = t->x;
 	check_left_update(t);
 	check_right_update(t);
-	move_cursor_to_tab(t);
 	backup_increment_and_check(es->active_tab);
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
@@ -658,10 +677,12 @@ void normal_mode_create(void)
 	execute_char['d'] = &handle_d;
 	execute_char['w'] = &motion_helper_update_saved_x;
 	execute_char['v'] = &handle_v;
+	execute_char['y'] = &handle_y;
+	execute_char['Y'] = &handle_Y;
 
 	action_needs_motion['d'] = true;
 	action_needs_motion['y'] = true;
-	action_needs_target['Y'] = true;
+	action_needs_motion['Y'] = true;
 
 	motion_needs_target['f'] = true;
 	motion_needs_target['t'] = true;

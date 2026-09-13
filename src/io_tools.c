@@ -428,10 +428,10 @@ void move_cursor_to_valid_coordinates(Tab* t)
 		int line_below_index = pt_get_line_index(t->pt, t->y + 1);
 		if (line_below_index >= 0)
 		{
-			// adjust t->x by one because of newline character
-			if (line_below_index - line_index < t->x - 1)
+			t->x = line_below_index - 2 - line_index;
+			if (t->x < 0)
 			{
-				t->x = line_below_index - 2 - line_index;
+				t->x = 0;
 			}
 		}
 		else

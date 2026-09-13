@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "highlight_mode.h"
 #include "normal_mode/normal_mode.h"
+#include "normal_mode/motions.h"
 #include "global.h"
 #include "io_tools.h"
 #include "undo.h"
@@ -24,20 +25,25 @@ static void return_to_normal_mode(EditorState* es)
 	print_message("Normal Mode");
 }
 
-static void get_start_end_index(Tab* t, int* start_index, int* end_index)
+static Coordinate get_start_end_index(EditorState* es, Tab* t, int* start_index, int* end_index)
 {
+	Coordinate bounds;
+	bounds.y = t->highlight_y;
+	bounds.x = t->highlight_x;
+	bounds.y2 = t->y;
+	bounds.x2 = t->x;
 	*start_index = pt_get_line_index(t->pt, t->highlight_y);
 	if (*start_index < 0)
 	{
 		return_to_normal_mode(es);
-		return;
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
 
 	*end_index = pt_get_line_index(t->pt, t->y);
 	if (*end_index < 0)
 	{
 		return_to_normal_mode(es);
-		return;
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 	}
 
 	*start_index += t->highlight_x;
@@ -48,19 +54,29 @@ static void get_start_end_index(Tab* t, int* start_index, int* end_index)
 		int store = *start_index;
 		*start_index = *end_index;
 		*end_index = store;
+
+		store = bounds.y;
+		bounds.y = bounds.y2;
+		bounds.y2 = store;
+
+		store = bounds.x;
+		bounds.x = bounds.x2;
+		bounds.x2 = store;
 	}
 
 	// handles case where we are deleting the last line of the file and its empty
-	if (pt_get(t->pt, end_index) == '\0')
+	if (pt_get(t->pt, *end_index) == '\0')
 	{
-		*end_index--;
-		if (pt_get(t->pt, end_index) == '\0')
+		*end_index = *end_index - 1;
+		if (pt_get(t->pt, *end_index) == '\0')
 		{
 			*start_index = -1;
 			*end_index = -1;
-			return;
+			return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
 		}
 	}
+
+	return bounds;
 }
 
 void highlight_mode(EditorState* es, int ch)
@@ -129,7 +145,7 @@ void highlight_mode(EditorState* es, int ch)
 			{
 				int start_index = -1;
 				int end_index = -1;
-				get_start_end_index(t, &start_index, &end_index);
+				Coordinate bounds = get_start_end_index(es, t, &start_index, &end_index);
 				if (start_index < 0 || end_index < 0)
 				{
 					return;
@@ -137,7 +153,13 @@ void highlight_mode(EditorState* es, int ch)
 
 				handle_rm_on_boundary(es, start_index, end_index);
 
-				move_cursor_to_valid_coordinates(t);
+				t->y = bounds.y;
+				t->x = bounds.x - 1;
+				if (t->x < 0)
+				{
+					t->x = 0;
+				}
+				move_cursor_to_tab(t);
 				check_left_update(t);
 				check_top_update(t);
 				t->saved_x_index = t->x;
@@ -252,7 +274,7 @@ void highlight_mode(EditorState* es, int ch)
 			{
 				int start_index;
 				int end_index;
-				get_start_end_index(t, &start_index, &end_index);
+				get_start_end_index(es, t, &start_index, &end_index);
 				if (start_index < 0 || end_index < 0)
 				{
 					return;
@@ -268,7 +290,7 @@ void highlight_mode(EditorState* es, int ch)
 				if (pt_iterator_init(t->pt, &pi, start_index))
 				{
 					char c = pt_iterate(&pi);
-					for (int i = start_index; i <= end_index; i++)
+					for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
 					{
 						to_copy[i - start_index] = c;
 					}
@@ -288,7 +310,7 @@ void highlight_mode(EditorState* es, int ch)
 			{
 				int start_index;
 				int end_index;
-				get_start_end_index(t, &start_index, &end_index);
+				Coordinate bounds = get_start_end_index(es, t, &start_index, &end_index);
 				if (start_index < 0 || end_index < 0)
 				{
 					return;
@@ -304,7 +326,7 @@ void highlight_mode(EditorState* es, int ch)
 				if (pt_iterator_init(t->pt, &pi, start_index))
 				{
 					char c = pt_iterate(&pi);
-					for (int i = start_index; i <= end_index; i++)
+					for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
 					{
 						to_copy[i - start_index] = c;
 					}
@@ -313,7 +335,14 @@ void highlight_mode(EditorState* es, int ch)
 
 					handle_rm_on_boundary(es, start_index, end_index);
 
-					move_cursor_to_valid_coordinates(t);
+					t->y = bounds.y;
+					t->x = bounds.x - 1;
+					if (t->x < 0)
+					{
+						t->x = 0;
+					}
+
+					move_cursor_to_tab(t);
 					check_left_update(t);
 					check_top_update(t);
 					t->saved_x_index = t->x;
