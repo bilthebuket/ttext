@@ -35,6 +35,7 @@
 - w -> jumps forwards by one word
 - v -> enter highlight mode
 - y/Y \<motion\> -> copy/cut text covered by motion
+- \<action\> i \<target (must be a grouping symbol)\> apply action to all characters in inside the grouping symbols
 
 typing a number before an action in normal mode will repeat it that number of times. does not apply to all actions (only the ones that make sense).
 

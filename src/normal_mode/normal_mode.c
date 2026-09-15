@@ -604,13 +604,8 @@ static void handle_p(EditorState* es)
 	}
 	int start_index;
 	int end_index;
-	if (ci_execute(t->pt, &start_index, &end_index))
-	{
-		for (int i = start_index; i <= end_index; i++)
-		{
-			print_line(t, i);
-		}
-	}
+	ci_execute(t->pt, &start_index, &end_index);
+	print_tab(t);
 }
 
 static void handle_escape(EditorState* es)
@@ -688,6 +683,7 @@ void normal_mode_create(void)
 	motion_needs_target['t'] = true;
 	motion_needs_target['F'] = true;
 	motion_needs_target['T'] = true;
+	motion_needs_target['i'] = true;
 
 	action_needs_target['f'] = true;
 	action_needs_target['t'] = true;

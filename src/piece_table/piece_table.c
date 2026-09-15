@@ -1014,11 +1014,14 @@ void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index)
 	}
 	else if (end_index >= finder.global_char_index + p->len - 1)
 	{
-		Undo* u = undo_update_create(p, start_index, p->start_index, p->len, p->lines_inside);
+		Undo* u = undo_update_create(p, finder.global_char_index, p->start_index, p->len, p->lines_inside);
 		if (u != NULL)
 		{
 			pt_undo_update(pt, u);
 		}
+
+		int store = num_chars_removing;
+		num_chars_removing -= finder.global_char_index + p->len - start_index;
 
 		for (int i = 0; start_index + i < finder.global_char_index + p->len; i++)
 		{
@@ -1028,11 +1031,10 @@ void pt_rm_on_boundary(PieceTable* pt, int start_index, int end_index)
 				p->lines_inside--;
 			}
 		}
-		p->chars_contained -= num_chars_removing;
-		p->len -= num_chars_removing;
+		p->chars_contained -= store;
+		p->len -= store;
 
 		tree_recursive_update_to_root(t, &piece_update_info);
-		num_chars_removing -= finder.global_char_index + p->len - start_index;
 	}
 	else
 	{

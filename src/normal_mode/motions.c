@@ -593,6 +593,113 @@ static Coordinate handle_d(EditorState* es)
 	return r;
 }
 
+static Coordinate handle_i(EditorState* es)
+{
+	Coordinate r;
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	char left;
+	char right;
+	if (es->target == '[' || es->target == ']')
+	{
+		left = '[';
+		right = ']';
+	}
+	else if (es->target == '{' || es->target == '}')
+	{
+		left = '{';
+		right = '}';
+	}
+	else if (es->target == '(' || es->target == ')')
+	{
+		left = '(';
+		right = ')';
+	}
+	else
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	int start_index = line_index + t->x;
+	int end_index = line_index + t->x;
+
+	PieceIterator pi;
+	if (!pt_iterator_init(t->pt, &pi, start_index))
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	char c = pt_iterate_backwards(&pi);
+	for (int i = 0; c != '\0' && i < es->action_repeat; i++)
+	{
+		while (c != '\0' && c != left)
+		{
+			c = pt_iterate_backwards(&pi);
+			start_index--;
+		}
+		c = pt_iterate_backwards(&pi);
+		start_index--;
+	}
+	start_index += 2;
+
+	if (c == '\0')
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	if (!pt_iterator_init(t->pt, &pi, line_index + t->x))
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	c = pt_iterate(&pi);
+	for (int i = 0; c != '\0' && i < es->action_repeat; i++)
+	{
+		while (c != '\0' && c != right)
+		{
+			c = pt_iterate(&pi);
+			end_index++;
+		}
+		c = pt_iterate(&pi);
+		end_index++;
+	}
+	end_index -= 2;
+
+	if (c == '\0')
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	r.y = pt_get_line_index_inverse(t->pt, start_index);
+	r.y2 = pt_get_line_index_inverse(t->pt, end_index);
+
+	line_index = pt_get_line_index(t->pt, r.y);
+	if (line_index < 0)
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+	r.x = start_index - line_index;
+
+	line_index = pt_get_line_index(t->pt, r.y2);
+	if (line_index < 0)
+	{
+		return (Coordinate){.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+	r.x2 = end_index - line_index;
+
+	return r;
+}
+
 void initialize_normal_mode_motions(void)
 {
 	for (int i = 0; i < NUM_CHARS; i++)
@@ -613,6 +720,7 @@ void initialize_normal_mode_motions(void)
 	do_motion['%'] = &handle_percent_sign;
 	do_motion['w'] = &handle_w;
 	do_motion['d'] = &handle_d;
+	do_motion['i'] = &handle_i;
 }
 
 Coordinate get_target_index(EditorState* es, char motion)
