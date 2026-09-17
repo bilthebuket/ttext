@@ -280,6 +280,33 @@ LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_
 	return r;
 }
 
+LinkedList* hm_get_all_keys(HashMap* map)
+{
+	if (map == NULL)
+	{
+		return NULL;
+	}
+
+	LinkedList* r = ll_create();
+	for (int i = 0; i < map->arr_size; i++)
+	{
+		LinkedList* lst = map->arr[i];
+		if (lst != NULL)
+		{
+			for (int j = 0; j < lst->size; j++)
+			{
+				HashMapElt* elt = ll_get_elt(lst, j);
+				if (elt != NULL)
+				{
+					ll_insert(r, elt->key, j, r->size);
+				}
+			}
+		}
+	}
+
+	return r;
+}
+
 LinkedList* hm_get_dangerous(HashMap* map, void* key, int (*hash)(void*, int))
 {
 	if (map == NULL || hash == NULL)

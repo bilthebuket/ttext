@@ -31,6 +31,7 @@ LinkedList* hm_rm(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_e
 // same as hm_rm except it removes the first instance that meets the criteria from removal and returns instead of removing the rest
 void* hm_rm_one(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool), void (*key_free)(void*));
 LinkedList* hm_get(HashMap* map, void* key, int (*hash)(void*, int), bool (*key_equals)(void*, void*), bool (*elt_equals)(void*, bool));
+LinkedList* hm_get_all_keys(HashMap* map);
 
 // returns the linked list for a key that the hashmap uses internally
 // use with extremem caution, the linked list should be read only (dont add or remove linked list nodes)
