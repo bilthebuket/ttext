@@ -58,6 +58,7 @@ Tab* tab_create(char* fname)
 	r->lines = NULL;
 	r->saved_x_index = 0;
 	r->edits_since_last_backup = 0;
+	r->active_string = NULL;
 
 	FILE* f;
 	if (fname != NULL)
@@ -148,6 +149,7 @@ void tab_free(Tab* t)
 			ll_free(t->undos);
 		}
 		pt_free(t->pt);
+		da_free(t->active_string);
 		free(t);
 	}
 }

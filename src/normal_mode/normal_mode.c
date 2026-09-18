@@ -11,6 +11,9 @@
 #include "piece_table/undo.h"
 #include "undo.h"
 #include "highlight_mode.h"
+#include "fuzzy_find.h"
+
+#define ARBITRARY_SIZE 50
 
 static bool action_needs_motion[NUM_CHARS];
 static bool motion_needs_target[NUM_CHARS];
@@ -110,6 +113,9 @@ static void handle_i(EditorState* es)
 	ci_prepare(t->pt, line_index + t->x);
 	undo_insert(es, line_index + t->x);
 
+	es->fuzzy_find = find_strings_to_autocomplete(es, &es->fuzzy_find_len);
+	t->active_string = da_create(ARBITRARY_SIZE);
+	da_insert(t->active_string, '\0', 0);
 	es->mode = &insert_mode;
 }
 
@@ -150,6 +156,9 @@ static void handle_a(EditorState* es)
 		su_prepare(es->signatures, t->pt, &(t->su), t->fname, line_index + t->x);
 	}
 
+	es->fuzzy_find = find_strings_to_autocomplete(es, &es->fuzzy_find_len);
+	t->active_string = da_create(ARBITRARY_SIZE);
+	da_insert(t->active_string, '\0', 0);
 	es->mode = &insert_mode;
 }
 
@@ -191,6 +200,10 @@ static void handle_o(EditorState* es)
 	t->tab_num_flags &= ~CHANGES_SAVED;
 	es->flags |= UPDATE_FINDER_FLAG;
 	print_message("Insert Mode");
+
+	es->fuzzy_find = find_strings_to_autocomplete(es, es->fuzzy_find_len);
+	t->active_string = da_create(ARBITRARY_SIZE);
+	da_insert(t->active_string, '\0', 0);
 	es->mode = &insert_mode;
 }
 

@@ -8,6 +8,7 @@
 #include "terminal_mode.h"
 #include "piece_table/color_indices.h"
 #include "global.h"
+#include "fuzzy_find.h"
 
 bool is_valid_name_character(char c)
 {
@@ -29,6 +30,8 @@ int es_init(EditorState* es, int argc, char* argv[])
 	es->action = '\0';
 	es->motion = '\0';
 	es->target = '\0';
+	es->fuzzy_find = NULL;
+	es->fuzzy_find_len = 0;
 	sem_init(&(es->sem), 0, 1);
 	ci_init_arrays();
 
@@ -36,6 +39,7 @@ int es_init(EditorState* es, int argc, char* argv[])
 	es->mode = &normal_mode;
 	insert_mode_create();
 	normal_mode_create();
+	fuzzy_find_init();
 	if (!terminal_create(es))
 	{
 		sem_destroy(&(es->sem));
@@ -127,6 +131,11 @@ void es_uninit(EditorState* es)
 	finder_free(es->finder);
 	hm_free(es->signatures, &free, &signature_free);
 	ll_free_good(es->clipboard, &free);
+	for (int i = 0; i < es->fuzzy_find_len; i++)
+	{
+		free(es->fuzzy_find[i]);
+	}
+	free(es->fuzzy_find);
 }
 
 // TODO: use bitflags intead of bool array

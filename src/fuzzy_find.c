@@ -175,7 +175,7 @@ void order_by_closest_match(char** to_order, int to_order_len, char* target)
 	free(residuals);
 }
 
-char** find_strings_to_autocomplete(EditorState* es)
+char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 {
 	Tab* t = es->active_tab;
 	if (t == NULL)
@@ -290,6 +290,7 @@ char** find_strings_to_autocomplete(EditorState* es)
 	ll_free(cyan_text_strs);
 
 	char** r = malloc(sizeof(char*) * lst->size);
+	*arr_size = lst->size;
 	for (int i = 0; i < lst->size; i++)
 	{
 		r[i] = ll_rm(lst, 0);

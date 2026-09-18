@@ -11,6 +11,32 @@
 #include "piece_table/color_indices.h"
 #include "undo.h"
 
+static void update_autocomplete(char** fuzzy_find, DyanicArray* str, char c)
+{
+	if (str == NULL)
+	{
+		return;
+	}
+
+	if (c == BACKSPACE_KEYCODE2)
+	{
+		da_rm(str, str->len - 2);
+	}
+	else if (c == ' ' || c == '\n' || c == '\t')
+	{
+		for (int i = str->len - 2; i >= 0; i--)
+		{
+			da_rm(str, i);
+		}
+	}
+	else
+	{
+		da_insert(str, c, str->len - 1);
+	}
+
+	order_by_closest_match(fuzzy_find, str->arr);
+}
+
 static void handle_default(EditorState* es, int ch)
 {
 	Tab* t = es->active_tab;
@@ -22,6 +48,8 @@ static void handle_default(EditorState* es, int ch)
 	{
 		return;
 	}
+
+	update_autocomplete(es->fuzzy_find, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -98,6 +126,8 @@ static void handle_tab(EditorState* es, int ch)
 		return;
 	}
 
+	update_autocomplete(es->fuzzy_find, t->active_string, ch);
+
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
 	{
@@ -132,6 +162,8 @@ static void handle_backspace(EditorState* es, int ch)
 	{
 		return;
 	}
+
+	update_autocomplete(es->fuzzy_find, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -223,6 +255,16 @@ static void handle_escape(EditorState* es, int ch)
 	}
 	es->mode = &normal_mode;
 	es->flags |= UPDATE_FINDER_FLAG;
+
+	da_free(t->active_string);
+	t->active_string = NULL;
+	for (int i = 0; i < es->fuzzy_find_len; i++)
+	{
+		free(es->fuzzy_find[i]);
+	}
+	free(es->fuzzy_find);
+	es->fuzzy_find = NULL;
+	es->fuzzy_find_len = 0;
 }
 
 static void handle_enter(EditorState* es, int ch)
@@ -237,6 +279,8 @@ static void handle_enter(EditorState* es, int ch)
 	{
 		return;
 	}
+
+	update_autocomplete(es->fuzzy_find, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)

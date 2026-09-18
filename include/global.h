@@ -69,6 +69,8 @@ typedef struct EditorState
 	LinkedList* clipboard;
 	Finder* finder;
 	HashMap* signatures;
+	char** fuzzy_find;
+	int fuzzy_find_len;
 	int active_tab_index;
 	int flags;
 

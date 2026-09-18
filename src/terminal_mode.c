@@ -770,6 +770,13 @@ static void handle_enter(EditorState* es, int ch)
 		{
 			snake_execute(t);
 		}
+		else if (!gb_strcmp(gb, start_index, end_index, "print_autocomplete"))
+		{
+			for (int i = 0; i < es->fuzzy_find_len; i++)
+			{
+				fprintf(stderr, "%s\n", es->fuzzy_find[i]);
+			}
+		}
 
 		make_input_line();
 		print_tab(terminal);

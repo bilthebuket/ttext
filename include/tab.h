@@ -4,6 +4,7 @@
 #include "linked_list.h"
 #include "piece_table/piece_table.h"
 #include "signature.h"
+#include "dynamic_array.h"
 
 #define BACKUP_EDIT_THRESHOLD 50
 
@@ -13,6 +14,7 @@ typedef struct Tab
 	PieceTable* pt;
 	char* fname;
 	LinkedList* undos;
+	DynamicArray* active_string;
 	SignatureUpdate su;
 
 	// cursor position
