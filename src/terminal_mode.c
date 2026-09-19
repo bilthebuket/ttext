@@ -891,6 +891,9 @@ bool terminal_create(EditorState* es)
 	terminal->height = TERMINAL_HEIGHT;
 	terminal->left_column_index = 0;
 	terminal->top_line_index = 0;
+	terminal->highlight_x = -1;
+	terminal->highlight_y = -1;
+	terminal->active_string = NULL;
 
 	slave_pid = forkpty(&master_fd, NULL, NULL, NULL);
 	if (slave_pid == 0)

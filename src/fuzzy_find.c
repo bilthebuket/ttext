@@ -290,5 +290,6 @@ char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 		i++;
 	}
 	ll_free(lst);
+	hm_free(found, NULL, NULL);
 	return r;
 }

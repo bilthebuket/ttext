@@ -429,7 +429,7 @@ static void initialize_signatures_helper(HashMap* map, const char* directory)
 		if (!strcmp(directory, "."))
 		{
 			int len = 0;
-			for (; path[len] != '\0'; len++) {}
+			for (; name[len] != '\0'; len++) {}
 			len++;
 			path = malloc(sizeof(char) * len);
 			if (path != NULL)
