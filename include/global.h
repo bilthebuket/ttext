@@ -18,6 +18,11 @@
 #define BACKSPACE_KEYCODE2 0x7f
 #define ESCAPE_KEYCODE 27
 #define ENTER_KEYCODE1 10
+#define CTRL_G 7
+#define CTRL_F 6
+#define CTRL_D 4
+#define CTRL_S 19
+#define CTRL_A 1
 
 #define CHANGES_SAVED (1 << 31)
 #define PARSE_FOR_SIGNATURES (1 << 30)

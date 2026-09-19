@@ -201,7 +201,7 @@ static void handle_o(EditorState* es)
 	es->flags |= UPDATE_FINDER_FLAG;
 	print_message("Insert Mode");
 
-	es->fuzzy_find = find_strings_to_autocomplete(es, es->fuzzy_find_len);
+	es->fuzzy_find = find_strings_to_autocomplete(es, &es->fuzzy_find_len);
 	t->active_string = da_create(ARBITRARY_SIZE);
 	da_insert(t->active_string, '\0', 0);
 	es->mode = &insert_mode;

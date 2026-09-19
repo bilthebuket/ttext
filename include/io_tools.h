@@ -7,6 +7,9 @@
 #include "global.h"
 #include "piece_table/piece_table.h"
 
+void print_autocomplete_suggestions(Tab* t, char** strs, int len);
+void unprint_autocomplete_suggestions(Tab* t);
+
 void print_tab(Tab* t);
 void print_line(Tab* t, int line_index);
 void print_message(const char* const str);

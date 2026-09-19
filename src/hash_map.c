@@ -298,7 +298,7 @@ LinkedList* hm_get_all_keys(HashMap* map)
 				HashMapElt* elt = ll_get_elt(lst, j);
 				if (elt != NULL)
 				{
-					ll_insert(r, elt->key, j, r->size);
+					ll_insert(r, elt->key, r->size);
 				}
 			}
 		}

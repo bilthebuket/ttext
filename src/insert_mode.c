@@ -10,8 +10,9 @@
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
 #include "undo.h"
+#include "fuzzy_find.h"
 
-static void update_autocomplete(char** fuzzy_find, DyanicArray* str, char c)
+static void update_autocomplete(char** fuzzy_find, int fuzzy_find_len, DynamicArray* str, char c)
 {
 	if (str == NULL)
 	{
@@ -34,7 +35,7 @@ static void update_autocomplete(char** fuzzy_find, DyanicArray* str, char c)
 		da_insert(str, c, str->len - 1);
 	}
 
-	order_by_closest_match(fuzzy_find, str->arr);
+	order_by_closest_match(fuzzy_find, fuzzy_find_len, str->arr);
 }
 
 static void handle_default(EditorState* es, int ch)
@@ -49,7 +50,7 @@ static void handle_default(EditorState* es, int ch)
 		return;
 	}
 
-	update_autocomplete(es->fuzzy_find, t->active_string, ch);
+	update_autocomplete(es->fuzzy_find, es->fuzzy_find_len, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -111,6 +112,7 @@ static void handle_default(EditorState* es, int ch)
 	move_cursor_to_tab(t);
 
 	print_line(t, t->y);
+	print_autocomplete_suggestions(t, es->fuzzy_find, es->fuzzy_find_len);
 }
 
 static void handle_tab(EditorState* es, int ch)
@@ -126,7 +128,7 @@ static void handle_tab(EditorState* es, int ch)
 		return;
 	}
 
-	update_autocomplete(es->fuzzy_find, t->active_string, ch);
+	update_autocomplete(es->fuzzy_find, es->fuzzy_find_len, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -148,6 +150,7 @@ static void handle_tab(EditorState* es, int ch)
 	check_right_update(t);
 	move_cursor_to_tab(t);
 	print_line(t, line_index);
+	print_autocomplete_suggestions(t, es->fuzzy_find, es->fuzzy_find_len);
 }
 
 static void handle_backspace(EditorState* es, int ch)
@@ -163,7 +166,7 @@ static void handle_backspace(EditorState* es, int ch)
 		return;
 	}
 
-	update_autocomplete(es->fuzzy_find, t->active_string, ch);
+	update_autocomplete(es->fuzzy_find, es->fuzzy_find_len, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -210,6 +213,8 @@ static void handle_backspace(EditorState* es, int ch)
 			print_tab(t);
 		}
 	}
+
+	print_autocomplete_suggestions(t, es->fuzzy_find, es->fuzzy_find_len);
 }
 
 static void handle_escape(EditorState* es, int ch)
@@ -265,6 +270,7 @@ static void handle_escape(EditorState* es, int ch)
 	free(es->fuzzy_find);
 	es->fuzzy_find = NULL;
 	es->fuzzy_find_len = 0;
+	unprint_autocomplete_suggestions(t);
 }
 
 static void handle_enter(EditorState* es, int ch)
@@ -280,7 +286,7 @@ static void handle_enter(EditorState* es, int ch)
 		return;
 	}
 
-	update_autocomplete(es->fuzzy_find, t->active_string, ch);
+	update_autocomplete(es->fuzzy_find, es->fuzzy_find_len, t->active_string, ch);
 
 	int line_index = pt_get_line_index(t->pt, t->y);
 	if (line_index < 0)
@@ -304,6 +310,91 @@ static void handle_enter(EditorState* es, int ch)
 	move_cursor_to_tab(t);
 
 	print_tab(t);
+	print_autocomplete_suggestions(t, es->fuzzy_find, es->fuzzy_find_len);
+}
+
+static void control_helper(EditorState* es, int to_autocomplete)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL || to_autocomplete >= es->fuzzy_find_len)
+	{
+		return;
+	}
+
+	int line_index = pt_get_line_index(t->pt, t->y);
+	if (line_index < 0)
+	{
+		return;
+	}
+
+	int store_x = t->x;
+
+	for (int i = 0; i < t->active_string->len - 1; i++)
+	{
+		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		{
+			su_handle_deletion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x - 1);
+		}
+		pt_rm(t->pt, line_index + t->x - 1);
+		undo_handle_delete(es);
+		ci_handle_rm(t->pt);
+
+		t->x--;
+	}
+	for (int i = 0; es->fuzzy_find[to_autocomplete][i] != '\0'; i++)
+	{
+		if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
+		{
+			su_handle_insertion(es->signatures, t->pt, t->fname, &(t->su), line_index + t->x);
+		}
+		pt_insert(t->pt, es->fuzzy_find[to_autocomplete][i], line_index + t->x);
+		undo_handle_insert(es);
+		ci_handle_insert(t->pt);
+		t->x++;
+	}
+
+	if (t->x < store_x)
+	{
+		check_left_update(t);
+		move_cursor_to_tab(t);
+	}
+	else if (t->x > store_x)
+	{
+		check_right_update(t);
+		move_cursor_to_tab(t);
+	}
+
+	print_line(t, t->y);
+}
+
+static void handle_ctrl_a(EditorState* es, int ch)
+{
+	(void) ch;
+	control_helper(es, 4);
+}
+
+static void handle_ctrl_s(EditorState* es, int ch)
+{
+	(void) ch;
+	control_helper(es, 3);
+}
+
+static void handle_ctrl_d(EditorState* es, int ch)
+{
+	(void) ch;
+	control_helper(es, 2);
+}
+
+static void handle_ctrl_f(EditorState* es, int ch)
+{
+	(void) ch;
+	control_helper(es, 1);
+}
+
+static void handle_ctrl_g(EditorState* es, int ch)
+{
+	(void) ch;
+	control_helper(es, 0);
 }
 
 static void (*execute_char[NUM_CHARS])(EditorState*, int);
@@ -318,6 +409,11 @@ void insert_mode_create(void)
 	execute_char[BACKSPACE_KEYCODE2] = &handle_backspace;
 	execute_char[ESCAPE_KEYCODE] = &handle_escape;
 	execute_char[ENTER_KEYCODE1] = &handle_enter;
+	execute_char[CTRL_G] = &handle_ctrl_g;
+	execute_char[CTRL_F] = &handle_ctrl_f;
+	execute_char[CTRL_D] = &handle_ctrl_d;
+	execute_char[CTRL_S] = &handle_ctrl_s;
+	execute_char[CTRL_A] = &handle_ctrl_a;
 }
 
 void insert_mode(EditorState* es, int ch)

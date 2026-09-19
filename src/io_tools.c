@@ -10,8 +10,120 @@
 #include "piece_table/color_indices.h"
 #include "undo.h"
 
+// includes border characters, so for width 20 and height 7 we'll show the first 18 chracters of the 5 best suggestions
+#define AUTOCOMPLETE_BOX_WIDTH 20
+#define AUTOCOMPLETE_BOX_HEIGHT 7
+
 static int height;
 static int width;
+
+static void get_autocomplete_box_size(Tab* t, int* box_width, int* box_height, int* left_index, int* top_index)
+{
+	if (t->height >= AUTOCOMPLETE_BOX_HEIGHT)
+	{
+		*box_height = AUTOCOMPLETE_BOX_HEIGHT;
+	}
+	else
+	{
+		*box_height = t->height;
+	}
+	if (t->width + 1 >= AUTOCOMPLETE_BOX_WIDTH)
+	{
+		*box_width = AUTOCOMPLETE_BOX_WIDTH;
+	}
+	else
+	{
+		*box_width = t->width + 1;
+	}
+
+	if (t->x + *box_width - 1 > t->width)
+	{
+		*left_index = width - *box_width;
+	}
+	else
+	{
+		*left_index = t->xpos + t->x - t->left_column_index;
+	}
+	if (t->y + *box_height - 1 > t->height)
+	{
+		*top_index = t->ypos + t->y - t->top_line_index - *box_height;
+	}
+	else
+	{
+		*top_index = t->ypos + t->y - t->top_line_index + 1;
+	}
+}
+
+void unprint_autocomplete_suggestions(Tab* t)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+
+	int box_width, box_height, left_index, top_index;
+	get_autocomplete_box_size(t, &box_width, &box_height, &left_index, &top_index);
+
+	for (int i = 0; i < box_height ; i++)
+	{
+		print_line(t, top_index + i);
+	}
+}
+
+void print_autocomplete_suggestions(Tab* t, char** strs, int len)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+
+	for (int i = 0; i < AUTOCOMPLETE_BOX_HEIGHT; i++)
+	{
+		print_line(t, t->ypos + t->y + 1 - t->top_line_index + i);
+	}
+
+	int y, x;
+	getyx(stdscr, y, x);
+
+	int box_width;
+	int box_height;
+	int left_index;
+	int top_index;
+
+	get_autocomplete_box_size(t, &box_width, &box_height, &left_index, &top_index);
+	attron(COLOR_PAIR(WHITE_TEXT));
+
+	for (int i = 0; i < box_width; i++)
+	{
+		mvaddch(top_index, left_index + i, '-');
+		mvaddch(top_index + box_height - 1, left_index + i, '-');
+	}
+	for (int i = 1; i < box_height - 1; i++)
+	{
+		mvaddch(top_index + i, left_index, '|');
+		mvaddch(top_index + i, left_index + box_width - 1, '|');
+	}
+
+	if (len > box_height - 2)
+	{
+		len = box_height - 2;
+	}
+
+	for (int i = 0; i < len; i++)
+	{
+		int j = 0;
+		for (; strs[i][j] != '\0' && j < box_width - 2; j++)
+		{
+			mvaddch(top_index + i + 1, left_index + j + 1, strs[i][j]);
+		}
+		for (; j < box_width - 2; j++)
+		{
+			mvaddch(top_index + i + 1, left_index + j + 1, ' ');
+		}
+	}
+
+	move(y, x);
+}
 
 bool is_tab_on_screen(Tab* t)
 {

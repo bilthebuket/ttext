@@ -777,6 +777,10 @@ static void handle_enter(EditorState* es, int ch)
 				fprintf(stderr, "%s\n", es->fuzzy_find[i]);
 			}
 		}
+		else
+		{
+			print_message("command not found");
+		}
 
 		make_input_line();
 		print_tab(terminal);

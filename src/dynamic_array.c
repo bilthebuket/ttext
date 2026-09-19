@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "dynamic_array.h"
+#include "global.h"
 
 DynamicArray* da_create(int starting_size)
 {
@@ -11,7 +12,7 @@ DynamicArray* da_create(int starting_size)
 	DynamicArray* r = malloc(sizeof(DynamicArray));
 	if (r != NULL)
 	{
-		r->arr = malloc(sizeof(char) * start_size);
+		r->arr = malloc(sizeof(char) * starting_size);
 		if (r->arr == NULL)
 		{
 			free(r);
@@ -23,9 +24,9 @@ DynamicArray* da_create(int starting_size)
 	return r;
 }
 
-char da_get(DyanmicArray* da, int index)
+char da_get(DynamicArray* da, int index)
 {
-	if (da == NULL || index < 0 || index >= len)
+	if (da == NULL || index < 0 || index >= da->len)
 	{
 		return '\0';
 	}
@@ -42,7 +43,7 @@ void da_insert(DynamicArray* da, char c, int index)
 
 	if (da->len == da->arr_size)
 	{
-		char* new_arr = realloc(da->arr_size, sizeof(char) * da->arr_size * 2);
+		char* new_arr = realloc(da->arr, sizeof(char) * da->arr_size * 2);
 		if (new_arr == NULL)
 		{
 			return;
@@ -60,6 +61,7 @@ void da_insert(DynamicArray* da, char c, int index)
 	}
 
 	da->arr[index] = c;
+	da->len++;
 }
 
 char da_rm(DynamicArray* da, int index)
@@ -76,6 +78,7 @@ char da_rm(DynamicArray* da, int index)
 		da->arr[i] = da->arr[i + 1];
 	}
 
+	da->len--;
 	return r;
 }
 

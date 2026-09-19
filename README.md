@@ -65,6 +65,9 @@ typing a number before an action in normal mode will repeat it that number of ti
 - :snake -> play snake with your text file
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
+note: when moving and resizing windows, you also use fractions of the screen size.
+ex: w2 = width of screen / 2, h4 = height of screen / 4
+
 ## Highlight Mode
 
 all motions and action repeat from normal mode work in highlight mode
