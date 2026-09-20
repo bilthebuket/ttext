@@ -407,6 +407,7 @@ static void handle_enter(EditorState* es, int ch)
 				if (num_to_change2 == NULL)
 				{
 					sign1 = 1;
+					sign2 = 0;
 				}
 				else
 				{
@@ -419,12 +420,18 @@ static void handle_enter(EditorState* es, int ch)
 				if (num_to_change2 == NULL)
 				{
 					sign1 = -1;
+					sign2 = 0;
 				}
 				else
 				{
 					sign1 = 1;
 					sign2 = -1;
 				}
+			}
+			else
+			{
+				sign1 = 0;
+				sign2 = 0;
 			}
 
 			start_index = end_index + 1;;

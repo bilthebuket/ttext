@@ -247,7 +247,7 @@ PieceTable* pt_create(char* buf, int len, bool do_color_indices)
 	{
 		if (buf != NULL)
 		{
-			int new_len = len;
+			unsigned int new_len = len;
 			for (int i = 0; i < len; i++)
 			{
 				if (buf[i] == '\t')
