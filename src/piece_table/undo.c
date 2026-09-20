@@ -2,11 +2,12 @@
 #include "piece_table/undo.h"
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
+#include "global.h"
 
 // creates a new set of undos
 void pt_undo_insert(PieceTable* pt)
 {
-	if (pt == NULL)
+	if (pt == NULL || pt->undos == NULL)
 	{
 		return;
 	}
@@ -15,6 +16,12 @@ void pt_undo_insert(PieceTable* pt)
 	if (elt != NULL)
 	{
 		ll_insert(pt->undos, elt, 0);
+	}
+
+	if (pt->undos->size > MAX_NUM_UNDOS)
+	{
+		LinkedList* to_remove = ll_rm(pt->undos, pt->undos->size - 1);
+		ll_free_good(to_remove, &undo_free);
 	}
 }
 
@@ -64,12 +71,14 @@ void pt_undo_update(PieceTable* pt, Undo* to_add)
 	}
 }
 
-void undo_free(Undo* u)
+void undo_free(void* v)
 {
-	if (u == NULL)
+	if (v == NULL)
 	{
 		return;
 	}
+
+	Undo* u = (Undo*) v;
 
 	switch (u->operation)
 	{

@@ -2,6 +2,7 @@
 #include "piece_table/color_indices.h"
 #include "piece_table/piece_table.h"
 #include "undo.h"
+#include "global.h"
 
 void undo_insert(EditorState* es, int index)
 {
@@ -31,6 +32,15 @@ void undo_insert(EditorState* es, int index)
 	ui->num_added = 0;
 
 	ll_insert(t->undos, ui, 0);
+
+	if (t->undos->size > MAX_NUM_UNDOS)
+	{
+		UndoInfo* to_remove = ll_rm(t->undos, t->undos->size - 1);
+		if (to_remove != NULL)
+		{
+			free(to_remove);
+		}
+	}
 }
 
 static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* end_index)
@@ -114,7 +124,7 @@ static void color_indices_prepare_for_execute(PieceTable* pt, UndoInfo* ui)
 				{
 					f.contained = start_index + 1;
 					f.global_char_index = -1;
-					pt->color_indices = tree_rm(pt->color_indices, &f, ci_compare, &free, &ci_update_info);
+					pt->color_indices = tree_rm(pt->color_indices, &f, &ci_finder_compare_characters, &free, &ci_update_info);
 				}
 			}
 		}
@@ -178,6 +188,13 @@ static void color_indices_undo_execute(PieceTable* pt, UndoInfo* ui)
 {
 	if (pt == NULL || ui == NULL)
 	{
+		return;
+	}
+
+	if (pt->pieces == NULL)
+	{
+		tree_free(pt->color_indices, &free);
+		pt->color_indices = NULL;
 		return;
 	}
 

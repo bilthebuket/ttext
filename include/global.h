@@ -60,6 +60,8 @@
 
 #define CLIPBOARD_MAX_SIZE 10
 
+#define MAX_NUM_UNDOS 50
+
 #include "finder.h"
 #include "signature.h"
 

@@ -224,7 +224,7 @@ void ll_free_good(LinkedList* lst, void (*free_node)(void*))
 				for (int i = 0; i < lst->size - 1; i++)
 				{
 					ptr = ptr->next;
-					if (free_node != NULL)
+					if (free_node != NULL && ptr->prev->elt != NULL)
 					{
 						(*free_node)(ptr->prev->elt);
 					}

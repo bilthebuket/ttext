@@ -20,6 +20,24 @@ static char qwerty[ROWS][KEYS_PER_ROW * 2 + 1] =
 	"zZxXcCvVbBnNmM,<.>/?\0\0\0\0\0\0"
 };
 
+#define NUM_LANGUAGE_WORDS 61
+
+static const char* language_words[] = 
+{
+	"alignas", "alignof", "auto", "bool", "break", "case",
+	"char", "const", "constexpr", "continue", "default", "do",
+	"double", "else", "enum", "extern", "false", "float",
+	"for", "goto", "if", "inline", "int", "long", "nullptr",
+	"register", "restrict", "return", "short", "signed", "sizeof",
+	"static", "static_assert", "struct", "switch", "thread_local",
+	"true", "typedef", "typeof", "typeof_unqual", "union",
+	"unsigned", "void", "volatile", "while",
+	"include", "define", "undef",
+	"if", "ifdef", "ifndef", "elif", "elifdef", "elifndef",
+	"else", "endif",
+	"line", "error", "warning", "pragma", "embed"
+};
+
 void fuzzy_find_init(void)
 {
 	for (int i = 0; i < ROWS; i++)
@@ -174,6 +192,27 @@ void order_by_closest_match(char** to_order, int to_order_len, char* target)
 	free(residuals);
 }
 
+static bool string_in_hashmap(HashMap* map, const char* str)
+{
+	LinkedList* existing_values = hm_get_dangerous(map, (char*) str, &hash_function);
+	if (existing_values != NULL)
+	{
+		for (int i = 0; i < existing_values->size; i++)
+		{
+			HashMapElt* elt = ll_get_elt(existing_values, i);
+			if (elt != NULL)
+			{
+				if (!strcmp(elt->key, str))
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 {
 	Tab* t = es->active_tab;
@@ -198,7 +237,7 @@ char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 	for (int i = 0; i < lst->size; i++)
 	{
 		char* key = ll_rm(lst, 0);
-		if (key != NULL)
+		if (key != NULL && !string_in_hashmap(found, key))
 		{
 			int len = strlen(key) + 1;
 			char* dupe = malloc(sizeof(char) * len);
@@ -208,6 +247,28 @@ char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 				ll_insert(lst, dupe, lst->size);
 				hm_insert(found, dupe, NULL, &hash_function);
 			}
+		}
+		else
+		{
+			i--;
+		}
+	}
+
+	for (int i = 0; i < NUM_LANGUAGE_WORDS; i++)
+	{
+		const char* str = language_words[i];
+		if (string_in_hashmap(found, str))
+		{
+			continue;
+		}
+
+		int len = strlen(str) + 1;
+		char* dupe = malloc(sizeof(char) * len);
+		if (dupe != NULL)
+		{
+			strcpy(dupe, str);
+			ll_insert(lst, dupe, lst->size);
+			hm_insert(found, dupe, NULL, &hash_function);
 		}
 	}
 
@@ -247,27 +308,10 @@ char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 			}
 			da_insert(str, '\0', i);
 
-			LinkedList* existing_values = hm_get_dangerous(found, str->arr, &hash_function);
-			if (existing_values != NULL)
+			if (string_in_hashmap(found, str->arr))
 			{
-				bool found = false;
-				for (int i = 0; i < existing_values->size; i++)
-				{
-					HashMapElt* elt = ll_get_elt(existing_values, i);
-					if (elt != NULL)
-					{
-						if (!strcmp(elt->key, str->arr))
-						{
-							found = true;
-							break;
-						}
-					}
-				}
-				if (found)
-				{
-					da_free(str);
-					continue;
-				}
+				da_free(str);
+				continue;
 			}
 
 			hm_insert(found, str->arr, NULL, &hash_function);

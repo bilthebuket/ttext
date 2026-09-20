@@ -39,7 +39,7 @@ typedef struct UndoUpdate
 */
 void pt_undo_insert(PieceTable* pt);
 void pt_undo_execute(PieceTable* pt);
-void undo_free(Undo* u);
+void undo_free(void* v);
 void pt_undo_update(PieceTable* pt, Undo* to_add);
 
 /*
