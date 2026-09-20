@@ -816,7 +816,7 @@ static void pt_update_color_indices_helper(PieceTable* pt, int index)
 							j--;
 						}
 					}
-					if (!is_valid_name_character(c2) && pt_iterator_init(pt, &pi2, f.global_char_index))
+					if ((!is_valid_name_character(c2) || c2 == '[' || c2 == ']') && pt_iterator_init(pt, &pi2, f.global_char_index))
 					{
 						j = 0;
 						char c2 = pt_iterate(&pi2);
