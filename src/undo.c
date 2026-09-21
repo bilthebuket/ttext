@@ -257,6 +257,15 @@ static void execute_helper(EditorState* es, UndoInfo* ui)
 	color_indices_undo_execute(es->active_tab->pt, ui);
 }
 
+static void invert_undo_info(UndoInfo* ui)
+{
+	ui->index += ui->num_added;
+	ui->index -= ui->num_deleted;
+	int store = ui->num_deleted;
+	ui->num_deleted = ui->num_added;
+	ui->num_added = store;
+}
+
 void undo_execute(EditorState* es)
 {
 	Tab* t = es->active_tab;
@@ -266,8 +275,12 @@ void undo_execute(EditorState* es)
 	}
 
 	UndoInfo* ui = ll_rm(t->undos, 0);
-	execute_helper(es, ui);
-	ll_insert(t->redos, ui, 0);
+	if (ui != NULL)
+	{
+		execute_helper(es, ui);
+		invert_undo_info(ui);
+		ll_insert(t->redos, ui, 0);
+	}
 }
 
 void redo_execute(EditorState* es)
@@ -279,8 +292,12 @@ void redo_execute(EditorState* es)
 	}
 
 	UndoInfo* ui = ll_rm(t->redos, 0);
-	execute_helper(es, ui);
-	ll_insert(t->undos, ui, 0);
+	if (ui != NULL)
+	{
+		execute_helper(es, ui);
+		invert_undo_info(ui);
+		ll_insert(t->undos, ui, 0);
+	}
 }
 
 void undo_handle_insert(EditorState* es)
