@@ -29,6 +29,7 @@
 - ! -> enter terminal mode
 - n -> goto next instance of string (after using :find)
 - u -> undo
+- U -> redo
 - p \<number\> -> pastes from clipboard of corresponding number
 - fFtT \<char\> -> jump to character on current line
 - d \<motion\> -> delete all characters spanned by motion (ex. df, will delete all characters between the cursor and the first instance of a comma on the current line, inclusive)
