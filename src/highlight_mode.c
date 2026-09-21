@@ -280,7 +280,7 @@ void highlight_mode(EditorState* es, int ch)
 					return;
 				}
 
-				char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+				char* to_copy = malloc(sizeof(char) * (end_index - start_index + 2));
 				if (to_copy == NULL)
 				{
 					return;
@@ -290,11 +290,12 @@ void highlight_mode(EditorState* es, int ch)
 				if (pt_iterator_init(t->pt, &pi, start_index))
 				{
 					char c = pt_iterate(&pi);
-					for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
+					int i = start_index;
+					for (; i <= end_index; i++, c = pt_iterate(&pi))
 					{
 						to_copy[i - start_index] = c;
 					}
-					to_copy[end_index + 1] = '\0';
+					to_copy[i - start_index] = '\0';
 					clipboard_insert(es->clipboard, to_copy);
 
 					return_to_normal_mode(es);
@@ -316,7 +317,7 @@ void highlight_mode(EditorState* es, int ch)
 					return;
 				}
 
-				char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+				char* to_copy = malloc(sizeof(char) * (end_index - start_index + 2));
 				if (to_copy == NULL)
 				{
 					return;
@@ -326,11 +327,12 @@ void highlight_mode(EditorState* es, int ch)
 				if (pt_iterator_init(t->pt, &pi, start_index))
 				{
 					char c = pt_iterate(&pi);
-					for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
+					int i = start_index;
+					for (; i <= end_index; i++, c = pt_iterate(&pi))
 					{
 						to_copy[i - start_index] = c;
 					}
-					to_copy[end_index + 1] = '\0';
+					to_copy[i - start_index] = '\0';
 					clipboard_insert(es->clipboard, to_copy);
 
 					handle_rm_on_boundary(es, start_index, end_index);

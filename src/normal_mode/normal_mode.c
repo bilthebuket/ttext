@@ -349,7 +349,7 @@ static void handle_y(EditorState* es)
 		return;
 	}
 
-	char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+	char* to_copy = malloc(sizeof(char) * (end_index - start_index + 2));
 	if (to_copy == NULL)
 	{
 		return;
@@ -359,11 +359,12 @@ static void handle_y(EditorState* es)
 	if (pt_iterator_init(t->pt, &pi, start_index))
 	{
 		char c = pt_iterate(&pi);
-		for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
+		int i = start_index;
+		for (; i <= end_index; i++, c = pt_iterate(&pi))
 		{
 			to_copy[i - start_index] = c;
 		}
-		to_copy[end_index + 1] = '\0';
+		to_copy[i - start_index] = '\0';
 		clipboard_insert(es->clipboard, to_copy);
 	}
 	else
@@ -388,7 +389,7 @@ static void handle_Y(EditorState* es)
 		return;
 	}
 
-	char* to_copy = malloc(sizeof(char) * end_index - start_index + 2);
+	char* to_copy = malloc(sizeof(char) * (end_index - start_index + 2));
 	if (to_copy == NULL)
 	{
 		return;
@@ -398,11 +399,12 @@ static void handle_Y(EditorState* es)
 	if (pt_iterator_init(t->pt, &pi, start_index))
 	{
 		char c = pt_iterate(&pi);
-		for (int i = start_index; i <= end_index; i++, c = pt_iterate(&pi))
+		int i = start_index;
+		for (; i <= end_index; i++, c = pt_iterate(&pi))
 		{
 			to_copy[i - start_index] = c;
 		}
-		to_copy[end_index + 1] = '\0';
+		to_copy[i - start_index] = '\0';
 		clipboard_insert(es->clipboard, to_copy);
 
 		handle_rm_on_boundary(es, start_index, end_index);
@@ -578,7 +580,7 @@ static void handle_p(EditorState* es)
 		return;
 	}
 
-	if (!(t->x == 0 && pt_get(t->pt, line_index) == '\n'))
+	if (!(t->x == 0 && ((pt_get(t->pt, line_index) == '\n') || pt_get(t->pt, line_index) == '\0')))
 	{
 		t->x++;
 	}
