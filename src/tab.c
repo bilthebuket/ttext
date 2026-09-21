@@ -81,6 +81,13 @@ Tab* tab_create(char* fname)
 		return NULL;
 	}
 
+	r->redos = ll_create();
+	if (r->redos == NULL)
+	{
+		tab_free(r);
+		return NULL;
+	}
+
 	if (f == NULL)
 	{
 		r->pt = pt_create(NULL, -1, false);
@@ -148,6 +155,7 @@ void tab_free(Tab* t)
 			}
 			ll_free(t->undos);
 		}
+		ll_free(t->redos);
 		pt_free(t->pt);
 		da_free(t->active_string);
 		free(t);

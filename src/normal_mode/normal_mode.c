@@ -536,6 +536,29 @@ static void handle_u(EditorState* es)
 		undo_execute(es);
 	}
 	es->flags |= UPDATE_FINDER_FLAG;
+	t->tab_num_flags &= ~CHANGES_SAVED;
+	move_cursor_to_valid_coordinates(t);
+	t->saved_x_index = t->x;
+	backup_increment_and_check(t);
+	print_tab(t);
+}
+
+static void handle_U(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	for (int i = 0; i < es->action_repeat; i++)
+	{
+		redo_prepare_for_execute(es);
+		pt_redo_execute(t->pt);
+		redo_execute(es);
+	}
+	es->flags |= UPDATE_FINDER_FLAG;
+	t->tab_num_flags &= ~CHANGES_SAVED;
 	move_cursor_to_valid_coordinates(t);
 	t->saved_x_index = t->x;
 	backup_increment_and_check(t);
@@ -678,6 +701,7 @@ void normal_mode_create(void)
 	execute_char['%'] = &motion_helper_update_saved_x;
 	execute_char['n'] = &handle_n;
 	execute_char['u'] = &handle_u;
+	execute_char['U'] = &handle_U;
 	execute_char['p'] = &handle_p;
 	execute_char[ESCAPE_KEYCODE] = &handle_escape;
 	execute_char['f'] = &motion_helper_update_saved_x;

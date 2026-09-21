@@ -41,6 +41,18 @@ void undo_insert(EditorState* es, int index)
 			free(to_remove);
 		}
 	}
+
+	if (t->redos != NULL)
+	{
+		while (t->redos->size > 0)
+		{
+			UndoInfo* ui = ll_rm(t->redos, 0);
+			if (ui != NULL)
+			{
+				free(ui);
+			}
+		}
+	}
 }
 
 static bool get_pre_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* end_index)
@@ -131,19 +143,42 @@ static void color_indices_prepare_for_execute(PieceTable* pt, UndoInfo* ui)
 	}
 }
 
-void undo_prepare_for_execute(EditorState* es)
+static void prepare_helper(EditorState* es, UndoInfo* ui)
 {
 	if (es == NULL || es->active_tab == NULL || es->active_tab->undos == NULL)
 	{
 		return;
 	}
 
-	UndoInfo* ui = ll_get_elt(es->active_tab->undos, 0);
 	if (es->active_tab->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
 		signature_undo_prepare_for_execute(es->signatures, es->active_tab->pt, es->active_tab->fname, ui);
 	}
 	color_indices_prepare_for_execute(es->active_tab->pt, ui);
+}
+
+void undo_prepare_for_execute(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	UndoInfo* ui = ll_get_elt(t->undos, 0);
+	prepare_helper(es, ui);
+}
+
+void redo_prepare_for_execute(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	UndoInfo* ui = ll_get_elt(t->redos, 0);
+	prepare_helper(es, ui);
 }
 
 static bool get_post_bounds(PieceTable* pt, UndoInfo* ui, int* start_index, int* end_index)
@@ -206,7 +241,7 @@ static void color_indices_undo_execute(PieceTable* pt, UndoInfo* ui)
 	}
 }
 
-void undo_execute(EditorState* es)
+static void execute_helper(EditorState* es, UndoInfo* ui)
 {
 	if (es == NULL || es->active_tab == NULL)
 	{
@@ -215,18 +250,37 @@ void undo_execute(EditorState* es)
 
 	Tab* t = es->active_tab;
 
-	UndoInfo* ui = ll_rm(t->undos, 0);
-	if (ui == NULL)
-	{
-		return;
-	}
-
 	if (t->tab_num_flags & PARSE_FOR_SIGNATURES)
 	{
 		signature_undo_execute(es->signatures, es->active_tab->pt, es->active_tab->fname, ui);
 	}
 	color_indices_undo_execute(es->active_tab->pt, ui);
-	free(ui);
+}
+
+void undo_execute(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	UndoInfo* ui = ll_rm(t->undos, 0);
+	execute_helper(es, ui);
+	ll_insert(t->redos, ui, 0);
+}
+
+void redo_execute(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return;
+	}
+
+	UndoInfo* ui = ll_rm(t->redos, 0);
+	execute_helper(es, ui);
+	ll_insert(t->undos, ui, 0);
 }
 
 void undo_handle_insert(EditorState* es)

@@ -320,6 +320,12 @@ PieceTable* pt_create(char* buf, int len, bool do_color_indices)
 			pt_free(r);
 			return NULL;
 		}
+		r->redos = ll_create();
+		if (r->redos == NULL)
+		{
+			pt_free(r);
+			return NULL;
+		}
 
 		r->color_indices = NULL;
 
@@ -904,6 +910,16 @@ void pt_free(PieceTable* pt)
 		ll_free(undos);
 	}
 	ll_free(pt->undos);
+
+	if (pt->redos != NULL)
+	{
+		while (pt->redos->size > 0)
+		{
+			LinkedList* redos = ll_rm(pt->redos, 0);
+			ll_free_good(redos, &undo_free);
+		}
+		ll_free(pt->redos);
+	}
 
 	free(pt);
 }

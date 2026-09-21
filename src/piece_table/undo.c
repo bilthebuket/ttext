@@ -23,6 +23,15 @@ void pt_undo_insert(PieceTable* pt)
 		LinkedList* to_remove = ll_rm(pt->undos, pt->undos->size - 1);
 		ll_free_good(to_remove, &undo_free);
 	}
+
+	if (pt->redos != NULL)
+	{
+		while (pt->redos->size > 0)
+		{
+			LinkedList* redo = ll_rm(pt->redos, 0);
+			ll_free_good(redo, &undo_free);
+		}
+	}
 }
 
 // updates the set of undos at the top of the undo stack
@@ -101,6 +110,94 @@ void undo_free(void* v)
 	free(u);
 }
 
+LinkedList* execute_helper(PieceTable* pt, LinkedList* to_execute)
+{
+	LinkedList* r = ll_create();
+
+	while (1)
+	{
+		Undo* undo = (Undo*) ll_rm(to_execute, 0);
+		if (undo == NULL)
+		{
+			break;
+		}
+
+		switch (undo->operation)
+		{
+			case UNDO_CREATE:
+			{
+				Piece* p = (Piece*) undo->stuff_we_need;
+				Undo* inverse = undo_rm_create(p->chars_contained);
+				if (inverse != NULL)
+				{
+					ll_insert(r, inverse, 0);
+				}
+				pt->pieces = tree_insert(pt->pieces, p, &piece_compare, &piece_update_info);
+				break;
+			}
+
+			case UNDO_UPDATE:
+			{
+				UndoUpdate* u = (UndoUpdate*) undo->stuff_we_need;
+
+				PieceFinder f;
+				f.contained = u->index + 1;
+				f.global_char_index = -1;
+
+				Tree* to_update = tree_helper(pt->pieces, &f, &piece_finder_compare_characters);
+				if (to_update == NULL || to_update->elt == NULL)
+				{
+					break;
+				}
+				Piece* piece_to_update = (Piece*) to_update->elt;
+
+				Undo* inverse = undo_update_create(piece_to_update, f.global_char_index, piece_to_update->start_index, piece_to_update->len, piece_to_update->lines_inside);
+				if (inverse != NULL)
+				{
+					ll_insert(r, inverse, 0);
+				}
+
+				piece_to_update->start_index = u->start_index;
+				piece_to_update->len = u->len;
+				piece_to_update->lines_inside = u->lines_inside;
+				tree_recursive_update_to_root(to_update, &piece_update_info);
+				free(u);
+				break;
+			}
+
+			case UNDO_RM:
+			{
+				PieceFinder f;
+				f.contained = *((int*) undo->stuff_we_need);
+				f.global_char_index = -1;
+				Piece* p = tree_get(pt->pieces, &f, &piece_finder_compare_characters);
+
+				if (p != NULL)
+				{
+					p->chars_contained = f.global_char_index + p->len;
+					Undo* inverse = undo_create_create(p);
+					if (inverse != NULL)
+					{
+						ll_insert(r, inverse, 0);
+					}
+				}
+
+				f.contained = *((int*) undo->stuff_we_need);
+				f.global_char_index = -1;
+
+				pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, NULL, &piece_update_info);
+				free(undo->stuff_we_need);
+				break;
+			}
+		}
+
+		free(undo);
+	}
+
+	ll_free(to_execute);
+	return r;
+}
+
 void pt_undo_execute(PieceTable* pt)
 {
 	if (pt == NULL)
@@ -114,61 +211,25 @@ void pt_undo_execute(PieceTable* pt)
 		return;
 	}
 
-	while (1)
+	LinkedList* to_redo = execute_helper(pt, undos);
+	ll_insert(pt->redos, to_redo, 0);
+}
+
+void pt_redo_execute(PieceTable* pt)
+{
+	if (pt == NULL)
 	{
-		Undo* to_execute = (Undo*) ll_rm(undos, 0);
-		if (to_execute == NULL)
-		{
-			break;
-		}
-
-		switch (to_execute->operation)
-		{
-			case UNDO_CREATE:
-			{
-				Piece* p = (Piece*) to_execute->stuff_we_need;
-				pt->pieces = tree_insert(pt->pieces, p, &piece_compare, &piece_update_info);
-				break;
-			}
-
-			case UNDO_UPDATE:
-			{
-				UndoUpdate* u = (UndoUpdate*) to_execute->stuff_we_need;
-
-				PieceFinder f;
-				f.contained = u->index + 1;
-				f.global_char_index = -1;
-
-				Tree* to_update = tree_helper(pt->pieces, &f, &piece_finder_compare_characters);
-				if (to_update == NULL || to_update->elt == NULL)
-				{
-					break;
-				}
-				Piece* piece_to_update = (Piece*) to_update->elt;
-
-				piece_to_update->start_index = u->start_index;
-				piece_to_update->len = u->len;
-				piece_to_update->lines_inside = u->lines_inside;
-				tree_recursive_update_to_root(to_update, &piece_update_info);
-				free(u);
-				break;
-			}
-
-			case UNDO_RM:
-			{
-				PieceFinder f;
-				f.contained = *((int*) to_execute->stuff_we_need);
-				f.global_char_index = -1;
-				pt->pieces = tree_rm(pt->pieces, &f, &piece_finder_compare_characters, &piece_free, &piece_update_info);
-				free(to_execute->stuff_we_need);
-				break;
-			}
-		}
-
-		free(to_execute);
+		return;
 	}
 
-	ll_free(undos);
+	LinkedList* redos = (LinkedList*) ll_rm(pt->redos, 0);
+	if (redos == NULL)
+	{
+		return;
+	}
+
+	LinkedList* to_undo = execute_helper(pt, redos);
+	ll_insert(pt->undos, to_undo, 0);
 }
 
 Undo* undo_update_create(Piece* p, int index, int start_index, int len, int lines_inside)

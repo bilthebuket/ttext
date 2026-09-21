@@ -14,6 +14,7 @@ typedef struct Tab
 	PieceTable* pt;
 	char* fname;
 	LinkedList* undos;
+	LinkedList* redos;
 	DynamicArray* active_string;
 	SignatureUpdate su;
 

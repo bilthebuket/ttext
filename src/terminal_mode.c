@@ -867,6 +867,7 @@ bool terminal_create(EditorState* es)
 	}
 	terminal->fname = NULL;
 	terminal->undos = NULL;
+	terminal->redos = NULL;
 	terminal->lines = ll_create();
 	if (terminal->lines == NULL)
 	{
