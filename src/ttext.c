@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
 		char c = getch();
 		sem_wait(&es.sem);
 		(*es.mode)(&es, c);
+		print_cursor_coordinates(es.active_tab);
 		refresh();
 		sem_post(&es.sem);
 	}

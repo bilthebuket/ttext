@@ -176,7 +176,7 @@ void snake_execute(Tab* t)
 			line_size = line_below_index - line_index - 1;
 			line_index = line_below_index;
 		}
-		process_line(&pi, &ci, &game[i * t->width * BYTES_PER_CELL], t->width, line_size);
+		process_line(&pi, &ci, &game[(i - t->top_line_index) * t->width * BYTES_PER_CELL], t->width, line_size);
 	}
 
 	int player_index = (t->height / 2) * t->width + (t->width / 2);

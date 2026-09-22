@@ -41,4 +41,6 @@ void print_pt_to_message_bar(PieceTable* pt);
 // used for screen movement and resizing in terminal mode
 char* parse_screen_values(char* str);
 
+void print_cursor_coordinates(Tab* t);
+
 #endif

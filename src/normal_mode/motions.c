@@ -700,6 +700,29 @@ static Coordinate handle_i(EditorState* es)
 	return r;
 }
 
+static Coordinate handle_g(EditorState* es)
+{
+	(void) es;
+	return (Coordinate) {.x = 0, .y = 0, .x2 = -1, .y2 = -1};
+}
+
+static Coordinate handle_G(EditorState* es)
+{
+	Tab* t = es->active_tab;
+	if (t == NULL)
+	{
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	int num_lines = pt_get_num_lines(t->pt);
+	if (num_lines < 0)
+	{
+		return (Coordinate) {.x = -1, .y = -1, .x2 = -1, .y2 = -1};
+	}
+
+	return (Coordinate) {.x = 0, .y = num_lines - 1, .x2 = -1, .y2 = -1};
+}
+
 void initialize_normal_mode_motions(void)
 {
 	for (int i = 0; i < NUM_CHARS; i++)
@@ -721,6 +744,8 @@ void initialize_normal_mode_motions(void)
 	do_motion['w'] = &handle_w;
 	do_motion['d'] = &handle_d;
 	do_motion['i'] = &handle_i;
+	do_motion['g'] = &handle_g;
+	do_motion['G'] = &handle_G;
 }
 
 Coordinate get_target_index(EditorState* es, char motion)

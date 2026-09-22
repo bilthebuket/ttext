@@ -14,6 +14,8 @@
 #define AUTOCOMPLETE_BOX_WIDTH 20
 #define AUTOCOMPLETE_BOX_HEIGHT 7
 
+#define DISPLAY_COORDINATES_NUM_CHARS 13
+
 static int height;
 static int width;
 
@@ -195,6 +197,7 @@ void print_screen(EditorState* es)
 		print_tab((Tab*) ll_get_elt(es->tabs, i));
 	}
 	print_terminal();
+	print_cursor_coordinates(es->active_tab);
 
 	move(y,x);
 }
@@ -362,13 +365,39 @@ void print_message(const char* const str)
 	}
 	int y, x;
 	getyx(stdscr, y, x);
-	for (int i = 0; i < width; i++)
+	for (int i = 0; i < width - DISPLAY_COORDINATES_NUM_CHARS; i++)
 	{
 		mvaddch(height - MESSAGE_LINE_HEIGHT, i, ' ');
 	}
-	for (int i = 0; i < width && str[i] != '\0'; i++)
+	for (int i = 0; i < width - DISPLAY_COORDINATES_NUM_CHARS && str[i] != '\0'; i++)
 	{
 		mvaddch(height - MESSAGE_LINE_HEIGHT, i, unctrl(str[i])[0]);
+	}
+	move(y, x);
+}
+
+void print_cursor_coordinates(Tab* t)
+{
+	if (t == NULL)
+	{
+		return;
+	}
+
+	attron(COLOR_PAIR(WHITE_TEXT));
+
+	int y, x;
+	getyx(stdscr, y, x);
+	for (int i = width - DISPLAY_COORDINATES_NUM_CHARS; i < width; i++)
+	{
+		mvaddch(height - MESSAGE_LINE_HEIGHT, i, ' ');
+	}
+	mvaddch(height - MESSAGE_LINE_HEIGHT, width - 1, ')');
+	mvaddch(height - MESSAGE_LINE_HEIGHT, width - (DISPLAY_COORDINATES_NUM_CHARS - 3) / 2 - 2, ',');
+	mvaddch(height - MESSAGE_LINE_HEIGHT, width - DISPLAY_COORDINATES_NUM_CHARS, '(');
+	for (int i = 0; i < (DISPLAY_COORDINATES_NUM_CHARS - 3) / 2; i++)
+	{
+		mvaddch(height - MESSAGE_LINE_HEIGHT, width - DISPLAY_COORDINATES_NUM_CHARS + 1 + i, '0' + (t->x / (int) pow(10, ((DISPLAY_COORDINATES_NUM_CHARS - 3) / 2 - i - 1)) % 10));
+		mvaddch(height - MESSAGE_LINE_HEIGHT, width - (DISPLAY_COORDINATES_NUM_CHARS - 3) / 2 - 1 + i, '0' + (t->y / (int) pow(10, ((DISPLAY_COORDINATES_NUM_CHARS - 3) / 2 - i - 1)) % 10));
 	}
 	move(y, x);
 }

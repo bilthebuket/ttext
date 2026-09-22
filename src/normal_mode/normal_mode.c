@@ -710,6 +710,8 @@ void normal_mode_create(void)
 	execute_char['T'] = &motion_helper_update_saved_x;
 	execute_char['d'] = &handle_d;
 	execute_char['w'] = &motion_helper_update_saved_x;
+	execute_char['g'] = &motion_helper_update_saved_x;
+	execute_char['G'] = &motion_helper_update_saved_x;
 	execute_char['v'] = &handle_v;
 	execute_char['y'] = &handle_y;
 	execute_char['Y'] = &handle_Y;
