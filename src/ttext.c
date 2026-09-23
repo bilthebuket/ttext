@@ -14,6 +14,7 @@
 #include "line.h"
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
+#include "macro.h"
 
 int main(int argc, char* argv[])
 {
@@ -43,12 +44,27 @@ int main(int argc, char* argv[])
 
 	while (!(es.flags & TERMINATE_FLAG))
 	{
-		char c = getch();
-		sem_wait(&es.sem);
-		(*es.mode)(&es, c);
-		print_cursor_coordinates(es.active_tab);
-		refresh();
-		sem_post(&es.sem);
+		if (es.macro == NULL)
+		{
+			char c = getch();
+			sem_wait(&es.sem);
+			(*es.mode)(&es, c);
+			print_cursor_coordinates(es.active_tab);
+			refresh();
+			sem_post(&es.sem);
+		}
+		else
+		{
+			sem_wait(&es.sem);
+			for (int i = 0; es.macro[i] != '\0'; i++)
+			{
+				(*es.mode)(&es, es.macro[i]);
+			}
+			print_cursor_coordinates(es.active_tab);
+			refresh();
+			sem_post(&es.sem);
+			es.macro = NULL;
+		}
 	}
 
 	if (error_log != NULL)

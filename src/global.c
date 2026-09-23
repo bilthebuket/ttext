@@ -34,7 +34,8 @@ int es_init(EditorState* es, int argc, char* argv[])
 	es->fuzzy_find_len = 0;
 	sem_init(&(es->sem), 0, 1);
 	ci_init_arrays();
-
+	mb_init(&es->mb);
+	es->macro = NULL;
 
 	es->mode = &normal_mode;
 	insert_mode_create();
@@ -127,6 +128,7 @@ void es_uninit(EditorState* es)
 		Tab* t = ll_rm(es->tabs, 0);
 		tab_free(t);
 	}
+	mb_uninit(&es->mb);
 	ll_free(es->tabs);
 	finder_free(es->finder);
 	hm_free(es->signatures, &free, &signature_free);

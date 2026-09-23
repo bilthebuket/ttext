@@ -7,6 +7,8 @@
 #include "hash_map.h"
 #include "tab.h"
 #include "semaphore.h"
+#include "finder.h"
+#include "signature.h"
 
 #define LINE_SIZE 2048
 #define FNAME_SIZE 256
@@ -62,13 +64,16 @@
 
 #define MAX_NUM_UNDOS 50
 
-#include "finder.h"
-#include "signature.h"
+typedef struct EditorState EditorState;
 
-typedef struct EditorState
+#include "macro.h"
+
+struct EditorState
 {
 	sem_t sem;
+	MacroBundle mb;
 
+	char* macro;
 	void (*mode)(struct EditorState*, int);
 	// maintained in ascending order of z_index (last element in list is on top of screen)
 	LinkedList* tabs;
@@ -85,7 +90,7 @@ typedef struct EditorState
 	char action;
 	char motion;
 	char target;
-} EditorState;
+};
 
 extern FILE* error_log;
 

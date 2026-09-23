@@ -40,6 +40,8 @@
 - \<action\> i \<target (must be a grouping symbol)\> apply action to all characters in inside the grouping symbols
 - g -> go to top of file
 - G -> go to bottom of file
+- m \<number\> -> execute macro of corresponding number
+- M \<number\> -> enter macro mode to define a macro for the corresponding number
 
 typing a number before an action in normal mode will repeat it that number of times. does not apply to all actions (only the ones that make sense).
 
@@ -47,6 +49,7 @@ typing a number before an action in normal mode will repeat it that number of ti
 
 - default -> insert character
 - esc -> enter normal mode
+- CTRL + gfdsa -> autofill from suggestion (g = 1, f = 2, etc)
 
 ## Terminal Mode
 
@@ -80,6 +83,11 @@ all motions and action repeat from normal mode work in highlight mode
 - d -> delete highlighted text
 - escape -> return to normal mode
 - y/Y -> copy/cut highlighted text
+
+## Macro Mode
+
+- default -> add character to macro
+- CTRL + g -> save macro and return to normal mode
 
 # Styling Guide
 

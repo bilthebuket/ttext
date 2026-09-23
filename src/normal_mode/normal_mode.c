@@ -668,6 +668,24 @@ static void handle_v(EditorState* es)
 	es->mode = &highlight_mode;
 }
 
+static void handle_m(EditorState* es)
+{
+	execute_macro(es);
+}
+
+static void handle_M(EditorState* es)
+{
+	if (valid_macro_assignment(es))
+	{
+		print_message("Macro Mode");
+		es->mode = &macro_mode;
+	}
+	else
+	{
+		print_message("Macros can be assigned to keys 0-9");
+	}
+}
+
 bool is_motion(char c)
 {
 	if ((int) c >= 0)
@@ -715,6 +733,8 @@ void normal_mode_create(void)
 	execute_char['v'] = &handle_v;
 	execute_char['y'] = &handle_y;
 	execute_char['Y'] = &handle_Y;
+	execute_char['m'] = &handle_m;
+	execute_char['M'] = &handle_M;
 
 	action_needs_motion['d'] = true;
 	action_needs_motion['y'] = true;
@@ -731,6 +751,8 @@ void normal_mode_create(void)
 	action_needs_target['F'] = true;
 	action_needs_target['T'] = true;
 	action_needs_target['p'] = true;
+	action_needs_target['m'] = true;
+	action_needs_target['M'] = true;
 
 	initialize_normal_mode_motions();
 }
