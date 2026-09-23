@@ -48,11 +48,15 @@ void macro_mode(EditorState* es, int ch)
 				}
 				es->mb.macro_recording->len = 0;
 				da_insert(es->mb.macro_recording, '\0', 0);
-				if (es->mb.macros[convert_char_to_index(es->mb.target)] != NULL)
+				int index = convert_char_to_index(es->mb.target);
+				if (index >= 0)
 				{
-					free(es->mb.macros[convert_char_to_index(es->mb.target)]);
+					if (es->mb.macros[index] != NULL)
+					{
+						free(es->mb.macros[index]);
+					}
+					es->mb.macros[index] = macro;
 				}
-				es->mb.macros[convert_char_to_index(es->mb.target)] = macro;
 			}
 
 			es->mode = &normal_mode;
