@@ -59,6 +59,10 @@ int main(int argc, char* argv[])
 			for (int i = 0; es.macro[i] != '\0'; i++)
 			{
 				(*es.mode)(&es, es.macro[i]);
+				if (es.macro == NULL)
+				{
+					break;
+				}
 			}
 			print_cursor_coordinates(es.active_tab);
 			refresh();

@@ -670,11 +670,25 @@ static void handle_v(EditorState* es)
 
 static void handle_m(EditorState* es)
 {
+	if (es->macro != NULL)
+	{
+		print_message("Macro execution attempted to execute a macro, terminating");
+		es->macro = NULL;
+		return;
+	}
+
 	execute_macro(es);
 }
 
 static void handle_M(EditorState* es)
 {
+	if (es->macro != NULL)
+	{
+		print_message("Macro execution attempted to modify a macro, terminating");
+		es->macro = NULL;
+		return;
+	}
+
 	if (valid_macro_assignment(es))
 	{
 		print_message("Macro Mode");
