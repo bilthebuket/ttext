@@ -37,10 +37,9 @@ int main(int argc, char* argv[])
 
 	sem_wait(&es.sem);
 	print_screen(&es);
+	print_message("Normal Mode");
 	refresh();
 	sem_post(&es.sem);
-
-	print_message("normal mode");
 
 	while (!(es.flags & TERMINATE_FLAG))
 	{

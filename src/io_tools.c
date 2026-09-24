@@ -371,6 +371,7 @@ void print_message(const char* const str)
 	}
 	for (int i = 0; i < width - DISPLAY_COORDINATES_NUM_CHARS && str[i] != '\0'; i++)
 	{
+		attron(COLOR_PAIR(WHITE_TEXT));
 		mvaddch(height - MESSAGE_LINE_HEIGHT, i, unctrl(str[i])[0]);
 	}
 	move(y, x);
