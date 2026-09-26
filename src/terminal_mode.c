@@ -15,6 +15,7 @@
 #include "finder.h"
 #include "signature.h"
 #include "snake.h"
+#include "brickbreaker.h"
 
 static Tab* terminal;
 static char* listener_buf = NULL;
@@ -776,6 +777,10 @@ static void handle_enter(EditorState* es, int ch)
 		else if (!gb_strcmp(gb, start_index, end_index, "snake"))
 		{
 			snake_execute(t);
+		}
+		else if (!gb_strcmp(gb, start_index, end_index, "brickbreaker"))
+		{
+			brickbreaker_execute(t);
 		}
 		else if (!gb_strcmp(gb, start_index, end_index, "print_autocomplete"))
 		{

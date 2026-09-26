@@ -213,6 +213,9 @@ static bool string_in_hashmap(HashMap* map, const char* str)
 	return false;
 }
 
+// makes copies of all the signatures and language words so that everything can be freed together at the end
+// i could use pointers to the existing strings but this is an O(n) operation, while we have to do a O(nlogn) sort
+// with every keystroke anyways, so this is not the bottleneck, might as well keep it simple
 char** find_strings_to_autocomplete(EditorState* es, int* arr_len)
 {
 	Tab* t = es->active_tab;

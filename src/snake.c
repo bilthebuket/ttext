@@ -74,6 +74,7 @@ static void update_index_in_direction(int* index, int direction, int width)
 	}
 }
 
+// x and y are the coordinates of the top left corner of the tab on the screen
 static void print_char(unsigned char* game, int row, int col, int x, int y, int width)
 {
 	switch (game[(row * width + col) * BYTES_PER_CELL])
@@ -102,7 +103,6 @@ static void print_char(unsigned char* game, int row, int col, int x, int y, int 
 	}
 }
 
-// x and y are the coordinates of the top left corner of the tab on the screen
 static void print_state(unsigned char* game, int height, int width, int x, int y)
 {
 	for (int i = 0; i < height; i++)
