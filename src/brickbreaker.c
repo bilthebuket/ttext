@@ -119,10 +119,10 @@ void brickbreaker_execute(Tab* t)
 	}
 
 	int player_index = t->width * (t->height - 1) + t->width / 2;
+	int player_vel = 0;
 	int ball_index = t->width * (t->height - 2) + t->width / 2;
 	int ball_y_vel = -1;
 	int ball_x_vel = 1;
-	bool terminate = false;
 
 	for (int i = PLAYER_WIDTH / -2; i <= PLAYER_WIDTH / 2; i++)
 	{
@@ -137,33 +137,25 @@ void brickbreaker_execute(Tab* t)
 
 	nodelay(stdscr, TRUE);
 
-	while (!terminate)
+	while (1)
 	{
 		int ch = getch();
+		bool terminate = false;
 		switch (ch)
 		{
 			case 'h':
 			{
-				if (player_index - PLAYER_WIDTH / 2 > t->width * (t->height - 1))
-				{
-					game[(player_index + PLAYER_WIDTH / 2) * BYTES_PER_CELL] = '\0';
-					game[(player_index - PLAYER_WIDTH / 2 - 1) * BYTES_PER_CELL] = PLAYER_CHAR;
-					print_char(game, (player_index + PLAYER_WIDTH / 2) / t->width, (player_index + PLAYER_WIDTH / 2) % t->width, t->xpos, t->ypos, t->width);
-					print_char(game, (player_index - PLAYER_WIDTH / 2 - 1) / t->width, (player_index - PLAYER_WIDTH / 2 - 1) % t->width, t->xpos, t->ypos, t->width);
-					player_index--;
-				}
+				player_vel--;
 				break;
 			}
 			case 'l':
 			{
-				if (player_index + PLAYER_WIDTH / 2 + 1 < t->width * t->height)
-				{
-					game[(player_index - PLAYER_WIDTH / 2) * BYTES_PER_CELL] = '\0';
-					game[(player_index + PLAYER_WIDTH / 2 + 1) * BYTES_PER_CELL] = PLAYER_CHAR;
-					print_char(game, (player_index - PLAYER_WIDTH / 2) / t->width, (player_index - PLAYER_WIDTH / 2) % t->width, t->xpos, t->ypos, t->width);
-					print_char(game, (player_index + PLAYER_WIDTH / 2 + 1) / t->width, (player_index + PLAYER_WIDTH / 2 + 1) % t->width, t->xpos, t->ypos, t->width);
-					player_index++;
-				}
+				player_vel++;
+				break;
+			}
+			case ' ':
+			{
+				player_vel = 0;
 				break;
 			}
 			case ESCAPE_KEYCODE:
@@ -178,16 +170,58 @@ void brickbreaker_execute(Tab* t)
 			break;
 		}
 
+		if (abs(player_vel) > 0 && (player_index + PLAYER_WIDTH / 2) % t->width + player_vel < t->width && (player_index - PLAYER_WIDTH / 2) % t->width + player_vel >= 0)
+		{
+			if (abs(player_vel) <= PLAYER_WIDTH)
+			{
+				int direction = player_vel / abs(player_vel);
+				for (int i = 0; i < abs(player_vel); i++)
+				{
+					int index_to_update = player_index + (PLAYER_WIDTH / 2 + i + 1) * direction;
+					game[index_to_update * BYTES_PER_CELL] = PLAYER_CHAR;
+					print_char(game, index_to_update / t->width, index_to_update % t->width, t->xpos, t->ypos, t->width);
+
+					index_to_update = player_index - (PLAYER_WIDTH / 2 - i) * direction;
+					game[index_to_update * BYTES_PER_CELL] = '\0';
+					print_char(game, index_to_update / t->width, index_to_update % t->width, t->xpos, t->ypos, t->width);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < PLAYER_WIDTH; i++)
+				{
+					int index_to_update = player_index + player_vel - (PLAYER_WIDTH / 2 - i);
+					game[index_to_update * BYTES_PER_CELL] = PLAYER_CHAR;
+					print_char(game, index_to_update / t->width, index_to_update % t->width, t->xpos, t->ypos, t->width);
+
+					index_to_update = player_index - (PLAYER_WIDTH / 2 - i);
+					game[index_to_update * BYTES_PER_CELL] = '\0';
+					print_char(game, index_to_update / t->width, index_to_update % t->width, t->xpos, t->ypos, t->width);
+				}
+			}
+
+			player_index += player_vel;
+		}
+		else
+		{
+			player_vel = 0;
+		}
+
 		bool collision = false;
+
 		if (abs((ball_index + ball_x_vel) % t->width - ball_index % t->width) > 1)
 		{
 			ball_x_vel *= -1;
 			collision = true;
 		}
-		if (ball_index + ball_y_vel * t->width < 0 || ball_index + ball_y_vel * t->width >= t->height * t->width)
+		if (ball_index + ball_y_vel * t->width < 0)
 		{
 			ball_y_vel *= -1;
 			collision = true;
+		}
+		else if (ball_index + ball_y_vel * t->width >= t->height * t->width)
+		{
+			break;
 		}
 
 		if (!collision)
