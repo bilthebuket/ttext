@@ -6,6 +6,8 @@
 #define BYTES_PER_CELL 2
 #define SLEEP_TIME 25
 #define PLAYER_WIDTH 21
+#define PLAYER_SPEED 2
+#define BALL_SPEED 1
 
 #include "tab.h"
 

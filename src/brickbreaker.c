@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <ncurses.h>
+#include <time.h>
 #include "brickbreaker.h"
 #include "piece_table/piece_table.h"
 #include "piece_table/color_indices.h"
@@ -14,14 +15,14 @@ static void process_line(PieceIterator* pi, PieceIterator* ci, unsigned char* ga
 	while (1)
 	{
 		int store_color = color;
-		for (; color == store_color && c != ' ' && c != '\n' && c != '\0'; c = pt_iterate(pi), color = ci_iterate(ci))
+		for (; color == store_color && c != ' ' && c != '\n' && c != '\0'; c = pt_iterate(pi), color = ci_iterate(ci), offset++)
 		{
 			game[BYTES_PER_CELL * offset] = c;
 			game[BYTES_PER_CELL * offset + 1] = color;
 		}
 		for (; c == ' ' || c == '\n'; c = pt_iterate(pi), color = ci_iterate(ci)) {}
 
-		if (offset >= line_size || offset >= game_length)
+		if (offset >= line_size + (game_length - line_size) / 2 || offset >= game_length)
 		{
 			break;
 		}
@@ -85,6 +86,8 @@ void brickbreaker_execute(Tab* t)
 		return;
 	}
 
+	srand(time(NULL));
+
 	unsigned char* game = calloc(t->width * t->height * BYTES_PER_CELL, sizeof(char));
 	if (game == NULL)
 	{
@@ -115,14 +118,14 @@ void brickbreaker_execute(Tab* t)
 		{
 			break;
 		}
-		process_line(&pi, &ci, game, t->width, line_size);
+		process_line(&pi, &ci, &game[i * t->width * BYTES_PER_CELL], t->width, line_size);
 	}
 
 	int player_index = t->width * (t->height - 1) + t->width / 2;
 	int player_vel = 0;
 	int ball_index = t->width * (t->height - 2) + t->width / 2;
-	int ball_y_vel = -1;
-	int ball_x_vel = 1;
+	int ball_y_vel = BALL_SPEED * -1;
+	int ball_x_vel = BALL_SPEED;
 
 	for (int i = PLAYER_WIDTH / -2; i <= PLAYER_WIDTH / 2; i++)
 	{
@@ -145,12 +148,12 @@ void brickbreaker_execute(Tab* t)
 		{
 			case 'h':
 			{
-				player_vel--;
+				player_vel = PLAYER_SPEED * -1;
 				break;
 			}
 			case 'l':
 			{
-				player_vel++;
+				player_vel = PLAYER_SPEED;
 				break;
 			}
 			case ' ':
@@ -228,14 +231,29 @@ void brickbreaker_execute(Tab* t)
 		{
 			if (game[(ball_index + ball_y_vel * t->width + ball_x_vel) * BYTES_PER_CELL] == PLAYER_CHAR)
 			{
-				ball_x_vel *= -1;
+				if (rand() % 2 == 0)
+				{
+					ball_x_vel = -1 * BALL_SPEED;
+				}
+				else
+				{
+					ball_x_vel = BALL_SPEED;
+				}
 				ball_y_vel *= -1;
 			}
 			else if (game[(ball_index + ball_y_vel * t->width + ball_x_vel) * BYTES_PER_CELL] != '\0')
 			{
 				game[(ball_index + ball_y_vel * t->width + ball_x_vel) * BYTES_PER_CELL] = '\0';
 				print_char(game, ball_index / t->width + ball_y_vel, ball_index % t->width + ball_x_vel, t->xpos, t->ypos, t->width);
-				ball_x_vel *= -1;
+
+				if (rand() % 2 == 0)
+				{
+					ball_x_vel = -1 * BALL_SPEED;
+				}
+				else
+				{
+					ball_x_vel = BALL_SPEED;
+				}
 				ball_y_vel *= -1;
 			}
 		}

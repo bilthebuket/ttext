@@ -70,6 +70,7 @@ typing a number before an action in normal mode will repeat it that number of ti
 - :find \<string\> -> finds instances of a string (essentailly CTRL+F or /\<string\> in vim)
 - :flookup \<function name\> -> lists all function signatures in working directory with given function name
 - :snake -> play snake with your text file
+- :brickbreaker -> play brickbreaker with your text file (h = left, l = right, space = stop)
 - any command without a ':' prefix will be run as a bash command (ls, cd, mv, cat, grep, etc)
 
 note: when moving and resizing windows, you also use fractions of the screen size.
